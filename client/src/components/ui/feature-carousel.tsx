@@ -90,25 +90,30 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
               })}
             </div>
 
-            {/* Prev / Next */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 rounded-full h-10 w-10 z-20 bg-background/60 backdrop-blur-sm"
-              onClick={handlePrev}
-              aria-label="Previous"
+            {/* Prev / Next — wrapper matches image width so arrows always sit at image edges */}
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-between z-20 px-2"
+              style={{ width: 'clamp(188px, 72vw, 500px)' }}
             >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 rounded-full h-10 w-10 z-20 bg-background/60 backdrop-blur-sm"
-              onClick={handleNext}
-              aria-label="Next"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-background/60 backdrop-blur-sm flex-shrink-0"
+                onClick={handlePrev}
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-background/60 backdrop-blur-sm flex-shrink-0"
+                onClick={handleNext}
+                aria-label="Next"
+              >
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+            </div>
 
             {/* Dot indicators */}
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
