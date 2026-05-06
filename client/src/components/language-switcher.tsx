@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Globe, ChevronDown, Check } from "lucide-react";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 import { AZURE_VOICES, saveSpeechPrefs } from "@/hooks/use-speech";
-import { setGoogleTranslateLang } from "@/lib/google-translate";
-
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -15,9 +13,6 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const handleSelect = (lang: typeof SUPPORTED_LANGUAGES[number]) => {
     i18n.changeLanguage(lang.code);
     setOpen(false);
-
-    // Translate all page content via Google Translate
-    setGoogleTranslateLang(lang.code);
 
     // Auto-select the first Azure voice matching this language
     const firstVoice = AZURE_VOICES.find(v => v.language === lang.ttsLang);
