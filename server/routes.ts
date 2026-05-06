@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 import { generateReportContent, generatePresentationContent, generateConferencePaperContent, generateThesisContent, extractTextFromImage, generateChatResponse, generateSpeechAudio, checkGrammar, generateContent, generateSectionContent } from "./lib/gemini";
 import { searchImages, getRandomImage } from "./lib/pixabay";
 import { extractTextFromFile } from "./lib/file-processor";
@@ -17,7 +18,29 @@ import { getBMCCheckoutUrl, getBMCProducts, isBMCConfigured } from "./bmcClient"
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Rate limiters — protect AI generation endpoints from abuse
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please wait a minute before generating again." },
+  skip: (req) => process.env.NODE_ENV === "development",
+});
+
+const exportLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many export requests. Please wait a moment." },
+  skip: (req) => process.env.NODE_ENV === "development",
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply rate limiters to AI and export routes
+  app.use("/api/generate", generateLimiter);
+  app.use("/api/export", exportLimiter);
   // ── PDF Export ────────────────────────────────────────────────────────────
   app.post("/api/export/pdf", async (req, res) => {
     try {
