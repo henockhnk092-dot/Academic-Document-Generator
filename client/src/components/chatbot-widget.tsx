@@ -283,8 +283,8 @@ export function ChatbotWidget() {
         className={cn(
           "fixed transition-all duration-300 ease-in-out",
           isOpen
-            ? "inset-x-0 bottom-0 top-14 z-[9999] sm:z-50 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[min(360px,calc(100vw-2rem))] sm:h-[500px] sm:max-h-[80vh] sm:rounded-lg"
-            : "z-50 bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 sm:right-4 w-auto h-auto"
+            ? "inset-x-0 bottom-0 top-12 z-[9999] sm:z-50 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[min(360px,calc(100vw-1rem))] sm:h-[500px] sm:max-h-[85vh] sm:rounded-lg"
+            : "z-50 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] right-2 sm:right-4 w-auto h-auto"
         )}
       >
         {isOpen ? (
@@ -355,7 +355,7 @@ export function ChatbotWidget() {
                         <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       )}
                     </div>
-                    <div className="flex flex-col min-w-0 max-w-[calc(100%-2rem)] sm:max-w-[85%]">
+                    <div className="flex flex-col min-w-0 max-w-[calc(100%-2.5rem)] sm:max-w-[85%]">
                       <div
                         className={cn(
                           "rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm break-words",

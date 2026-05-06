@@ -283,7 +283,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
   return (
     <div className="bg-white dark:bg-card shadow-xl rounded-lg flex flex-col border border-border overflow-hidden">
       <div
-        className={`px-6 py-4 ${isTitle ? 'text-white flex-grow flex flex-col justify-center items-center text-center py-12 rounded-t-lg relative min-h-[300px]' : 'bg-muted/30 border-b border-border rounded-t-lg'}`}
+        className={`px-3 py-3 sm:px-6 sm:py-4 ${isTitle ? 'text-white flex-grow flex flex-col justify-center items-center text-center py-8 sm:py-12 rounded-t-lg relative min-h-[180px] sm:min-h-[300px]' : 'bg-muted/30 border-b border-border rounded-t-lg'}`}
         style={isTitle && slide.imgData ? {
           backgroundImage: `linear-gradient(rgba(30, 58, 138, 0.4), rgba(30, 58, 138, 0.5)), url(${slide.imgData})`,
           backgroundSize: 'cover',
@@ -317,7 +317,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
           </Badge>
           {slide.type && <Badge variant="outline" className="text-xs capitalize">{slide.type.replace('_', ' ')}</Badge>}
         </div>
-        <h2 className={`text-xl font-bold tracking-tight leading-tight ${isTitle ? 'text-white text-2xl md:text-4xl relative z-10' : 'text-foreground'}`} style={isTitle ? { textShadow: '0 2px 4px rgba(0,0,0,0.5)' } : {}}>
+        <h2 className={`font-bold tracking-tight leading-tight ${isTitle ? 'text-white text-xl sm:text-2xl md:text-4xl relative z-10' : 'text-lg sm:text-xl text-foreground'}`} style={isTitle ? { textShadow: '0 2px 4px rgba(0,0,0,0.5)' } : {}}>
           {slide.title}
         </h2>
         {isTitle && slide.content && (
@@ -328,7 +328,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
       </div>
 
       {!isTitle && (
-        <div className="flex-grow p-6 flex flex-col md:flex-row gap-6">
+        <div className="flex-grow p-3 sm:p-6 flex flex-col md:flex-row gap-3 sm:gap-6">
           <div className={`flex-1 flex flex-col justify-start ${isSplit ? 'md:w-1/2' : ''}`}>
             {renderContent()}
 
@@ -342,7 +342,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
 
           {isSplit && showImages && (
             <div className="flex-1 flex flex-col justify-center md:w-1/2">
-              <div className="flex-grow bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center border-2 border-dashed border-border relative min-h-[200px]">
+              <div className="flex-grow bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center border-2 border-dashed border-border relative min-h-[150px] sm:min-h-[200px]">
                 {slide.imgData ? (
                   <img src={slide.imgData} alt="Slide Visual" className="w-full h-full object-contain" />
                 ) : (
