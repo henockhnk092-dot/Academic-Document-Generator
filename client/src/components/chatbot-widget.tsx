@@ -306,6 +306,7 @@ export function ChatbotWidget() {
                         onClick={handleClearChat}
                         disabled={messages.length <= 1}
                         className="h-8 w-8"
+                        aria-label="Clear chat"
                         data-testid="button-clear-chatbot"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -320,7 +321,8 @@ export function ChatbotWidget() {
                   size="icon"
                   variant="ghost"
                   onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 sm:h-8 sm:w-8"
+                  className="h-8 w-8"
+                  aria-label="Close chat"
                   data-testid="button-minimize-chatbot"
                 >
                   <X className="h-5 w-5 sm:hidden" />
@@ -376,7 +378,7 @@ export function ChatbotWidget() {
                             variant="ghost"
                             className="h-6 w-6"
                             onClick={() => handleCopy(message.content, message.id)}
-                            title="Copy"
+                            aria-label="Copy message"
                           >
                             {copiedId === message.id ? (
                               <Check className="h-3 w-3 text-green-500" />
@@ -389,7 +391,7 @@ export function ChatbotWidget() {
                             variant="ghost"
                             className="h-6 w-6"
                             onClick={() => handleSpeak(message.content, message.id)}
-                            title={speakingId === message.id ? "Stop" : "Read aloud"}
+                            aria-label={speakingId === message.id ? "Stop reading" : "Read aloud"}
                           >
                             {speakingId === message.id ? (
                               <Square className="h-3 w-3 text-primary" />
@@ -432,6 +434,7 @@ export function ChatbotWidget() {
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
                   className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                  aria-label="Send message"
                   data-testid="button-send-message"
                 >
                   <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -443,8 +446,9 @@ export function ChatbotWidget() {
           <Button
             size="lg"
             variant="outline"
-            className="h-11 w-10 sm:h-14 sm:w-12 rounded-lg shadow-lg opacity-50 bg-background/30 backdrop-blur-sm border-primary/30 text-primary hover:opacity-100 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200"
+            className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl shadow-lg opacity-50 bg-background/30 backdrop-blur-sm border-primary/30 text-primary hover:opacity-100 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200"
             onClick={() => setIsOpen(true)}
+            aria-label="Open chat assistant"
             data-testid="button-open-chatbot"
           >
             <Bot className="h-6 w-6 sm:h-8 sm:w-8" />

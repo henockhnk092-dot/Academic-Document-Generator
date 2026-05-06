@@ -20,23 +20,16 @@ function repairJson(jsonString: string): any {
   try {
     return JSON.parse(jsonString);
   } catch (e) {
-    console.log("Attempting to repair truncated JSON...");
-    console.log("Raw response length:", jsonString.length);
-    console.log("First 500 chars:", jsonString.substring(0, 500));
-    console.log("Last 500 chars:", jsonString.substring(jsonString.length - 500));
-
     let repaired = jsonString.trim();
 
     // Detect and remove repeating garbage patterns at the end
     const repeatingPattern = /(.{1,50})\1{3,}$/;
     if (repeatingPattern.test(repaired.substring(Math.max(0, repaired.length - 1000)))) {
-      console.log("Detected repeating pattern at end, removing...");
       const match = repaired.substring(Math.max(0, repaired.length - 1000)).match(repeatingPattern);
       if (match) {
         const patternStartInSuffix = match.index!;
         const actualStartIndex = Math.max(0, repaired.length - 1000) + patternStartInSuffix;
         repaired = repaired.substring(0, actualStartIndex);
-        console.log("Removed repeating pattern, new length:", repaired.length);
       }
     }
 
@@ -88,9 +81,7 @@ function repairJson(jsonString: string): any {
       // If balanced, try to parse
       if (openBraces === 0 && openBrackets === 0 && !inString) {
         try {
-          const parsed = JSON.parse(candidate);
-          console.log("Successfully repaired JSON at position", searchEnd);
-          return parsed;
+          return JSON.parse(candidate);
         } catch (e) {
           // Continue searching
         }
@@ -685,9 +676,6 @@ Generate a complete IEEE conference paper HTML document following all the guidel
     .replace(/<p>\s*(?:\[\d+\]\s*)?\s*<\/p>/gi, '')
     // Clean up excessive whitespace in references section
     .replace(/(<div[^>]*class="references"[^>]*>[\s\S]*?)(\s{3,})([\s\S]*?<\/div>)/gi, '$1 $3');
-
-  // Log the cleaned content for debugging
-  console.log('📄 Conference paper body content length:', bodyContent.length);
 
   // Return ONLY the content with inline CSS - NO body/html wrapper
   // The parent div will handle the layout

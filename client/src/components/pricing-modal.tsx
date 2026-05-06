@@ -65,7 +65,6 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
     try {
       const response = await fetch("/api/payment/provider");
       const data = await response.json();
-      console.log("[PricingModal] Payment provider:", data);
       setPaymentProvider(data);
     } catch (error) {
       console.error("[PricingModal] Failed to fetch payment provider:", error);
@@ -79,12 +78,6 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
       const response = await fetch("/api/stripe/products");
       const data = await response.json();
       if (data.products) {
-        console.log("[PricingModal] Loaded products:", data.products.map((p: StripeProduct) => ({
-          name: p.product_name,
-          price_id: p.price_id,
-          tier: p.product_metadata?.tier,
-          interval: p.recurring?.interval,
-        })));
         setProducts(data.products);
       }
     } catch (error) {
@@ -129,12 +122,6 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
 
   const handleSelectPlan = (plan: keyof typeof PRICING_TIERS) => {
     const product = paymentProvider?.preferred === 'stripe' ? getProductForTier(plan) : undefined;
-
-    if (paymentProvider?.preferred === 'stripe' && !product) {
-      console.warn(`[PricingModal] No product found for tier: ${plan}. Available products:`, products.map(p => p.product_name));
-    } else {
-      console.log(`[PricingModal] Selected ${plan} via ${paymentProvider?.preferred}${product ? ` -> price_id: ${product.price_id}` : ''}`);
-    }
 
     setSelectedPlan(plan);
     onSelectPlan?.(plan, product?.price_id, paymentProvider?.preferred);

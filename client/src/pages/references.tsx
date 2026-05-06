@@ -738,10 +738,6 @@ export default function References() {
   };
 
   const saveToProjects = async () => {
-    console.log("=== SAVE TO PROJECTS STARTED ===");
-    console.log("User authenticated:", isAuthenticated);
-    console.log("User UID:", user?.uid);
-    console.log("Filtered references count:", filteredReferences.length);
 
     if (!isAuthenticated || !user?.uid) {
       toast({
@@ -778,7 +774,6 @@ export default function References() {
   </div>`).join('')}
 </div>`;
 
-      console.log("Calling saveDocument...");
       const docId = await saveDocument({
         type: "references",
         title: `Reference Library (${filteredReferences.length} refs)`,
@@ -795,11 +790,7 @@ export default function References() {
         },
       });
 
-      console.log("Document saved with ID:", docId);
-
-      // Invalidate the documents query cache so My Projects page shows the new document
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
-      console.log("Query cache invalidated for documents");
 
       toast({
         title: "Saved to Projects",

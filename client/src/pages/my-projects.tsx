@@ -163,29 +163,19 @@ export default function MyProjects() {
   const { data: documentsData, isLoading: isLoadingDocs, error: docsError } = useQuery({
     queryKey: ["documents", user?.uid],
     queryFn: async () => {
-      console.log("=== FETCHING DOCUMENTS ===");
-      console.log("User authenticated:", isAuthenticated);
-      console.log("User UID:", user?.uid);
-      console.log("User email:", user?.email);
-
       const db = getFirebaseDb();
-      console.log("Firebase DB initialized:", !!db);
 
       if (!db || !user?.uid) {
-        console.log("Early return - no db or user");
         return [];
       }
 
       const docsRef = collection(db, "documents");
       const q = query(docsRef, where("userId", "==", user.uid), orderBy("createdAt", "desc"));
 
-      console.log("Executing query for userId:", user.uid);
       const querySnapshot = await getDocs(q);
-      console.log("Query returned", querySnapshot.docs.length, "documents");
 
       const docs = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log("Document:", doc.id, data);
         return {
           id: doc.id,
           ...data,
@@ -257,10 +247,6 @@ export default function MyProjects() {
 
   // Export functions
   const handleExportHTML = (doc: Document) => {
-    console.log("=== EXPORTING HTML ===");
-    console.log("Document:", doc);
-    console.log("Document content:", doc.content);
-    console.log("Content type:", typeof doc.content);
 
     let htmlContent = "";
 
@@ -280,7 +266,6 @@ export default function MyProjects() {
       } else if (doc.content.slides) {
         // Handle PowerPoint slides
         htmlContent = `<h1>${doc.title}</h1>`;
-        console.log("Processing slides:", doc.content.slides.length);
         doc.content.slides.forEach((slide: any, index: number) => {
           htmlContent += `<div style="page-break-after: always; margin-bottom: 40px; padding: 20px; border: 1px solid #ddd;">`;
           htmlContent += `<h2>Slide ${index + 1}: ${slide.title || ''}</h2>`;
@@ -307,7 +292,6 @@ export default function MyProjects() {
       } else if (doc.content.sections) {
         // Handle sections (reports, thesis, conference papers)
         htmlContent = `<h1>${doc.title}</h1>`;
-        console.log("Processing sections:", doc.content.sections.length);
         doc.content.sections.forEach((section: any) => {
           htmlContent += `<h2>${section.heading || section.title}</h2>`;
           if (section.imageUrl) {
@@ -322,9 +306,6 @@ export default function MyProjects() {
         });
       }
     }
-
-    console.log("Generated HTML length:", htmlContent.length);
-    console.log("HTML preview:", htmlContent.substring(0, 500));
 
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);

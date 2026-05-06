@@ -158,13 +158,8 @@ export async function saveDocument(documentData: {
   settings: any;
   language?: string;
 }): Promise<string> {
-  console.log("=== SAVING DOCUMENT ===");
   const db = getFirebaseDb();
   const auth = getFirebaseAuth();
-
-  console.log("Firebase DB initialized:", !!db);
-  console.log("Auth initialized:", !!auth);
-  console.log("Current user:", auth?.currentUser?.uid, auth?.currentUser?.email);
 
   if (!db) throw new Error("Firebase not initialized");
   if (!auth?.currentUser) throw new Error("User not authenticated");
@@ -183,8 +178,6 @@ export async function saveDocument(documentData: {
   if (!existingDocs.empty) {
     // Update existing document
     const existingDocId = existingDocs.docs[0].id;
-    console.log("Updating existing document:", existingDocId);
-
     const docRef = doc(db, "documents", existingDocId);
     await updateDoc(docRef, {
       topic: documentData.topic,
@@ -194,7 +187,6 @@ export async function saveDocument(documentData: {
       updatedAt: Timestamp.now().toMillis().toString(),
     });
 
-    console.log("Document updated with ID:", existingDocId);
     return existingDocId;
   }
 
@@ -211,13 +203,7 @@ export async function saveDocument(documentData: {
     updatedAt: Timestamp.now().toMillis().toString(),
   };
 
-  console.log("Creating new document");
-  console.log("Document type:", documentToSave.type);
-  console.log("Document title:", documentToSave.title);
-
   const docRef = await addDoc(collection(db, "documents"), documentToSave);
-
-  console.log("Document created with ID:", docRef.id);
   return docRef.id;
 }
 

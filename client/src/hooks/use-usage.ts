@@ -87,7 +87,6 @@ export function useUsage() {
     };
     localStorage.setItem(GUEST_USAGE_KEY, JSON.stringify(usage));
     setGuestAttempts(newCount);
-    console.log(`[Usage] Guest attempts incremented to ${newCount}/${USAGE_LIMITS.guest}`);
     return newCount;
   }, [getGuestAttempts]);
 
@@ -103,9 +102,7 @@ export function useUsage() {
 
     if (!isAuthenticated) {
       const attempts = getGuestAttempts();
-      console.log(`[Usage] Guest check: ${attempts}/${USAGE_LIMITS.guest} attempts used`);
       if (attempts >= USAGE_LIMITS.guest) {
-        console.log(`[Usage] Guest limit reached - blocking generation`);
         return { allowed: false, reason: "guest_limit" };
       }
       return { allowed: true };
@@ -156,7 +153,6 @@ export function useUsage() {
       await queryClient.invalidateQueries({ queryKey: ["/api/usage", currentUserId] });
       // Also refetch to ensure we have the latest data
       await queryClient.refetchQueries({ queryKey: ["/api/usage", currentUserId] });
-      console.log("[Usage] Usage recorded and cache invalidated for user:", currentUserId);
       return { success: true };
     } catch (error: any) {
       if (error.status === 403 || error.message?.includes("403")) {

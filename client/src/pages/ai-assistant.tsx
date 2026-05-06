@@ -265,13 +265,10 @@ export default function AiAssistant() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      console.log("[AI Assistant] Sending message:", content.substring(0, 50) + "...");
-      // Send directly without requiring session - more resilient to database issues
-      const chatResponse = await apiRequest("POST", "/api/ai/chat", { 
-        sessionId: sessionId || undefined, 
-        message: content 
+      const chatResponse = await apiRequest("POST", "/api/ai/chat", {
+        sessionId: sessionId || undefined,
+        message: content
       });
-      console.log("[AI Assistant] Received response");
       return chatResponse as unknown as ChatResponse;
     },
     onSuccess: (data) => {

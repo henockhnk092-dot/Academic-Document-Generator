@@ -78,8 +78,6 @@ export async function exportToPPTX(
         // ========== TITLE SLIDE ==========
         slide.background = { color: "1E3A8A" }; // Dark blue background
 
-        console.log(`🔍 Title slide ${index + 1}: imgData =`, slideData.imgData ? slideData.imgData.substring(0, 50) + '...' : 'MISSING');
-
         // Add background image if available
         if (slideData.imgData) {
           try {
@@ -92,15 +90,13 @@ export async function exportToPPTX(
                 w: "100%",
                 h: "100%",
                 sizing: { type: "cover", w: "100%", h: "100%" },
-                transparency: 35, // Lighter overlay so background image is more visible
+                transparency: 35,
               });
-              console.log(`✅ Background image embedded in title slide ${index + 1}`);
             }
           } catch (err) {
-            console.error(`❌ Failed to embed background image in title slide ${index + 1}:`, err);
+            console.error(`Failed to embed background image in title slide ${index + 1}:`, err);
           }
         } else {
-          console.warn(`⚠️ No imgData for title slide ${index + 1}`);
         }
 
         // Add semi-transparent overlay for text readability
@@ -245,10 +241,7 @@ export async function exportToPPTX(
 
           // ========== IMAGE/CHART SECTION ==========
           if (hasImagePlaceholder && slideData.type !== "quote") {
-            console.log(`🔍 Slide ${index + 1} (${slideData.type}): imgData =`, slideData.imgData ? slideData.imgData.substring(0, 50) + '...' : 'MISSING');
-
             if (slideData.imgData) {
-              // Convert and embed image
               try {
                 const imgBase64 = await urlToBase64(slideData.imgData);
                 if (imgBase64) {
@@ -260,12 +253,11 @@ export async function exportToPPTX(
                     h: 4,
                     sizing: { type: "contain", w: "45%", h: 4 },
                   });
-                  console.log(`✅ Image embedded in PPTX for slide ${index + 1}`);
                 } else {
                   throw new Error("Base64 conversion returned null");
                 }
               } catch (err) {
-                console.error(`❌ Failed to embed image in slide ${index + 1}:`, err);
+                console.error(`Failed to embed image in slide ${index + 1}:`, err);
                 // Fallback to placeholder if image embedding fails
                 slide.addText("[Image unavailable]", {
                   x: "52%",

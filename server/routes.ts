@@ -550,7 +550,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, error: "Invalid URL format" });
       }
 
-      console.log(`[references] Fetching metadata from: ${url}`);
 
       // Fetch the webpage with timeout
       const controller = new AbortController();
@@ -572,12 +571,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.log(`[references] URL fetch failed with status: ${response.status}`);
         return res.status(400).json({ success: false, error: `Website returned error: ${response.status}` });
       }
 
       const html = await response.text();
-      console.log(`[references] Fetched ${html.length} bytes from URL`);
 
       // Extract metadata from HTML
       const getMetaContent = (name: string): string => {
@@ -880,24 +877,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      console.log("[AI Chat] Received message:", message.substring(0, 50) + "...");
-
       // Build context-aware prompt
-      const systemContext = context 
+      const systemContext = context
         ? `You are an academic writing assistant. The user is working on: ${context}. Help them improve their writing.`
         : "You are an academic writing assistant. Help the user improve their academic writing.";
 
       const response = await generateChatResponse(`${systemContext}\n\nUser: ${message}`);
-      console.log("[AI Chat] Generated response successfully");
 
-      // Try to save to database, but don't fail if database is unavailable
       if (sessionId) {
         try {
           await storage.createAiMessage({ sessionId, role: "user", content: message });
           await storage.createAiMessage({ sessionId, role: "assistant", content: response });
-          console.log("[AI Chat] Saved messages to database");
-        } catch (dbError) {
-          console.warn("[AI Chat] Could not save to database (non-critical):", dbError);
+        } catch (_dbError) {
+          // non-critical — database unavailable
         }
       }
 
@@ -917,12 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User ID and text are required" });
       }
 
-      console.log("[Grammar Check] Analyzing text:", text.substring(0, 100) + "...");
-
-      // Use dedicated grammar check function
       const suggestions = await checkGrammar(text);
-
-      console.log("[Grammar Check] Found", suggestions.length, "suggestions");
 
       // Save suggestions if documentId provided
       if (documentId && Array.isArray(suggestions)) {
