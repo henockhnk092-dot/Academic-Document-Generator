@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Mail, 
+import {
+  Mail,
   Send,
   MessageCircle,
   Loader2
 } from "lucide-react";
 import { SiGithub, SiDiscord, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
 import { FaXTwitter } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 export default function Contact() {
+  const { t } = useTranslation();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -79,9 +82,9 @@ export default function Contact() {
     <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-contact">
       <div className="space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Contact Us</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("pages.contact.title")}</h1>
           <p className="text-muted-foreground">
-            Have questions, feedback, or feature requests? We'd love to hear from you.
+            {t("pages.contact.subtitle")}
           </p>
         </div>
 
@@ -90,10 +93,10 @@ export default function Contact() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Send a Message
+                {t("pages.contact.formTitle")}
               </CardTitle>
               <CardDescription>
-                Fill out the form below and we'll respond as soon as possible.
+                {t("pages.contact.formSubtitle")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -103,7 +106,7 @@ export default function Contact() {
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
-                      placeholder="Your name"
+                      placeholder={t("pages.contact.namePlaceholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
@@ -115,7 +118,7 @@ export default function Contact() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder={t("pages.contact.emailPlaceholder")}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
@@ -127,7 +130,7 @@ export default function Contact() {
                   <Label htmlFor="subject">Subject</Label>
                   <Input
                     id="subject"
-                    placeholder="What's this about?"
+                    placeholder={t("pages.contact.subjectPlaceholder")}
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     required
@@ -138,7 +141,7 @@ export default function Contact() {
                   <Label htmlFor="message">Message</Label>
                   <Textarea
                     id="message"
-                    placeholder="Your message..."
+                    placeholder={t("pages.contact.messagePlaceholder")}
                     rows={5}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -150,12 +153,12 @@ export default function Contact() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
+                      {t("pages.contact.sending")}
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Send Message
+                      {t("pages.contact.sendButton")}
                     </>
                   )}
                 </Button>
@@ -166,7 +169,7 @@ export default function Contact() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Get in Touch</CardTitle>
+                <CardTitle>{t("pages.contact.getInTouch")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -175,8 +178,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Email</p>
-                    <a 
-                      href="mailto:hhnk3693@gmail.com" 
+                    <a
+                      href="mailto:hhnk3693@gmail.com"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       hhnk3693@gmail.com
@@ -189,9 +192,9 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Source Code</p>
-                    <a 
-                      href="https://github.com/henockhnk092-dot/Academic-Document-Generator" 
-                      target="_blank" 
+                    <a
+                      href="https://github.com/henockhnk092-dot/Academic-Document-Generator"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
@@ -204,8 +207,8 @@ export default function Contact() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Follow & Connect</CardTitle>
-                <CardDescription>Stay updated with the latest features and news.</CardDescription>
+                <CardTitle>{t("pages.contact.followConnect")}</CardTitle>
+                <CardDescription>{t("pages.contact.followDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {socialLinks.map((link, index) => (
@@ -231,24 +234,24 @@ export default function Contact() {
 
             <Card>
               <CardHeader>
-                <CardTitle>FAQ</CardTitle>
+                <CardTitle>{t("pages.contact.faqTitle")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
-                  <p className="font-medium">How do I get started?</p>
-                  <p className="text-muted-foreground">Choose a document type from the home page or sidebar, enter your topic, and click Generate.</p>
+                  <p className="font-medium">{t("pages.contact.faq1Q")}</p>
+                  <p className="text-muted-foreground">{t("pages.contact.faq1A")}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Do I need an account?</p>
-                  <p className="text-muted-foreground">No account required to generate documents. Sign in with Google to save projects to the cloud.</p>
+                  <p className="font-medium">{t("pages.contact.faq2Q")}</p>
+                  <p className="text-muted-foreground">{t("pages.contact.faq2A")}</p>
                 </div>
                 <div>
-                  <p className="font-medium">What formats can I export?</p>
-                  <p className="text-muted-foreground">DOCX, PPTX, PDF, HTML, BibTeX, RIS, CSV, PNG, JPEG, and WEBP formats are supported.</p>
+                  <p className="font-medium">{t("pages.contact.faq3Q")}</p>
+                  <p className="text-muted-foreground">{t("pages.contact.faq3A")}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Is it free to use?</p>
-                  <p className="text-muted-foreground">Yes! All features are free. If you find it useful, consider supporting via Buy Me a Coffee.</p>
+                  <p className="font-medium">{t("pages.contact.faq4Q")}</p>
+                  <p className="text-muted-foreground">{t("pages.contact.faq4A")}</p>
                 </div>
               </CardContent>
             </Card>

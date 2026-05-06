@@ -24,6 +24,7 @@ import { useAuth } from "@/components/auth-provider";
 import { saveDocument } from "@/lib/firebase";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ToneType } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface Author {
   name: string;
@@ -32,6 +33,7 @@ interface Author {
 }
 
 export default function GenerateConference() {
+  const { t } = useTranslation();
   const [topic, setTopic] = useState("");
   const [targetPages, setTargetPages] = useState("auto");
   const [tone, setTone] = useState<ToneType>("academic");
@@ -41,7 +43,7 @@ export default function GenerateConference() {
 
   const [useManualAuthors, setUseManualAuthors] = useState(false);
   const [authors, setAuthors] = useState<Author[]>([{ name: "", affiliation: "", email: "" }]);
-  
+
   const [useCustomFormatting, setUseCustomFormatting] = useState(false);
   const [customFormat, setCustomFormat] = useState({
     fontSize: "10",
@@ -51,7 +53,7 @@ export default function GenerateConference() {
     textColor: "#000000",
     fontFamily: "Times New Roman"
   });
-  
+
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -552,8 +554,8 @@ export default function GenerateConference() {
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
         <GeneratorLayout
-          title="Conference Paper Generator"
-          description="IEEE-formatted papers with proper citations and academic structure"
+          title={t("pages.conference.title")}
+          description={t("pages.conference.subtitle")}
           icon={<BookOpen className="w-6 h-6 text-white" />}
           gradient="from-purple-500 to-pink-500"
         >
@@ -561,28 +563,28 @@ export default function GenerateConference() {
         <div className="lg:col-span-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Paper Configuration</CardTitle>
-              <CardDescription>Define your conference paper topic and settings</CardDescription>
+              <CardTitle>{t("pages.conference.configTitle")}</CardTitle>
+              <CardDescription>{t("pages.conference.configSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs defaultValue="text" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="text" data-testid="tab-text-input">Text Input</TabsTrigger>
-                  <TabsTrigger value="upload" data-testid="tab-file-upload">File Upload</TabsTrigger>
+                  <TabsTrigger value="text" data-testid="tab-text-input">{t("common.textInput")}</TabsTrigger>
+                  <TabsTrigger value="upload" data-testid="tab-file-upload">{t("common.fileUpload")}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="text" className="space-y-4">
                   <div>
-                    <Label htmlFor="topic">Research Topic/Abstract</Label>
+                    <Label htmlFor="topic">{t("pages.conference.topicLabel")}</Label>
                     <Textarea
                       id="topic"
-                      placeholder="Enter your conference paper topic or abstract..."
+                      placeholder={t("pages.conference.topicPlaceholder")}
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       className="min-h-32 mt-2"
                       data-testid="input-paper-topic"
                     />
                     <div className="text-xs text-muted-foreground mt-2">
-                      {topic?.length || 0} characters
+                      {topic?.length || 0} {t("common.characters")}
                     </div>
                   </div>
                   <Button
@@ -600,17 +602,17 @@ export default function GenerateConference() {
                     data-testid="button-surprise-me"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Surprise Me
+                    {t("common.surpriseMe")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="upload" className="space-y-4">
                   <div className="relative border-2 border-dashed rounded-lg p-8 text-center hover-elevate transition-colors">
                     <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground mb-2">
-                      Drop files here or click to browse
+                      {t("common.dropFiles")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supports PDF, DOCX, TXT, and images
+                      {t("common.supportedFormats")}
                     </p>
                     <input
                       type="file"
@@ -621,10 +623,10 @@ export default function GenerateConference() {
                       data-testid="input-file-upload"
                     />
                   </div>
-                  
+
                   {uploadedFiles.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Uploaded Files</Label>
+                      <Label>{t("common.uploadedFiles")}</Label>
                       {uploadedFiles.map((file, index) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
                           <div className="flex items-center gap-2">
@@ -647,13 +649,13 @@ export default function GenerateConference() {
 
               <div className="space-y-4 pt-4 border-t">
                 <div>
-                  <Label htmlFor="target-length">Target Length</Label>
+                  <Label htmlFor="target-length">{t("common.targetLength")}</Label>
                   <Select value={targetPages} onValueChange={setTargetPages}>
                     <SelectTrigger id="target-length" className="mt-2" data-testid="select-target-length">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto (AI-determined)</SelectItem>
+                      <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
                       <SelectItem value="1-2 pages">1-2 Pages</SelectItem>
                       <SelectItem value="3-5 pages">3-5 Pages</SelectItem>
                       <SelectItem value="6-10 pages">6-10 Pages</SelectItem>
@@ -663,14 +665,14 @@ export default function GenerateConference() {
                 </div>
 
                 <div>
-                  <Label htmlFor="tone">Tone & Style</Label>
+                  <Label htmlFor="tone">{t("pages.conference.toneAndStyle")}</Label>
                   <Select value={tone} onValueChange={(val) => setTone(val as ToneType)}>
                     <SelectTrigger id="tone" className="mt-2" data-testid="select-tone">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
+                      <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
                       <SelectItem value="essay">Essay</SelectItem>
                       <SelectItem value="creative">Creative</SelectItem>
                     </SelectContent>
@@ -678,20 +680,20 @@ export default function GenerateConference() {
                 </div>
 
                 <div>
-                  <Label htmlFor="citation-style">Reference Style</Label>
+                  <Label htmlFor="citation-style">{t("pages.conference.referenceStyle")}</Label>
                   <Select value={citationStyle} onValueChange={setCitationStyle}>
                     <SelectTrigger id="citation-style" className="mt-2" data-testid="select-citation-style">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ieee">IEEE (Numeric)</SelectItem>
-                      <SelectItem value="harvard">Harvard (Author-Date)</SelectItem>
+                      <SelectItem value="ieee">{t("pages.conference.ieeeNumeric")}</SelectItem>
+                      <SelectItem value="harvard">{t("pages.conference.harvardAuthorDate")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="generate-images">Generate Figures</Label>
+                  <Label htmlFor="generate-images">{t("pages.conference.generateFigures")}</Label>
                   <Switch
                     id="generate-images"
                     checked={generateImages}
@@ -706,7 +708,7 @@ export default function GenerateConference() {
                   <Button variant="ghost" className="w-full justify-between" data-testid="button-advanced-settings">
                     <span className="flex items-center gap-2">
                       <Settings className="w-4 h-4" />
-                      Advanced Settings
+                      {t("common.advancedSettings")}
                     </span>
                     <span className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`}>
                       ▼
@@ -723,7 +725,7 @@ export default function GenerateConference() {
                         data-testid="switch-manual-authors"
                       />
                     </div>
-                    
+
                     {useManualAuthors && (
                       <div className="space-y-4">
                         {authors.map((author, index) => (
@@ -785,7 +787,7 @@ export default function GenerateConference() {
                         data-testid="switch-custom-formatting"
                       />
                     </div>
-                    
+
                     {useCustomFormatting && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
@@ -896,7 +898,7 @@ export default function GenerateConference() {
                       className="text-primary hover:underline font-medium"
                       data-testid="button-view-pricing"
                     >
-                      View Pricing
+                      {t("common.viewPricing")}
                     </button>
                   </div>
                 )}
@@ -910,12 +912,12 @@ export default function GenerateConference() {
                   {isGenerating || isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
+                      {t("common.generating")}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Conference Paper
+                      {t("pages.conference.generateButton")}
                     </>
                   )}
                 </Button>
@@ -929,8 +931,8 @@ export default function GenerateConference() {
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <CardTitle>Paper Preview</CardTitle>
-                  <CardDescription>IEEE-formatted conference paper preview</CardDescription>
+                  <CardTitle>{t("pages.conference.previewTitle")}</CardTitle>
+                  <CardDescription>{t("pages.conference.previewSubtitle")}</CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {/* TTS Controls */}
@@ -966,27 +968,27 @@ export default function GenerateConference() {
                     ) : (
                       <Cloud className="w-4 h-4 mr-2" />
                     )}
-                    {isSaving ? "Saving..." : "Save"}
+                    {isSaving ? t("common.saving") : t("common.save")}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" disabled={!hasContent} data-testid="button-export-menu">
                         <Download className="w-4 h-4 mr-2" />
-                        Export
+                        {t("common.export")}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={handleExportPDF} data-testid="export-pdf">
                         <FileText className="w-4 h-4 mr-2" />
-                        Export as PDF
+                        {t("common.exportAsPDF")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleDownloadHTML} data-testid="export-html">
                         <FileCode className="w-4 h-4 mr-2" />
-                        Export as HTML (IEEE)
+                        {t("pages.conference.exportAsHTMLIEEE")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handlePrint} data-testid="export-print">
                         <Printer className="w-4 h-4 mr-2" />
-                        Print
+                        {t("common.print")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -998,13 +1000,13 @@ export default function GenerateConference() {
                 <div className="space-y-4 mb-6">
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
-                    {progress < 50 ? "Generating IEEE-formatted conference paper..." : 
-                     progress < 90 ? "Processing figures and formatting..." : 
+                    {progress < 50 ? "Generating IEEE-formatted conference paper..." :
+                     progress < 90 ? "Processing figures and formatting..." :
                      "Finalizing document..."}
                   </div>
                 </div>
               )}
-              
+
               <div
                 ref={previewRef}
                 className="border rounded-lg bg-background min-h-[600px] overflow-auto shadow-inner"
@@ -1018,17 +1020,17 @@ export default function GenerateConference() {
                 ) : (
                   <div className="text-center text-muted-foreground py-16 px-4">
                     <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="font-medium">Your IEEE conference paper will appear here</p>
-                    <p className="text-sm mt-2">Configure settings and click "Generate Conference Paper" to start</p>
+                    <p className="font-medium">{t("pages.conference.emptyState")}</p>
+                    <p className="text-sm mt-2">{t("pages.conference.emptyStateHint")}</p>
                     <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
-                      <p className="font-medium text-center mb-3">IEEE Paper Features:</p>
+                      <p className="font-medium text-center mb-3">{t("pages.conference.features")}</p>
                       <ul className="space-y-1">
-                        <li>• Two-column layout with proper spacing</li>
-                        <li>• Roman numeral section headings (I., II., III.)</li>
-                        <li>• Abstract with keywords section</li>
-                        <li>• Auto-generated figures with captions</li>
-                        <li>• IEEE-style numbered references [1], [2]</li>
-                        <li>• Print-ready A4 format</li>
+                        <li>• {t("pages.conference.feature1")}</li>
+                        <li>• {t("pages.conference.feature2")}</li>
+                        <li>• {t("pages.conference.feature3")}</li>
+                        <li>• {t("pages.conference.feature4")}</li>
+                        <li>• {t("pages.conference.feature5")}</li>
+                        <li>• {t("pages.conference.feature6")}</li>
                       </ul>
                     </div>
                   </div>

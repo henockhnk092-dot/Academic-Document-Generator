@@ -26,8 +26,11 @@ import {
 } from "lucide-react";
 import { SiGithub, SiYoutube, SiTiktok } from "react-icons/si";
 import { FaXTwitter } from "react-icons/fa6";
+import { useTranslation } from "react-i18next";
 
 export default function About() {
+  const { t } = useTranslation();
+
   const documentTypes = [
     {
       icon: FileText,
@@ -141,9 +144,9 @@ export default function About() {
               <Sparkles className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">About AcademicGen</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("pages.about.title")}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            A unified platform for academic AI tools — generate reports, presentations, conference papers, and theses; humanize AI text with bypass detection scoring; validate citations for fake references; generate images; and read everything aloud with Azure Neural HD voices.
+            {t("pages.about.tagline")}
           </p>
         </div>
 
@@ -158,7 +161,7 @@ export default function About() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Document Generators</CardTitle>
+            <CardTitle>{t("pages.about.docGenerators")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
@@ -180,7 +183,7 @@ export default function About() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Platform Features</CardTitle>
+            <CardTitle>{t("pages.about.platformFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -201,7 +204,7 @@ export default function About() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Technology Stack</CardTitle>
+            <CardTitle>{t("pages.about.techStack")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
@@ -239,17 +242,17 @@ export default function About() {
 
         <Card>
           <CardHeader>
-            <CardTitle>About the Author</CardTitle>
+            <CardTitle>{t("pages.about.aboutAuthor")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground leading-relaxed">
-              HNK is a Computer Engineer based in Cape Town, South Africa, with a versatile skill set spanning software development, scientific computing, network infrastructure, electronics and embedded systems.
+              {t("pages.about.authorBio")}
             </p>
             <div className="flex items-center gap-4 flex-wrap pt-2">
               <Button variant="outline" asChild data-testid="link-github-repo">
-                <a 
-                  href="https://github.com/henockhnk092-dot/Academic-Document-Generator" 
-                  target="_blank" 
+                <a
+                  href="https://github.com/henockhnk092-dot/Academic-Document-Generator"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >
@@ -259,9 +262,9 @@ export default function About() {
                 </a>
               </Button>
               <Button variant="outline" asChild data-testid="link-twitter">
-                <a 
-                  href="https://twitter.com/HnkHorizon" 
-                  target="_blank" 
+                <a
+                  href="https://twitter.com/HnkHorizon"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >
@@ -270,9 +273,9 @@ export default function About() {
                 </a>
               </Button>
               <Button variant="outline" asChild data-testid="link-youtube">
-                <a 
-                  href="https://youtube.com/@HNK2005" 
-                  target="_blank" 
+                <a
+                  href="https://youtube.com/@HNK2005"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >
@@ -281,9 +284,9 @@ export default function About() {
                 </a>
               </Button>
               <Button variant="outline" asChild data-testid="link-tiktok">
-                <a 
-                  href="https://tiktok.com/@codingfever" 
-                  target="_blank" 
+                <a
+                  href="https://tiktok.com/@codingfever"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
                 >
@@ -297,7 +300,7 @@ export default function About() {
 
         <Card id="privacy">
           <CardHeader>
-            <CardTitle>Privacy Policy & Terms</CardTitle>
+            <CardTitle>{t("pages.about.privacyTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
@@ -346,7 +349,7 @@ export default function About() {
         </Card>
 
         <div className="text-center text-sm text-muted-foreground space-y-1">
-          <p>Powered by Google Gemini AI</p>
+          <p>{t("pages.about.poweredBy")}</p>
           <p>Version 2.0.0</p>
           <p className="mt-2">
             <a

@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Coffee,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface StripeProduct {
   product_id: string;
@@ -62,6 +63,8 @@ const FEATURES = [
 ];
 
 export default function Pricing() {
+  const { t } = useTranslation();
+
   const [, setLocation] = useLocation();
   const [products, setProducts] = useState<StripeProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -275,6 +278,24 @@ export default function Pricing() {
     );
   };
 
+  const getTierName = (tier: typeof TIER_ORDER[number]): string => {
+    switch (tier) {
+      case 'day_pass': return t("pages.pricing.dayPass");
+      case 'weekly': return t("pages.pricing.weekly");
+      case 'monthly': return t("pages.pricing.monthly");
+      case 'yearly': return t("pages.pricing.yearly");
+    }
+  };
+
+  const getTierDescription = (tier: typeof TIER_ORDER[number]): string => {
+    switch (tier) {
+      case 'day_pass': return t("pages.pricing.dayPassDesc");
+      case 'weekly': return t("pages.pricing.weeklyDesc");
+      case 'monthly': return t("pages.pricing.monthlyDesc");
+      case 'yearly': return t("pages.pricing.yearlyDesc");
+    }
+  };
+
   return (
     <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-pricing">
       <div className="space-y-8">
@@ -282,16 +303,15 @@ export default function Pricing() {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
             <Crown className="h-10 w-10 text-primary" />
-            Pricing & Plans
+            {t("pages.pricing.title")}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choose the perfect plan for your academic document generation needs.
-            Unlock unlimited generations and premium features.
+            {t("pages.pricing.subtitle")}
           </p>
           {paymentProvider?.preferred === 'bmc' && (
             <div className="flex items-center justify-center gap-2 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 py-2 px-4 rounded-lg max-w-md mx-auto">
               <Coffee className="h-4 w-4" />
-              <span>Secure payments powered by Buy Me a Coffee</span>
+              <span>{t("pages.pricing.securePayments")}</span>
             </div>
           )}
         </div>
@@ -365,12 +385,12 @@ export default function Pricing() {
                   {isPopular && (
                     <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1">
                       <Sparkles className="h-3 w-3 mr-1" />
-                      Most Popular
+                      {t("pages.pricing.mostPopular")}
                     </Badge>
                   )}
                   {isBestValue && (
                     <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1">
-                      Best Value
+                      {t("pages.pricing.bestValue")}
                     </Badge>
                   )}
                   <CardHeader className="pb-4 pt-6">
@@ -378,9 +398,9 @@ export default function Pricing() {
                       <div className={`p-2 rounded-lg ${isPopular || isBestValue ? 'bg-primary/10' : 'bg-muted'}`}>
                         <Icon className={`h-5 w-5 ${isPopular || isBestValue ? 'text-primary' : 'text-muted-foreground'}`} />
                       </div>
-                      <CardTitle className="text-xl">{tierInfo.name}</CardTitle>
+                      <CardTitle className="text-xl">{getTierName(tier)}</CardTitle>
                     </div>
-                    <CardDescription>{tierInfo.description}</CardDescription>
+                    <CardDescription>{getTierDescription(tier)}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1">
                     <div className="mb-4">
@@ -388,7 +408,7 @@ export default function Pricing() {
                         {formatPrice(product, tierInfo.price)}
                       </span>
                       <span className="text-muted-foreground ml-1">
-                        {tier === 'day_pass' ? 'one-time' : getRecurringText(product, `/${tier.replace('_', ' ')}`)}
+                        {tier === 'day_pass' ? t("pages.pricing.oneTime") : getRecurringText(product, `/${tier.replace('_', ' ')}`)}
                       </span>
                     </div>
                     {tier === 'yearly' && (
@@ -399,15 +419,15 @@ export default function Pricing() {
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span>Unlimited generations</span>
+                        <span>{t("pages.pricing.unlimitedGenerations")}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span>All document types</span>
+                        <span>{t("pages.pricing.allDocumentTypes")}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span>AI image generation</span>
+                        <span>{t("pages.pricing.aiImageGeneration")}</span>
                       </li>
                     </ul>
                   </CardContent>
@@ -430,7 +450,7 @@ export default function Pricing() {
                       ) : paymentProvider?.preferred === 'bmc' ? (
                         <>
                           <Coffee className="mr-2 h-4 w-4" />
-                          Subscribe
+                          {t("pages.pricing.subscribe")}
                           <ExternalLink className="ml-2 h-3 w-3" />
                         </>
                       ) : (
@@ -452,10 +472,10 @@ export default function Pricing() {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              All Plans Include
+              {t("pages.pricing.allPlansInclude")}
             </CardTitle>
             <CardDescription>
-              Every subscription gives you access to our full suite of features
+              {t("pages.pricing.allPlansDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -472,21 +492,21 @@ export default function Pricing() {
 
         {/* FAQ Section */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-center">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold text-center">{t("pages.pricing.faqTitle")}</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Can I cancel anytime?</CardTitle>
+                <CardTitle className="text-lg">{t("pages.pricing.faq1Q")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period.
+                  {t("pages.pricing.faq1A")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">What payment methods do you accept?</CardTitle>
+                <CardTitle className="text-lg">{t("pages.pricing.faq2Q")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -498,21 +518,21 @@ export default function Pricing() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Do you offer refunds?</CardTitle>
+                <CardTitle className="text-lg">{t("pages.pricing.faq3Q")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  If you're not satisfied with our service, contact us within 7 days of your purchase for a full refund.
+                  {t("pages.pricing.faq3A")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">What happens when my subscription expires?</CardTitle>
+                <CardTitle className="text-lg">{t("pages.pricing.faq4Q")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  You'll revert to the free plan with limited generations. Your saved projects and documents will remain accessible.
+                  {t("pages.pricing.faq4A")}
                 </p>
               </CardContent>
             </Card>

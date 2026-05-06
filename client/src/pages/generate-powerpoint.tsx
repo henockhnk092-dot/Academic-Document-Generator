@@ -24,6 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { exportToPPTX, exportToHTML } from "@/lib/pptx-export";
 import { azureAvailable, AZURE_VOICES, fetchAzureAudio, getSpeechPrefs } from "@/hooks/use-speech";
 import type { ToneType } from "@shared/schema";
+import { useTranslation } from "react-i18next";
 
 interface SlideImage {
   url: string;
@@ -264,17 +265,17 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
 
   const renderContent = () => {
     if (!slide.content) return null;
-    
-    const contentText = Array.isArray(slide.content) 
-      ? slide.content.map((item: string) => `• ${item}`).join('\n') 
+
+    const contentText = Array.isArray(slide.content)
+      ? slide.content.map((item: string) => `• ${item}`).join('\n')
       : slide.content;
-    
+
     return (
-      <div 
+      <div
         className="document-content leading-relaxed"
-        dangerouslySetInnerHTML={{ 
-          __html: sanitizeHtml(parseMarkdownToHtml(contentText)) 
-        }} 
+        dangerouslySetInnerHTML={{
+          __html: sanitizeHtml(parseMarkdownToHtml(contentText))
+        }}
       />
     );
   };
@@ -383,6 +384,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
 }
 
 export default function GeneratePowerPoint() {
+  const { t } = useTranslation();
   const [topic, setTopic] = useState("");
   const [slideCount, setSlideCount] = useState("auto");
   const [tone, setTone] = useState<ToneType>("professional");
@@ -429,10 +431,10 @@ export default function GeneratePowerPoint() {
   const handleGenerate = async (checkUsage: () => Promise<boolean>) => {
     const allowed = await checkUsage();
     if (!allowed) return;
-    
+
     setSlideImageUrls({});
     setCurrentSlide(0);
-    
+
     const finalTopic = extractedText ? `${topic}\n\nAdditional Context:\n${extractedText}` : topic;
     generate({
       topic: finalTopic,
@@ -692,8 +694,8 @@ export default function GeneratePowerPoint() {
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
         <GeneratorLayout
-          title="PowerPoint Presentation Generator"
-          description="Professional slides with AI structuring, auto-images, speaker notes, and voice coaching"
+          title={t("pages.powerpoint.title")}
+          description={t("pages.powerpoint.subtitle")}
           icon={<Presentation className="w-6 h-6 text-white" />}
           gradient="from-orange-500 to-red-500"
         >
@@ -701,28 +703,28 @@ export default function GeneratePowerPoint() {
             <div className="lg:col-span-4 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Presentation Configuration</CardTitle>
-                  <CardDescription>Define your presentation topic and settings</CardDescription>
+                  <CardTitle>{t("pages.powerpoint.configTitle")}</CardTitle>
+                  <CardDescription>{t("pages.powerpoint.configSubtitle")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <Tabs defaultValue="text" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="text" data-testid="tab-text-input">Text Input</TabsTrigger>
-                      <TabsTrigger value="upload" data-testid="tab-file-upload">File Upload</TabsTrigger>
+                      <TabsTrigger value="text" data-testid="tab-text-input">{t("common.textInput")}</TabsTrigger>
+                      <TabsTrigger value="upload" data-testid="tab-file-upload">{t("common.fileUpload")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="text" className="space-y-4">
                       <div>
-                        <Label htmlFor="topic">Presentation Topic</Label>
+                        <Label htmlFor="topic">{t("pages.powerpoint.topicLabel")}</Label>
                         <Textarea
                           id="topic"
-                          placeholder="Enter your presentation topic..."
+                          placeholder={t("pages.powerpoint.topicPlaceholder")}
                           value={topic}
                           onChange={(e) => setTopic(e.target.value)}
                           className="min-h-32 mt-2"
                           data-testid="input-presentation-topic"
                         />
                         <div className="text-xs text-muted-foreground mt-2">
-                          {topic?.length || 0} characters
+                          {topic?.length || 0} {t("common.characters")}
                         </div>
                       </div>
                       <Button
@@ -740,17 +742,17 @@ export default function GeneratePowerPoint() {
                         data-testid="button-surprise-me"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
-                        Surprise Me
+                        {t("common.surpriseMe")}
                       </Button>
                     </TabsContent>
                     <TabsContent value="upload" className="space-y-4">
                       <div className="border-2 border-dashed rounded-lg p-8 text-center hover-elevate transition-colors relative">
                         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground mb-2">
-                          Drop files here or click to browse
+                          {t("common.dropFiles")}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Supports PDF, DOCX, TXT, and images
+                          {t("common.supportedFormats")}
                         </p>
                         <input
                           type="file"
@@ -761,10 +763,10 @@ export default function GeneratePowerPoint() {
                           data-testid="input-file-upload"
                         />
                       </div>
-                      
+
                       {uploadedFiles.length > 0 && (
                         <div className="space-y-2">
-                          <Label>Uploaded Files</Label>
+                          <Label>{t("common.uploadedFiles")}</Label>
                           {uploadedFiles.map((file, index) => (
                             <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
                               <div className="flex items-center gap-2">
@@ -787,13 +789,13 @@ export default function GeneratePowerPoint() {
 
                   <div className="space-y-4 pt-4 border-t">
                     <div>
-                      <Label htmlFor="slide-count">Number of Slides</Label>
+                      <Label htmlFor="slide-count">{t("pages.powerpoint.slideCount")}</Label>
                       <Select value={slideCount} onValueChange={setSlideCount}>
                         <SelectTrigger id="slide-count" className="mt-2" data-testid="select-slide-count">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto">Auto (AI-determined)</SelectItem>
+                          <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
                           <SelectItem value="5-10">5-10 Slides</SelectItem>
                           <SelectItem value="11-15">11-15 Slides</SelectItem>
                           <SelectItem value="16-20">16-20 Slides</SelectItem>
@@ -803,14 +805,14 @@ export default function GeneratePowerPoint() {
                     </div>
 
                     <div>
-                      <Label htmlFor="tone">Presentation Style</Label>
+                      <Label htmlFor="tone">{t("pages.powerpoint.presentationStyle")}</Label>
                       <Select value={tone} onValueChange={(val) => setTone(val as ToneType)}>
                         <SelectTrigger id="tone" className="mt-2" data-testid="select-tone">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="academic">Academic</SelectItem>
-                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
+                          <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
                           <SelectItem value="creative">Creative</SelectItem>
                         </SelectContent>
                       </Select>
@@ -818,8 +820,8 @@ export default function GeneratePowerPoint() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label htmlFor="generate-images">Auto-Generate Images</Label>
-                        <p className="text-xs text-muted-foreground">Add relevant images from Pixabay</p>
+                        <Label htmlFor="generate-images">{t("pages.powerpoint.autoImages")}</Label>
+                        <p className="text-xs text-muted-foreground">{t("pages.powerpoint.autoImagesHint")}</p>
                       </div>
                       <Switch
                         id="generate-images"
@@ -831,8 +833,8 @@ export default function GeneratePowerPoint() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label htmlFor="speaker-notes">Speaker Notes & Scripts</Label>
-                        <p className="text-xs text-muted-foreground">Include what to say for each slide</p>
+                        <Label htmlFor="speaker-notes">{t("pages.powerpoint.speakerNotes")}</Label>
+                        <p className="text-xs text-muted-foreground">{t("pages.powerpoint.speakerNotesHint")}</p>
                       </div>
                       <Switch
                         id="speaker-notes"
@@ -844,8 +846,8 @@ export default function GeneratePowerPoint() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label htmlFor="tts-coaching">Voice Coaching (TTS)</Label>
-                        <p className="text-xs text-muted-foreground">AI reads speaker notes aloud</p>
+                        <Label htmlFor="tts-coaching">{t("pages.powerpoint.voiceCoaching")}</Label>
+                        <p className="text-xs text-muted-foreground">{t("pages.powerpoint.voiceCoachingHint")}</p>
                       </div>
                       <Switch
                         id="tts-coaching"
@@ -866,7 +868,7 @@ export default function GeneratePowerPoint() {
                           className="text-primary hover:underline font-medium"
                           data-testid="button-view-pricing"
                         >
-                          View Pricing
+                          {t("common.viewPricing")}
                         </button>
                       </div>
                     )}
@@ -878,11 +880,11 @@ export default function GeneratePowerPoint() {
                       data-testid="button-generate-presentation"
                     >
                       {isGenerating ? (
-                        <>Generating...</>
+                        <>{t("common.generating")}</>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Presentation
+                          {t("pages.powerpoint.generateButton")}
                         </>
                       )}
                     </Button>
@@ -896,9 +898,9 @@ export default function GeneratePowerPoint() {
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                      <CardTitle>Slide Preview</CardTitle>
+                      <CardTitle>{t("pages.powerpoint.previewTitle")}</CardTitle>
                       <CardDescription>
-                        {presentation ? `${totalSlides} slides generated` : "Real-time preview of your presentation"}
+                        {presentation ? `${totalSlides} slides generated` : t("pages.powerpoint.previewSubtitle")}
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 flex-wrap">
@@ -961,31 +963,31 @@ export default function GeneratePowerPoint() {
                         ) : (
                           <Cloud className="w-4 h-4 mr-2" />
                         )}
-                        {isSaving ? "Saving..." : "Save"}
+                        {isSaving ? t("common.saving") : t("common.save")}
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm" data-testid="button-export-menu">
                             <Download className="w-4 h-4 mr-2" />
-                            Export
+                            {t("common.export")}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={handleExportPDF} data-testid="export-pdf">
                             <FileText className="w-4 h-4 mr-2" />
-                            Export as PDF
+                            {t("common.exportAsPDF")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={handleExportHTML} data-testid="export-html">
                             <FileCode className="w-4 h-4 mr-2" />
-                            Export as HTML
+                            {t("common.exportAsHTML")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={handleExportPPTX} data-testid="export-pptx">
                             <Presentation className="w-4 h-4 mr-2" />
-                            Export as PowerPoint (.pptx)
+                            {t("pages.powerpoint.exportAsPPTX")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={handlePrint} data-testid="export-print">
                             <Printer className="w-4 h-4 mr-2" />
-                            Print
+                            {t("common.print")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1105,16 +1107,16 @@ export default function GeneratePowerPoint() {
                     ) : (
                       <div className="text-center text-muted-foreground py-16 px-4">
                         <Presentation className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                        <p className="font-medium">Your presentation slides will appear here</p>
-                        <p className="text-sm mt-2">Configure settings and click "Generate Presentation" to start</p>
+                        <p className="font-medium">{t("pages.powerpoint.emptyState")}</p>
+                        <p className="text-sm mt-2">{t("pages.powerpoint.emptyStateHint")}</p>
                         <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
-                          <p className="font-medium text-center mb-3">PowerPoint Features:</p>
+                          <p className="font-medium text-center mb-3">{t("pages.powerpoint.features")}</p>
                           <ul className="space-y-1">
-                            <li>• Professional title slide with background images</li>
-                            <li>• AI-structured content with 6x6 rule</li>
-                            <li>• Auto-generated visuals from Pixabay</li>
-                            <li>• Speaker notes with delivery guidance</li>
-                            <li>• TTS voice coaching for practice</li>
+                            <li>• {t("pages.powerpoint.feature1")}</li>
+                            <li>• {t("pages.powerpoint.feature2")}</li>
+                            <li>• {t("pages.powerpoint.feature3")}</li>
+                            <li>• {t("pages.powerpoint.feature4")}</li>
+                            <li>• {t("pages.powerpoint.feature5")}</li>
                             <li>• Export to .pptx or HTML format</li>
                           </ul>
                         </div>

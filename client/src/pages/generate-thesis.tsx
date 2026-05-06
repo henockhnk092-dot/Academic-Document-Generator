@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, Volume2, FileText } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
@@ -28,6 +29,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import type { ToneType } from "@shared/schema";
 
 export default function GenerateThesis() {
+  const { t } = useTranslation();
   const [topic, setTopic] = useState("");
   const [targetLength, setTargetLength] = useState("auto");
   const [tone, setTone] = useState<ToneType>("academic");
@@ -470,7 +472,7 @@ export default function GenerateThesis() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: "Document saved",
+        title: t("common.save"),
         description: "Your thesis has been saved successfully",
       });
     } catch (error: any) {
@@ -489,8 +491,8 @@ export default function GenerateThesis() {
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
         <GeneratorLayout
-          title="Thesis/Dissertation Generator"
-          description="Complete academic thesis with chapters, methodology, results, and Harvard citations"
+          title={t("pages.thesis.title")}
+          description={t("pages.thesis.subtitle")}
           icon={<GraduationCap className="w-6 h-6 text-white" />}
           gradient="from-green-500 to-emerald-500"
         >
@@ -504,22 +506,22 @@ export default function GenerateThesis() {
             <CardContent className="space-y-6">
               <Tabs defaultValue="text" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="text" data-testid="tab-text-input">Text Input</TabsTrigger>
-                  <TabsTrigger value="upload" data-testid="tab-file-upload">File Upload</TabsTrigger>
+                  <TabsTrigger value="text" data-testid="tab-text-input">{t("common.textInput")}</TabsTrigger>
+                  <TabsTrigger value="upload" data-testid="tab-file-upload">{t("common.fileUpload")}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="text" className="space-y-4">
                   <div>
-                    <Label htmlFor="topic">Thesis Topic</Label>
+                    <Label htmlFor="topic">{t("pages.thesis.topicLabel")}</Label>
                     <Textarea
                       id="topic"
-                      placeholder="Enter your thesis topic or abstract..."
+                      placeholder={t("pages.thesis.topicPlaceholder")}
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
                       className="min-h-32 mt-2"
                       data-testid="input-report-topic"
                     />
                     <div className="text-xs text-muted-foreground mt-2">
-                      {topic?.length || 0} characters
+                      {topic?.length || 0} {t("common.characters")}
                     </div>
                   </div>
                   <Button
@@ -537,17 +539,17 @@ export default function GenerateThesis() {
                     data-testid="button-surprise-me"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Surprise Me
+                    {t("common.surpriseMe")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="upload" className="space-y-4">
                   <div className="border-2 border-dashed rounded-lg p-8 text-center hover-elevate transition-colors">
                     <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground mb-2">
-                      Drop files here or click to browse
+                      {t("common.dropFiles")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supports PDF, DOCX, TXT, and images
+                      {t("common.supportedFormats")}
                     </p>
                     <input
                       type="file"
@@ -561,7 +563,7 @@ export default function GenerateThesis() {
                   
                   {uploadedFiles.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Uploaded Files</Label>
+                      <Label>{t("common.uploadedFiles")}</Label>
                       {uploadedFiles.map((file, index) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
                           <div className="flex items-center gap-2">
@@ -584,13 +586,13 @@ export default function GenerateThesis() {
 
               <div className="space-y-4 pt-4 border-t">
                 <div>
-                  <Label htmlFor="target-length">Target Length</Label>
+                  <Label htmlFor="target-length">{t("common.targetLength")}</Label>
                   <Select value={targetLength} onValueChange={setTargetLength}>
                     <SelectTrigger id="target-length" className="mt-2" data-testid="select-target-length">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto (AI-determined)</SelectItem>
+                      <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
                       <SelectItem value="2-5">2-5 Pages</SelectItem>
                       <SelectItem value="6-10">6-10 Pages</SelectItem>
                       <SelectItem value="11-20">11-20 Pages</SelectItem>
@@ -600,22 +602,22 @@ export default function GenerateThesis() {
                 </div>
 
                 <div>
-                  <Label htmlFor="tone">Writing Tone</Label>
+                  <Label htmlFor="tone">{t("common.writingTone")}</Label>
                   <Select value={tone} onValueChange={(val) => setTone(val as ToneType)}>
                     <SelectTrigger id="tone" className="mt-2" data-testid="select-tone">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="essay">Essay</SelectItem>
-                      <SelectItem value="creative">Creative</SelectItem>
+                      <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
+                      <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
+                      <SelectItem value="essay">{t("common.toneEssay")}</SelectItem>
+                      <SelectItem value="creative">{t("common.toneCreative")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="generate-images">Generate Images</Label>
+                  <Label htmlFor="generate-images">{t("common.generateImages")}</Label>
                   <Switch
                     id="generate-images"
                     checked={generateImages}
@@ -635,7 +637,7 @@ export default function GenerateThesis() {
                       className="text-primary hover:underline font-medium"
                       data-testid="button-view-pricing"
                     >
-                      View Pricing
+                      {t("common.viewPricing")}
                     </button>
                   </div>
                 )}
@@ -647,11 +649,11 @@ export default function GenerateThesis() {
                   data-testid="button-generate-thesis"
                 >
                   {isGenerating || isSubmitting ? (
-                    <>Generating...</>
+                    <>{t("common.generating")}</>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Report
+                      {t("pages.thesis.generateButton")}
                     </>
                   )}
                 </Button>
@@ -663,18 +665,18 @@ export default function GenerateThesis() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Advanced Settings
+                {t("common.advancedSettings")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Citation Style</Label>
+                <Label>{t("common.citationStyle")}</Label>
                 <Select value={citationStyle} onValueChange={setCitationStyle}>
                   <SelectTrigger className="mt-2" data-testid="select-citation-style">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="auto">{t("common.auto")}</SelectItem>
                     <SelectItem value="ieee">IEEE</SelectItem>
                     <SelectItem value="harvard">Harvard</SelectItem>
                   </SelectContent>
@@ -689,8 +691,8 @@ export default function GenerateThesis() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Document Preview</CardTitle>
-                  <CardDescription>Real-time preview of your generated report</CardDescription>
+                  <CardTitle>{t("common.documentPreview")}</CardTitle>
+                  <CardDescription>{t("pages.thesis.previewSubtitle")}</CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {/* TTS Controls */}
@@ -722,31 +724,31 @@ export default function GenerateThesis() {
                     data-testid="button-cloud-save"
                   >
                     <Cloud className="w-4 h-4 mr-2" />
-                    {isSaving ? "Saving..." : "Save"}
+                    {isSaving ? t("common.saving") : t("common.save")}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" data-testid="button-export-menu">
                         <Download className="w-4 h-4 mr-2" />
-                        Export
+                        {t("common.export")}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem data-testid="export-pdf" onClick={handleExportPDF}>
                         <FileText className="w-4 h-4 mr-2" />
-                        Export as PDF
+                        {t("common.exportAsPDF")}
                       </DropdownMenuItem>
                       <DropdownMenuItem data-testid="export-html" onClick={handleExportHTML}>
                         <FileCode className="w-4 h-4 mr-2" />
-                        Export as HTML
+                        {t("common.exportAsHTML")}
                       </DropdownMenuItem>
                       <DropdownMenuItem data-testid="export-docx" onClick={handleExportDOCX}>
                         <FileDown className="w-4 h-4 mr-2" />
-                        Export as Word (.docx)
+                        {t("common.exportAsWord")}
                       </DropdownMenuItem>
                       <DropdownMenuItem data-testid="export-print" onClick={handlePrint}>
                         <Printer className="w-4 h-4 mr-2" />
-                        Print
+                        {t("common.print")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -837,17 +839,17 @@ export default function GenerateThesis() {
                 ) : (
                   <div className="text-center text-muted-foreground py-16 px-4">
                     <FileText className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="font-medium">Your generated report will appear here</p>
-                    <p className="text-sm mt-2">Configure settings and click "Generate Report" to start</p>
+                    <p className="font-medium">{t("pages.thesis.emptyState")}</p>
+                    <p className="text-sm mt-2">{t("pages.thesis.emptyStateHint")}</p>
                     <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
-                      <p className="font-medium text-center mb-3">Report Features:</p>
+                      <p className="font-medium text-center mb-3">{t("pages.thesis.features")}</p>
                       <ul className="space-y-1">
-                        <li>• Professional executive summary</li>
+                        <li>• {t("pages.thesis.feature1")}</li>
                         <li>• Structured sections with clear headings</li>
                         <li>• Data-driven analysis and findings</li>
                         <li>• Actionable recommendations</li>
                         <li>• Comprehensive appendices</li>
-                        <li>• Harvard or APA citation style</li>
+                        <li>• {t("pages.thesis.feature5")}</li>
                       </ul>
                     </div>
                   </div>
