@@ -1,0 +1,111 @@
+Here are the **core paper generation inputs** in detail:
+
+---
+
+### 1. Main Content Input
+- **State**: `inputText`
+- **Type**: `string`
+- **Default**: `''`
+- **UI Control**: 
+  - **Prompt mode**: `<textarea>` (48-64 lines height)
+  - **Upload mode**: `<textarea>` with extracted content (editable)
+- **Description**: Primary text content describing the research topic, methodology, findings, or full document text.
+
+---
+
+### 2. Template Selection
+- **State**: `selectedTemplate`
+- **Type**: `string`
+- **Default**: `'THESIS'`
+- **Options**: `'THESIS'` | `'CONF_PAPER'`
+- **UI Control**: Clickable card selector with icons
+- **Description**: Determines paper structure (single-column thesis vs. two-column IEEE conference).
+
+---
+
+### 3. Target Length
+- **State**: `targetPages`
+- **Type**: `string`
+- **Default**: `'Auto'`
+- **Options**: `'Auto'` | `'1-2 Pages'` | `'3-5 Pages'` | `'6-10 Pages'` | `'10+ Pages'`
+- **UI Control**: Button grid (2 columns mobile, 3 desktop)
+- **Description**: Controls content volume and expansion depth.
+
+---
+
+### 4. Tone & Style
+- **State**: `selectedTone`
+- **Type**: `string`
+- **Default**: `'Academic'`
+- **Options**: `'Academic'` | `'Professional'` | `'Essay'` | `'Creative'`
+- **UI Control**: Button grid (2 columns)
+- **Description**: Adjusts writing voice, vocabulary, and sentence structure.
+
+---
+
+### 5. Reference Style
+- **State**: `referenceStyle`
+- **Type**: `string`
+- **Default**: `'Auto'`
+- **Options**: `'Auto'` | `'Harvard'` | `'IEEE'`
+- **UI Control**: Button grid (3 columns)
+- **Description**: Citation format. Auto selects Harvard for Thesis, IEEE for Conference.
+
+---
+
+### 6. Image Generation
+- **State**: `generateImages`
+- **Type**: `boolean`
+- **Default**: `true`
+- **UI Control**: Toggle button (Enabled/Disabled)
+- **Description**: Enables AI-sourced professional images via Pixabay API.
+
+---
+
+### 7. Manual Author Details
+- **State**: `useManualAuthors` + `authors[]`
+- **Type**: `boolean` + `array`
+- **Default**: `false` + `[{ name: '', affiliation: '', email: '' }]`
+- **UI Controls**:
+  - Toggle button (Manual/AI Generated)
+  - Dynamic form fields per author:
+    - Name: `<input type="text">`
+    - Affiliation: `<input type="text">`
+    - Email: `<input type="email">`
+- **Description**: Override AI-generated author information.
+
+---
+
+### 8. Custom Formatting
+- **State**: `useCustomFormatting` + `customFormat{}`
+- **Type**: `boolean` + `object`
+- **Default**: `false` + `{ fontSize: '12', lineSpacing: '1.5', padding: '1.5', textAlign: 'justify', textColor: '#000000', fontFamily: 'Times New Roman' }`
+- **UI Controls** (when enabled):
+  - Font Size: `<select>` (10pt, 11pt, 12pt, 14pt)
+  - Line Spacing: `<select>` (1.0, 1.15, 1.5, 2.0)
+  - Margins: `<select>` (0.5cm to 2.5cm)
+  - Text Align: `<select>` (justify, left, center, right)
+  - Font Family: `<select>` (Times New Roman, Arial, Calibri, Georgia)
+  - Text Color: `<input type="color">`
+- **Description**: Override template default formatting.
+
+---
+
+### 9. File Upload (Optional)
+- **State**: `uploadedFile` (triggers `inputText` update)
+- **Type**: File object
+- **Accepted Types**: PDF, Word (.docx), TXT, Images (PNG, JPG, JPEG, GIF, WebP)
+- **UI Control**: Drag-and-drop zone or hidden file input
+- **Description**: Extracts and populates `inputText` from uploaded documents.
+
+---
+
+**Direct Form Input Elements Count**: 
+- 1 main textarea (content)
+- 6 select dropdowns (formatting)
+- 1 color picker (text color)
+- Up to 3 author inputs per author (name, affiliation, email)
+- 1 file upload input
+- 2 toggle buttons (images, manual authors, custom formatting)
+
+**Total Interactive Controls**: 16+ (including template/tone/reference buttons, toggles, and dynamic author fields)

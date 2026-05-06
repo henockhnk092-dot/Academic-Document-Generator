@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "Início",
+                "myProjects":  "Meus Projetos",
+                "templates":  "Modelos",
+                "aiAssistant":  "Assistente IA",
+                "analytics":  "Análises",
+                "myTemplates":  "Meus Modelos"
+            },
+    "generators":  {
+                       "label":  "Geradores de Documentos",
+                       "technicalReport":  "Relatório Técnico",
+                       "customReport":  "Relatório Personalizado",
+                       "powerpoint":  "Apresentação",
+                       "conferencePaper":  "Artigo de Conferência",
+                       "thesis":  "Tese",
+                       "aiImages":  "Imagens IA",
+                       "references":  "Referências",
+                       "aiHumanizer":  "Humanizador IA",
+                       "citationChecker":  "Verificador de Citações"
+                   },
+    "subscription":  {
+                         "label":  "Assinatura",
+                         "pricingPlans":  "Preços e Planos"
+                     },
+    "support":  {
+                    "label":  "Suporte",
+                    "about":  "Sobre",
+                    "contact":  "Contato",
+                    "settings":  "Configurações"
+                },
+    "auth":  {
+                 "signIn":  "Entrar / Cadastrar",
+                 "signOut":  "Sair"
+             },
+    "home":  {
+                 "badge":  "Powered by Google Gemini 2.5 Flash",
+                 "title1":  "Documentos Acadêmicos",
+                 "title2":  "com Inteligência Artificial",
+                 "subtitle":  "Crie relatórios profissionais, apresentações, artigos de conferência e teses. Humanize texto IA, verifique citações e gere imagens — tudo em um lugar.",
+                 "myProjects":  "Meus Projetos",
+                 "getStarted":  "Começar",
+                 "stats":  {
+                               "tools":  "Ferramentas IA",
+                               "templates":  "Modelos de Tópicos",
+                               "formats":  "Formatos de Exportação",
+                               "citations":  "Estilos de Citação"
+                           }
+             },
+    "common":  {
+                   "generate":  "Gerar",
+                   "loading":  "Carregando...",
+                   "save":  "Salvar",
+                   "cancel":  "Cancelar",
+                   "language":  "Idioma"
+               }
+}

@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "ዋና ገጽ",
+                "myProjects":  "የእኔ ፕሮጄክቶች",
+                "templates":  "አብነቶች",
+                "aiAssistant":  "AI ረዳት",
+                "analytics":  "ትንተና",
+                "myTemplates":  "የእኔ አብነቶች"
+            },
+    "generators":  {
+                       "label":  "የሰነድ ማመንጫዎች",
+                       "technicalReport":  "ቴክኒካዊ ሪፖርት",
+                       "customReport":  "ብጁ ሪፖርት",
+                       "powerpoint":  "ፕሬዘንቴሽን",
+                       "conferencePaper":  "የጉባዔ ጽሑፍ",
+                       "thesis":  "ዲሰርቴሽን",
+                       "aiImages":  "AI ምስሎች",
+                       "references":  "ማጣቀሻዎች",
+                       "aiHumanizer":  "AI ሰብዓዊ ማድረጊያ",
+                       "citationChecker":  "የጥቅስ ፈታሽ"
+                   },
+    "subscription":  {
+                         "label":  "የሂሳብ ምዝገባ",
+                         "pricingPlans":  "ዋጋዎች እና ዕቅዶች"
+                     },
+    "support":  {
+                    "label":  "ድጋፍ",
+                    "about":  "ስለ እኛ",
+                    "contact":  "አግኙን",
+                    "settings":  "ቅንብሮች"
+                },
+    "auth":  {
+                 "signIn":  "ግባ / ተመዝገብ",
+                 "signOut":  "ውጣ"
+             },
+    "home":  {
+                 "badge":  "Google Gemini 2.5 Flash ያበረታዋል",
+                 "title1":  "AI የሚያንቀሳቅሰው ትምህርታዊ",
+                 "title2":  "ሰነድ ማመንጫ",
+                 "subtitle":  "ሙያዊ ሪፖርቶችን፣ ፕሬዘንቴሽኖችን፣ የጉባዔ ጽሑፎችን እና ዲሰርቴሽኖችን ይፍጠሩ። AI ጽሑፍን ሰብዓዊ ያድርጉ፣ ጥቅሶችን ያረጋግጡ እና ምስሎችን ያመንጩ — ሁሉም በአንድ ቦታ።",
+                 "myProjects":  "የእኔ ፕሮጄክቶች",
+                 "getStarted":  "ጀምር",
+                 "stats":  {
+                               "tools":  "AI መሳሪያዎች",
+                               "templates":  "የርዕስ አብነቶች",
+                               "formats":  "የወጪ ቅርጸቶች",
+                               "citations":  "የጥቅስ ዘይቤዎች"
+                           }
+             },
+    "common":  {
+                   "generate":  "አመንጭ",
+                   "loading":  "እየጫነ...",
+                   "save":  "አስቀምጥ",
+                   "cancel":  "ሰርዝ",
+                   "language":  "ቋንቋ"
+               }
+}

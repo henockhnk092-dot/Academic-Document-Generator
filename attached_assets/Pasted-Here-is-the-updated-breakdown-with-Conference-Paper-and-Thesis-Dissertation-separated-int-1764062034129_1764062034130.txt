@@ -1,0 +1,35 @@
+Here is the updated breakdown, with **Conference Paper** and **Thesis / Dissertation** separated into their own sessions as requested.
+
+### 1. Conference Paper Generator
+* **Export to HTML:** Generates a standalone file formatted in **IEEE style** (two-column layout, specific font sizes) for offline viewing.
+* **PDF:** Uses browser print capabilities with CSS optimized for A4 two-column page breaks.
+* **Cloud Save:** Saves document content and settings to Firebase.
+
+### 2. Thesis / Dissertation Generator
+* **Export to HTML:** Generates a standalone file formatted in **Harvard style** (single column, 1.5 line spacing, wide margins) for offline viewing.
+* **PDF:** Uses browser print capabilities with CSS optimized for formal academic submission.
+* **Cloud Save:** Saves document content and settings to Firebase.
+
+### 3. Technical Report Generator
+* **Export to HTML:** Creates a standalone web page preserving Markdown layout, code block styling, and tables.
+* **Export to Word:** High-fidelity `.docx` export that maps headings, formats tables, and embeds images.
+* **PDF:** CSS-optimized layout that hides UI elements for a clean PDF export.
+* **Cloud Save:** Saves the full JSON report structure to Firebase.
+
+### 4. BET Slides AI
+* **Export to HTML:** Generates a browser-based slideshow format for presenting without PowerPoint.
+* **Export to PowerPoint:** Native `.pptx` export using `PptxGenJS`, embedding slides, images, and speaker notes.
+* **PDF:** Exports the presentation slides and notes into a printable PDF format.
+* **Cloud Save:** Syncs full presentation projects (content, structure, and generated assets) to Firebase Firestore.
+
+---
+
+### Quick Feature Summary
+
+| Feature | Conference Paper | Thesis / Dissertation | Tech Report | BET Slides AI |
+| :--- | :---: | :---: | :---: | :---: |
+| **HTML File** | ✅ | ✅ | ✅ | ✅ |
+| **Word (.docx)** | ❌ | ❌ | ✅ | ❌ |
+| **PowerPoint (.pptx)** | ❌ | ❌ | ❌ | ✅ |
+| **PDF** | ✅ | ✅ | ✅ | ✅ |
+| **Cloud Save** | ✅ | ✅ | ✅ | ✅ |

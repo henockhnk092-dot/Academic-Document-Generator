@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "Startseite",
+                "myProjects":  "Meine Projekte",
+                "templates":  "Vorlagen",
+                "aiAssistant":  "KI-Assistent",
+                "analytics":  "Analysen",
+                "myTemplates":  "Meine Vorlagen"
+            },
+    "generators":  {
+                       "label":  "Dokumentgeneratoren",
+                       "technicalReport":  "Technischer Bericht",
+                       "customReport":  "Benutzerdefinierter Bericht",
+                       "powerpoint":  "Präsentation",
+                       "conferencePaper":  "Konferenzbeitrag",
+                       "thesis":  "Dissertation",
+                       "aiImages":  "KI-Bilder",
+                       "references":  "Referenzen",
+                       "aiHumanizer":  "KI-Humanisierer",
+                       "citationChecker":  "Zitatprüfer"
+                   },
+    "subscription":  {
+                         "label":  "Abonnement",
+                         "pricingPlans":  "Preise \u0026 Pläne"
+                     },
+    "support":  {
+                    "label":  "Support",
+                    "about":  "Über uns",
+                    "contact":  "Kontakt",
+                    "settings":  "Einstellungen"
+                },
+    "auth":  {
+                 "signIn":  "Anmelden / Registrieren",
+                 "signOut":  "Abmelden"
+             },
+    "home":  {
+                 "badge":  "Powered by Google Gemini 2.5 Flash",
+                 "title1":  "KI-gestützte akademische",
+                 "title2":  "Dokumentenerstellung",
+                 "subtitle":  "Erstellen Sie professionelle Berichte, Präsentationen, Konferenzbeiträge und Dissertationen. Humanisieren Sie KI-Text, überprüfen Sie Zitate und generieren Sie Bilder — alles an einem Ort.",
+                 "myProjects":  "Meine Projekte",
+                 "getStarted":  "Loslegen",
+                 "stats":  {
+                               "tools":  "KI-Tools",
+                               "templates":  "Themenvorlagen",
+                               "formats":  "Exportformate",
+                               "citations":  "Zitierstile"
+                           }
+             },
+    "common":  {
+                   "generate":  "Generieren",
+                   "loading":  "Laden...",
+                   "save":  "Speichern",
+                   "cancel":  "Abbrechen",
+                   "language":  "Sprache"
+               }
+}

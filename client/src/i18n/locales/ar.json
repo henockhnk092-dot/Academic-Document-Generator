@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "الرئيسية",
+                "myProjects":  "مشاريعي",
+                "templates":  "القوالب",
+                "aiAssistant":  "مساعد الذكاء الاصطناعي",
+                "analytics":  "التحليلات",
+                "myTemplates":  "قوالبي"
+            },
+    "generators":  {
+                       "label":  "مولدات المستندات",
+                       "technicalReport":  "تقرير تقني",
+                       "customReport":  "تقرير مخصص",
+                       "powerpoint":  "عرض تقديمي",
+                       "conferencePaper":  "ورقة مؤتمر",
+                       "thesis":  "أطروحة",
+                       "aiImages":  "صور الذكاء الاصطناعي",
+                       "references":  "المراجع",
+                       "aiHumanizer":  "أنسنة الذكاء الاصطناعي",
+                       "citationChecker":  "مدقق الاستشهادات"
+                   },
+    "subscription":  {
+                         "label":  "الاشتراك",
+                         "pricingPlans":  "الأسعار والخطط"
+                     },
+    "support":  {
+                    "label":  "الدعم",
+                    "about":  "حول",
+                    "contact":  "اتصل بنا",
+                    "settings":  "الإعدادات"
+                },
+    "auth":  {
+                 "signIn":  "تسجيل الدخول / إنشاء حساب",
+                 "signOut":  "تسجيل الخروج"
+             },
+    "home":  {
+                 "badge":  "مدعوم بـ Google Gemini 2.5 Flash",
+                 "title1":  "وثائق أكاديمية",
+                 "title2":  "بالذكاء الاصطناعي",
+                 "subtitle":  "أنشئ تقارير احترافية وعروضاً تقديمية وأوراق مؤتمرات ورسائل دكتوراه. أنسن نص الذكاء الاصطناعي وتحقق من الاستشهادات وأنشئ الصور — كل ذلك في مكان واحد.",
+                 "myProjects":  "مشاريعي",
+                 "getStarted":  "ابدأ الآن",
+                 "stats":  {
+                               "tools":  "أدوات الذكاء الاصطناعي",
+                               "templates":  "قوالب المواضيع",
+                               "formats":  "صيغ التصدير",
+                               "citations":  "أنماط الاستشهاد"
+                           }
+             },
+    "common":  {
+                   "generate":  "إنشاء",
+                   "loading":  "جار التحميل...",
+                   "save":  "حفظ",
+                   "cancel":  "إلغاء",
+                   "language":  "اللغة"
+               }
+}

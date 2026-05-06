@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "Inicio",
+                "myProjects":  "Mis Proyectos",
+                "templates":  "Plantillas",
+                "aiAssistant":  "Asistente IA",
+                "analytics":  "Analíticas",
+                "myTemplates":  "Mis Plantillas"
+            },
+    "generators":  {
+                       "label":  "Generadores de Documentos",
+                       "technicalReport":  "Informe Técnico",
+                       "customReport":  "Informe Personalizado",
+                       "powerpoint":  "Presentación",
+                       "conferencePaper":  "Artículo de Conferencia",
+                       "thesis":  "Tesis",
+                       "aiImages":  "Imágenes IA",
+                       "references":  "Referencias",
+                       "aiHumanizer":  "Humanizador IA",
+                       "citationChecker":  "Verificador de Citas"
+                   },
+    "subscription":  {
+                         "label":  "Suscripción",
+                         "pricingPlans":  "Precios y Planes"
+                     },
+    "support":  {
+                    "label":  "Soporte",
+                    "about":  "Acerca de",
+                    "contact":  "Contacto",
+                    "settings":  "Configuración"
+                },
+    "auth":  {
+                 "signIn":  "Iniciar sesión / Registrarse",
+                 "signOut":  "Cerrar sesión"
+             },
+    "home":  {
+                 "badge":  "Impulsado por Google Gemini 2.5 Flash",
+                 "title1":  "Documentos Académicos",
+                 "title2":  "con Inteligencia Artificial",
+                 "subtitle":  "Crea informes profesionales, presentaciones, artículos de conferencia y tesis. Humaniza texto IA, verifica citas y genera imágenes — todo en un lugar.",
+                 "myProjects":  "Mis Proyectos",
+                 "getStarted":  "Comenzar",
+                 "stats":  {
+                               "tools":  "Herramientas IA",
+                               "templates":  "Plantillas de Temas",
+                               "formats":  "Formatos de Exportación",
+                               "citations":  "Estilos de Cita"
+                           }
+             },
+    "common":  {
+                   "generate":  "Generar",
+                   "loading":  "Cargando...",
+                   "save":  "Guardar",
+                   "cancel":  "Cancelar",
+                   "language":  "Idioma"
+               }
+}

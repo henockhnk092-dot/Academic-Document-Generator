@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "Accueil",
+                "myProjects":  "Mes Projets",
+                "templates":  "Modèles",
+                "aiAssistant":  "Assistant IA",
+                "analytics":  "Analyses",
+                "myTemplates":  "Mes Modèles"
+            },
+    "generators":  {
+                       "label":  "Générateurs de Documents",
+                       "technicalReport":  "Rapport Technique",
+                       "customReport":  "Rapport Personnalisé",
+                       "powerpoint":  "Présentation",
+                       "conferencePaper":  "Article de Conférence",
+                       "thesis":  "Thèse",
+                       "aiImages":  "Images IA",
+                       "references":  "Références",
+                       "aiHumanizer":  "Humaniseur IA",
+                       "citationChecker":  "Vérificateur de Citations"
+                   },
+    "subscription":  {
+                         "label":  "Abonnement",
+                         "pricingPlans":  "Tarifs \u0026 Plans"
+                     },
+    "support":  {
+                    "label":  "Support",
+                    "about":  "À propos",
+                    "contact":  "Contact",
+                    "settings":  "Paramètres"
+                },
+    "auth":  {
+                 "signIn":  "Connexion / Inscription",
+                 "signOut":  "Déconnexion"
+             },
+    "home":  {
+                 "badge":  "Propulsé par Google Gemini 2.5 Flash",
+                 "title1":  "Génération Académique",
+                 "title2":  "Propulsée par l\u0027IA",
+                 "subtitle":  "Créez des rapports professionnels, des présentations, des articles de conférence et des thèses. Humanisez le texte IA, vérifiez les citations et générez des images — en un seul endroit.",
+                 "myProjects":  "Mes Projets",
+                 "getStarted":  "Commencer",
+                 "stats":  {
+                               "tools":  "Outils IA",
+                               "templates":  "Modèles de Sujets",
+                               "formats":  "Formats d\u0027Export",
+                               "citations":  "Styles de Citation"
+                           }
+             },
+    "common":  {
+                   "generate":  "Générer",
+                   "loading":  "Chargement...",
+                   "save":  "Enregistrer",
+                   "cancel":  "Annuler",
+                   "language":  "Langue"
+               }
+}

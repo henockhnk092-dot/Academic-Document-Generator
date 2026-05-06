@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "होम",
+                "myProjects":  "मेरे प्रोजेक्ट",
+                "templates":  "टेम्पलेट",
+                "aiAssistant":  "AI सहायक",
+                "analytics":  "विश्लेषण",
+                "myTemplates":  "मेरे टेम्पलेट"
+            },
+    "generators":  {
+                       "label":  "दस्तावेज़ जेनरेटर",
+                       "technicalReport":  "तकनीकी रिपोर्ट",
+                       "customReport":  "कस्टम रिपोर्ट",
+                       "powerpoint":  "प्रेज़ेंटेशन",
+                       "conferencePaper":  "सम्मेलन पेपर",
+                       "thesis":  "थीसिस",
+                       "aiImages":  "AI चित्र",
+                       "references":  "संदर्भ",
+                       "aiHumanizer":  "AI ह्यूमनाइज़र",
+                       "citationChecker":  "उद्धरण जाँचकर्ता"
+                   },
+    "subscription":  {
+                         "label":  "सदस्यता",
+                         "pricingPlans":  "मूल्य निर्धारण"
+                     },
+    "support":  {
+                    "label":  "सहायता",
+                    "about":  "हमारे बारे में",
+                    "contact":  "संपर्क",
+                    "settings":  "सेटिंग्स"
+                },
+    "auth":  {
+                 "signIn":  "साइन इन / साइन अप",
+                 "signOut":  "साइन आउट"
+             },
+    "home":  {
+                 "badge":  "Google Gemini 2.5 Flash द्वारा संचालित",
+                 "title1":  "AI-संचालित शैक्षणिक",
+                 "title2":  "दस्तावेज़ जेनरेटर",
+                 "subtitle":  "पेशेवर रिपोर्ट, प्रेज़ेंटेशन, सम्मेलन पेपर और थीसिस बनाएं। AI टेक्स्ट को मानवीय बनाएं, उद्धरण सत्यापित करें और छवियाँ उत्पन्न करें — सब एक जगह।",
+                 "myProjects":  "मेरे प्रोजेक्ट",
+                 "getStarted":  "शुरू करें",
+                 "stats":  {
+                               "tools":  "AI उपकरण",
+                               "templates":  "विषय टेम्पलेट",
+                               "formats":  "निर्यात प्रारूप",
+                               "citations":  "उद्धरण शैलियाँ"
+                           }
+             },
+    "common":  {
+                   "generate":  "उत्पन्न करें",
+                   "loading":  "लोड हो रहा है...",
+                   "save":  "सहेजें",
+                   "cancel":  "रद्द करें",
+                   "language":  "भाषा"
+               }
+}

@@ -1,0 +1,35 @@
+{
+  "nav": {
+    "home": "Home",
+    "myProjects": "My Projects",
+    "templates": "Templates",
+    "myTemplates": "My Templates",
+    "aiAssistant": "AI Assistant",
+    "analytics": "Analytics"
+  },
+  "generators": {
+    "label": "Document Generators",
+    "technicalReport": "Technical Report",
+    "customReport": "Custom Report",
+    "powerpoint": "PowerPoint",
+    "conferencePaper": "Conference Paper",
+    "thesis": "Thesis",
+    "aiImages": "AI Images",
+    "references": "References",
+    "aiHumanizer": "AI Humanizer",
+    "citationChecker": "Citation Checker"
+  },
+  "subscription": { "label": "Subscription", "pricingPlans": "Pricing & Plans" },
+  "support": { "label": "Support", "about": "About", "contact": "Contact", "settings": "Settings" },
+  "auth": { "signIn": "Sign In / Sign Up", "signOut": "Sign Out" },
+  "home": {
+    "badge": "Powered by Google Gemini 2.5 Flash",
+    "title1": "AI-Powered Academic",
+    "title2": "Document Generator",
+    "subtitle": "Create professional reports, presentations, conference papers, and theses. Humanize AI text, verify citations, and generate images — all in one place.",
+    "myProjects": "My Projects",
+    "getStarted": "Get Started",
+    "stats": { "tools": "AI Tools", "templates": "Topic Templates", "formats": "Export Formats", "citations": "Citation Styles" }
+  },
+  "common": { "generate": "Generate", "loading": "Loading...", "save": "Save", "cancel": "Cancel", "language": "Language" }
+}

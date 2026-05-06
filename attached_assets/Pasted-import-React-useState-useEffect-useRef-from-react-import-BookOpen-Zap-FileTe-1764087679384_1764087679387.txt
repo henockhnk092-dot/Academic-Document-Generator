@@ -1,0 +1,2212 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  BookOpen,
+  Zap,
+  FileText,
+  Loader2,
+  Image as ImageIcon,
+  ChevronRight,
+  Layout,
+  Printer,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Settings,
+  Paperclip,
+  X,
+  File as FileIcon,
+  Plus,
+  Github,
+  Twitter,
+  Youtube,
+  Instagram,
+  Mail,
+  MessageCircle,
+  Key,
+  Info,
+  Send,
+  Download,
+  LogIn,
+  LogOut,
+  User,
+  Save,
+  Folder,
+  Trash2,
+  Shuffle
+} from 'lucide-react';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ImageRun } from 'docx';
+import { saveAs } from 'file-saver';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+import {
+  signInWithGoogle,
+  signInWithEmail,
+  signUpWithEmail,
+  logOut,
+  onAuthChange,
+  saveProject,
+  getUserProjects,
+  deleteProject
+} from './firebase';
+
+// --- Helper: Clean up content from AI (convert literal escape sequences) ---
+const cleanContent = (text) => {
+  if (!text) return text;
+  return text
+    .replace(/\\n/g, '\n')    // Convert literal \n to newlines
+    .replace(/\\t/g, '\t')    // Convert literal \t to tabs
+    .replace(/\\\\/g, '\\')   // Convert double backslash to single
+    .replace(/\\\$/g, '$')    // Remove backslash before dollar signs
+    .replace(/\\#/g, '#')     // Remove backslash before hash symbols
+    .replace(/\\\*/g, '*')    // Remove backslash before asterisks
+    .replace(/\\_/g, '_')     // Remove backslash before underscores
+    .replace(/\\`/g, '`');    // Remove backslash before backticks
+};
+
+// --- Helper: Render LaTeX with KaTeX ---
+const renderLatex = (latex, displayMode = false) => {
+  try {
+    // Clean up escaped backslashes and normalize LaTeX
+    let cleanLatex = latex
+      .replace(/\\\\/g, '\\')           // Double backslash to single
+      .replace(/\\quad\s*/g, '\\quad ')  // Normalize quad spacing
+      .trim();
+
+    // Fix JSON escape sequence issues - tab/newline/etc that should be LaTeX commands
+    // When JSON parses \t it becomes actual tab, \n becomes newline, etc.
+    // In JavaScript regex: \t=tab, \n=newline, \r=carriage return, \f=form feed, \x08=backspace
+    cleanLatex = cleanLatex
+      .replace(/\times/g, '\\times')       // Tab + "imes" -> \times
+      .replace(/\theta/g, '\\theta')       // Tab + "heta" -> \theta
+      .replace(/\tau/g, '\\tau')           // Tab + "au" -> \tau
+      .replace(/\text/g, '\\text')         // Tab + "ext" -> \text
+      .replace(/\nabla/g, '\\nabla')       // Newline + "abla" -> \nabla
+      .replace(/\nu(?![a-z])/g, '\\nu')    // Newline + "u" -> \nu
+      .replace(/\neq/g, '\\neq')           // Newline + "eq" -> \neq
+      .replace(/\right/g, '\\right')       // Carriage return + "ight" -> \right
+      .replace(/\rho/g, '\\rho')           // Carriage return + "ho" -> \rho
+      .replace(/\frac/g, '\\frac')         // Form feed + "rac" -> \frac
+      .replace(/\forall/g, '\\forall')     // Form feed + "orall" -> \forall
+      .replace(/\x08egin/g, '\\begin')     // Backspace + "egin" -> \begin
+      .replace(/\x08eta/g, '\\beta')       // Backspace + "eta" -> \beta
+      .replace(/\x08matrix/g, '\\bmatrix') // Backspace + "matrix" -> \bmatrix
+      .replace(/\x08ar/g, '\\bar');        // Backspace + "ar" -> \bar
+
+    // Fix common broken LaTeX patterns (partial commands from JSON escape)
+    cleanLatex = cleanLatex
+      .replace(/\\egin/g, '\\begin')
+      .replace(/\\rac/g, '\\frac')
+      .replace(/\\abla/g, '\\nabla')
+      .replace(/\\ight/g, '\\right')
+      .replace(/\\imes/g, '\\times')
+      .replace(/\\heta/g, '\\theta')
+      .replace(/\\eta(?![a-z])/g, '\\beta')
+      .replace(/\\au(?![a-z])/g, '\\tau')
+      .replace(/\\u(?=\d)/g, '\\nu');
+
+    // Normalize whitespace (but preserve spaces in text commands)
+    cleanLatex = cleanLatex.replace(/\s+/g, ' ').trim();
+
+    return katex.renderToString(cleanLatex, {
+      displayMode: displayMode,
+      throwOnError: false,
+      strict: false,
+      trust: true,
+      macros: {
+        "\\mathbf": "\\boldsymbol"
+      }
+    });
+  } catch (e) {
+    console.warn('KaTeX error:', e, 'Input:', latex);
+    return `<span class="text-red-500 font-mono text-sm">${latex}</span>`; // Show error visually
+  }
+};
+
+// --- API Configuration ---
+// Keys are loaded from .env file. User can override API key in UI.
+const DEFAULT_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash-preview-09-2025";
+const IMAGEN_MODEL = import.meta.env.VITE_IMAGEN_MODEL || "imagen-4.0-generate-001";
+const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT || "https://formspree.io/f/xeodowdj";
+
+// --- Helper: Text Generation (Gemini) ---
+const generateReportText = async (topic, refStyle, pageCount, attachedFiles, apiKey) => {
+  const keyToUse = apiKey || DEFAULT_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${keyToUse}`;
+
+  const systemPrompt = `
+    You are an expert technical writer adhering to strict BET Project Report Guidelines.
+    Generate a full, professional project report on: "${topic}".
+
+    STRICT FORMATTING & STRUCTURAL RULES:
+
+    1.  **Length & Depth Constraint**:
+        * The user has requested a report of approximately **${pageCount} pages**.
+        * To meet this, you MUST expand heavily on technical details.
+        * If page count is high (e.g., >5), generate deep subsections (e.g., 1.1, 1.2, 4.1, 4.2, 4.2.1) and extensive paragraphs.
+        * Ensure the "Methodology" and "Results" sections are very detailed to fill the space.
+
+    2.  **Mandatory Section Structure**:
+        * **Introduction**: Context (### 1.1), Problem Statement (### 1.2), Objectives (### 1.3).
+        * **Project Plan**: MUST include a text-based Gantt chart using a Markdown Table.
+        * **Project Budget**: MUST include a detailed cost breakdown in a Markdown Table.
+        * **Methodology/Design**: Technical approach, components (### 4.1), architecture.
+        * **Results/Analysis**: Performance metrics, validation (### 5.1).
+        * **Conclusion**: Summary and Future Work.
+        * **References**: List citations in **${refStyle}** format.
+        * **Appendix A**: MUST include Appendix A for supplementary material (e.g., PCB Schematics or Code Snippets).
+
+    3.  **Tables & Figures Protocol (CRITICAL)**:
+        * **Intro First**: You MUST introduce every figure or table in the text **BEFORE** you place it.
+        * **Tables**: Use standard Markdown tables.
+          * Example:
+          | Item | Cost |
+          |---|---|
+          | ... | ... |
+          * The Caption MUST be **ABOVE** the table text in Bold (e.g., "**Table 1: Budget**").
+        * **Figures**: The Caption MUST be provided in the JSON 'image_caption' field.
+
+    4.  **Content Integrity and Formatting**:
+        * Use '###' for sub-headings.
+        * Use '**' for bold text.
+        * Use '-' for lists.
+        * **CODE/ALGORITHMS**: Use Markdown code fences (e.g., \`\`\`pseudocode). Use "Algorithm X.Y: Title" for algorithm headings.
+        * **EQUATIONS**: Use single backticks (\`E=mc^2\`) for inline math. Use \`$$\` at the start and end of a single line for display/block equations, including equation numbers (e.g., \`$$V_{out} = I \\times R \\quad (1)$$\`).
+        * **NO FAKE REFERENCES**: Use "[Citation needed]" if needed.
+        * **CRITICAL COMPLETION MANDATE**: Ensure all paragraphs, sub-sections (e.g., 5.1.2), and tables are fully completed and closed before ending a content string. Do NOT leave content hanging or abruptly cut off mid-sentence, mid-list, or mid-table.
+
+    OUTPUT JSON STRUCTURE:
+    {
+      "title": "Report Title",
+      "date": "Current Date",
+      "author": "Student Name",
+      "abstract": "Executive summary (150 words)",
+      "sections": [
+        {
+          "heading": "Section Name",
+          "content": "Markdown content...",
+          "image_prompt": "Visual description for Imagen (or null)",
+          "image_caption": "Figure X: Descriptive Title"
+        }
+      ]
+    }
+  `;
+
+  // Construct user content payload
+  const userParts = [
+    { text: `Topic: ${topic}. Citation Style: ${refStyle}. Target Length: ${pageCount} Pages.` }
+  ];
+
+  // Add all attached files to payload
+  if (attachedFiles && attachedFiles.length > 0) {
+    attachedFiles.forEach((file, index) => {
+        if (file.type === 'text') {
+            userParts.push({ text: `\n\n[File Attachment ${index + 1}: ${file.name}]\n${file.data}` });
+        } else if (file.type === 'binary') {
+            userParts.push({
+                inlineData: {
+                mimeType: file.mimeType,
+                data: file.data
+                }
+            });
+            userParts.push({ text: `\n[File Attachment ${index + 1}: ${file.name}] (Visual Context provided above)` });
+        }
+    });
+    userParts.push({ text: "\n\nPlease utilize information from the attached files above to enhance the technical details, specifications, and context of the report." });
+  }
+
+  const payload = {
+    contents: [{ parts: userParts }],
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 65536  // Increase token limit to prevent truncation
+    }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    let errorText = "API request failed.";
+    try {
+        errorText = await response.text();
+    } catch (e) {
+        // Ignore if we can't read the error body
+    }
+    throw new Error(`Text Generation Error (${response.status}): ${errorText.substring(0, 100)}...`);
+  }
+
+  const data = await response.json();
+  let rawJsonText = data.candidates[0].content.parts[0].text;
+
+  // Try parsing JSON as-is first (in case AI properly escaped everything)
+  try {
+    return JSON.parse(rawJsonText);
+  } catch (firstError) {
+    // JSON parsing failed - likely due to unescaped LaTeX backslashes
+    // Strategy: More aggressive approach - escape all backslashes, then selectively unescape valid JSON sequences
+
+    console.log('First parse attempt failed:', firstError.message);
+
+    let fixedJson = rawJsonText;
+
+    // More aggressive approach: escape ALL backslashes that aren't already escaped
+    // This is safer than trying to identify specific LaTeX patterns
+
+    // Step 1: Temporarily replace already-escaped backslashes with a placeholder
+    const ESCAPED_BACKSLASH_PLACEHOLDER = '___ESCAPED_BACKSLASH___';
+    fixedJson = fixedJson.replace(/\\\\/g, ESCAPED_BACKSLASH_PLACEHOLDER);
+
+    // Step 2: Temporarily replace valid JSON escape sequences
+    const JSON_ESCAPES = {
+      '\\"': '___ESCAPED_QUOTE___',
+      '\\/': '___ESCAPED_SLASH___',
+      '\\b': '___ESCAPED_B___',
+      '\\f': '___ESCAPED_F___',
+      '\\n': '___ESCAPED_N___',
+      '\\r': '___ESCAPED_R___',
+      '\\t': '___ESCAPED_T___'
+    };
+
+    // Replace valid JSON escapes with placeholders
+    Object.entries(JSON_ESCAPES).forEach(([original, placeholder]) => {
+      fixedJson = fixedJson.split(original).join(placeholder);
+    });
+
+    // Step 3: Handle \uXXXX unicode sequences (valid in JSON)
+    const unicodePattern = /\\u([0-9a-fA-F]{4})/g;
+    const unicodeMatches = [];
+    fixedJson = fixedJson.replace(unicodePattern, (match, hex) => {
+      const placeholder = `___UNICODE_${unicodeMatches.length}___`;
+      unicodeMatches.push(match);
+      return placeholder;
+    });
+
+    // Step 4: Now escape ALL remaining single backslashes (these are LaTeX commands)
+    fixedJson = fixedJson.replace(/\\/g, '\\\\');
+
+    // Step 5: Restore the valid JSON escapes
+    Object.entries(JSON_ESCAPES).forEach(([original, placeholder]) => {
+      fixedJson = fixedJson.split(placeholder).join(original);
+    });
+
+    // Step 6: Restore unicode sequences
+    unicodeMatches.forEach((match, index) => {
+      fixedJson = fixedJson.split(`___UNICODE_${index}___`).join(match);
+    });
+
+    // Step 7: Restore already-escaped backslashes
+    fixedJson = fixedJson.split(ESCAPED_BACKSLASH_PLACEHOLDER).join('\\\\');
+
+    try {
+      return JSON.parse(fixedJson);
+    } catch (secondError) {
+      console.error('JSON parse failed after fixes:', secondError);
+      console.error('Raw JSON:', rawJsonText.substring(0, 500));
+
+      // Step 4: Try to recover truncated JSON
+      // If the error is "Unterminated string", try to close the JSON properly
+      if (secondError.message.includes('Unterminated string') || secondError.message.includes('Unexpected end')) {
+        console.log('Attempting to recover truncated JSON...');
+
+        let recoveredJson = fixedJson;
+
+        // Find the last complete section by looking for the pattern
+        // Try to close any open strings and arrays/objects
+        const lastValidSection = recoveredJson.lastIndexOf('},');
+        if (lastValidSection > 0) {
+          // Truncate to last complete section and close the JSON
+          recoveredJson = recoveredJson.substring(0, lastValidSection + 1);
+          recoveredJson += ']}'; // Close sections array and main object
+
+          try {
+            const result = JSON.parse(recoveredJson);
+            console.log('Successfully recovered truncated JSON with', result.sections?.length || 0, 'sections');
+            return result;
+          } catch (recoveryError) {
+            // Try another approach - find last complete content
+            const lastContentEnd = fixedJson.lastIndexOf('",');
+            if (lastContentEnd > 0) {
+              recoveredJson = fixedJson.substring(0, lastContentEnd + 1);
+              // Try to close properly
+              if (!recoveredJson.includes('"sections"')) {
+                throw new Error(`Failed to parse report JSON: ${secondError.message}`);
+              }
+
+              // Count open braces/brackets to close properly
+              let openBraces = (recoveredJson.match(/{/g) || []).length - (recoveredJson.match(/}/g) || []).length;
+              let openBrackets = (recoveredJson.match(/\[/g) || []).length - (recoveredJson.match(/]/g) || []).length;
+
+              recoveredJson += '}]}'.substring(0, openBraces + openBrackets + 1);
+
+              try {
+                return JSON.parse(recoveredJson);
+              } catch (e) {
+                // Give up
+              }
+            }
+          }
+        }
+      }
+
+      throw new Error(`Failed to parse report JSON: ${secondError.message}`);
+    }
+  }
+};
+
+// --- Helper: Image Generation (Pollinations.ai) ---
+// Free, no API key required, unlimited usage
+const ENABLE_IMAGE_GEN = import.meta.env.VITE_ENABLE_IMAGE_GEN !== 'false'; // enabled by default
+
+// --- Random Topic Generator ---
+const generateRandomTopic = () => {
+  const topics = [
+    // Computer Science & AI
+    "Machine Learning Optimization Techniques for Large-Scale Distributed Systems: A Comparative Analysis of Gradient Descent Algorithms",
+    "Blockchain Technology in Supply Chain Management: Security, Transparency, and Efficiency Improvements",
+    "Natural Language Processing for Real-Time Sentiment Analysis in Social Media Platforms",
+    "Edge Computing Architecture for IoT Devices: Reducing Latency and Improving Performance",
+    "Quantum Computing Applications in Cryptography: Post-Quantum Security Protocols",
+    "Deep Learning for Medical Image Classification: Early Detection of Cancer Using CNN Models",
+    "Cybersecurity in Cloud Computing: Advanced Threat Detection and Prevention Mechanisms",
+
+    // Engineering & Technology
+    "Renewable Energy Integration in Smart Grid Systems: Challenges and Solutions",
+    "Advanced Materials for Lightweight Electric Vehicle Battery Design",
+    "5G Network Infrastructure: Performance Optimization and Coverage Enhancement Strategies",
+    "Autonomous Vehicle Navigation Systems: Sensor Fusion and Real-Time Decision Making",
+    "Sustainable Building Design Using AI-Powered Energy Management Systems",
+    "Microfluidic Devices for Point-of-Care Medical Diagnostics",
+    "Robotics Process Automation in Manufacturing: Efficiency and Quality Control",
+
+    // Healthcare & Biomedical
+    "CRISPR Gene Editing Technology: Therapeutic Applications and Ethical Considerations",
+    "Telemedicine Platform Development: Improving Healthcare Access in Rural Areas",
+    "Wearable Health Monitoring Devices: Real-Time Vital Signs Analysis Using Machine Learning",
+    "Personalized Medicine Through Genomic Data Analysis: Treatment Optimization Strategies",
+    "3D Bioprinting for Tissue Engineering: Advances in Regenerative Medicine",
+    "AI-Assisted Drug Discovery: Accelerating Pharmaceutical Research and Development",
+
+    // Environmental Science
+    "Climate Change Impact on Coastal Ecosystems: Predictive Modeling and Conservation Strategies",
+    "Microplastic Pollution in Marine Environments: Detection Methods and Mitigation Approaches",
+    "Carbon Capture and Storage Technologies: Feasibility and Environmental Impact Assessment",
+    "Urban Heat Island Effect: Green Infrastructure Solutions for Temperature Reduction",
+    "Biodiversity Conservation Using Remote Sensing and GIS Technology",
+
+    // Business & Economics
+    "Digital Transformation in Financial Services: Fintech Innovation and Regulatory Challenges",
+    "E-Commerce Consumer Behavior Analysis Using Big Data and Predictive Analytics",
+    "Supply Chain Resilience in Global Disruptions: Risk Management and Optimization Strategies",
+    "Social Media Marketing Effectiveness: Measuring ROI and Customer Engagement Metrics",
+    "Cryptocurrency Market Dynamics: Price Prediction Using Machine Learning Models",
+
+    // Social Sciences
+    "Remote Work Impact on Employee Productivity and Mental Health: A Longitudinal Study",
+    "Social Media Influence on Political Opinion Formation: Network Analysis and Information Spread",
+    "Educational Technology Integration in K-12 Classrooms: Learning Outcomes and Student Engagement",
+    "Urban Mobility Solutions: Public Transportation Optimization Using Real-Time Data Analytics",
+    "Cultural Differences in Leadership Styles: A Cross-National Comparative Study",
+
+    // Physics & Materials Science
+    "Graphene-Based Nanocomposites for Advanced Energy Storage Applications",
+    "Quantum Entanglement in Communication Systems: Secure Data Transmission Protocols",
+    "Metamaterials for Electromagnetic Wave Manipulation: Applications in Antenna Design",
+    "Superconducting Materials at Room Temperature: Synthesis and Characterization",
+
+    // Data Science & Analytics
+    "Big Data Analytics for Predictive Maintenance in Industrial IoT Systems",
+    "Real-Time Fraud Detection in Financial Transactions Using Deep Learning",
+    "Customer Churn Prediction in Subscription-Based Services: A Machine Learning Approach",
+    "Data Privacy Preservation in Federated Learning Systems",
+    "Time Series Forecasting for Energy Demand: LSTM and Transformer Model Comparison"
+  ];
+
+  const randomIndex = Math.floor(Math.random() * topics.length);
+  return topics[randomIndex];
+};
+
+// --- Helper: Convert URL to Base64 ---
+const urlToBase64 = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch image');
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error converting URL to base64:', error);
+    throw error;
+  }
+};
+
+// --- Helper: Generate Image with Pixabay API ---
+const generateImage = async (prompt) => {
+  if (!ENABLE_IMAGE_GEN) {
+    throw new Error("Image generation disabled");
+  }
+
+  const pixabayApiKey = import.meta.env.VITE_PIXABAY_API_KEY?.trim();
+  if (!pixabayApiKey) {
+    throw new Error("Pixabay API key not configured");
+  }
+
+  // Step 1: Clean prompt and extract meaningful keywords
+  let cleanedPrompt = prompt.toLowerCase()
+    .replace(/\b(professional|technical|diagram|schematic|illustration|style|showing|figure|image)\b/gi, '')
+    .trim();
+
+  // Step 2: Remove special characters, punctuation, and extra spaces
+  cleanedPrompt = cleanedPrompt
+    .replace(/['".,;:!?(){}[\]<>\/\\|@#$%^&*+=`~_-]/g, ' ')  // Remove special chars
+    .replace(/\s+/g, ' ')  // Normalize whitespace
+    .trim();
+
+  // Step 3: Extract meaningful words (keep words > 3 chars)
+  const words = cleanedPrompt.split(/\s+/)
+    .filter(w => w.length > 3)
+    .filter(w => !/^(this|that|with|from|have|will|should|could|would|about)$/.test(w));
+
+  // Step 4: Take up to 6-8 keywords for specificity
+  let keywords = words.slice(0, Math.min(8, words.length)).join(' ') || 'technology business';
+
+  // Step 5: Search Pixabay with enhanced technical prompt (limit to 100 chars max per API docs)
+  // Reserve space for " technical engineering professional" (36 chars) to stay under 100 char limit
+  const technicalSuffix = ' technical engineering professional';
+  const maxKeywordLength = 100 - technicalSuffix.length;
+
+  if (keywords.length > maxKeywordLength) {
+    keywords = keywords.substring(0, maxKeywordLength).trim();
+  }
+
+  let searchKeywords = `${keywords}${technicalSuffix}`.trim();
+
+  const searchUrl = `https://pixabay.com/api/?key=${pixabayApiKey}&q=${encodeURIComponent(searchKeywords)}&image_type=photo&per_page=10&safesearch=true&orientation=horizontal&order=popular`;
+
+  try {
+    const response = await fetch(searchUrl);
+    if (!response.ok) {
+      throw new Error(`Pixabay API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.hits || data.hits.length === 0) {
+      // Fallback to generic technical/business images
+      const fallbackUrl = `https://pixabay.com/api/?key=${pixabayApiKey}&q=business+technology+professional&image_type=photo&per_page=10&safesearch=true&orientation=horizontal`;
+      const fallbackResponse = await fetch(fallbackUrl);
+      const fallbackData = await fallbackResponse.json();
+
+      if (!fallbackData.hits || fallbackData.hits.length === 0) {
+        throw new Error("No images found");
+      }
+
+      const randomIndex = Math.floor(Math.random() * fallbackData.hits.length);
+      const imageUrl = fallbackData.hits[randomIndex].largeImageURL;
+
+      // Convert to base64 for embedding in Word export
+      const imageBase64 = await urlToBase64(imageUrl);
+
+      return { url: imageUrl, base64: imageBase64 };
+    }
+
+    // Pick a random image from the results for variety
+    const randomIndex = Math.floor(Math.random() * data.hits.length);
+    const imageUrl = data.hits[randomIndex].largeImageURL;
+
+    // Convert to base64 for embedding in Word export
+    const imageBase64 = await urlToBase64(imageUrl);
+
+    return { url: imageUrl, base64: imageBase64 };
+  } catch (error) {
+    console.error('Pixabay image generation error:', error);
+    throw new Error(`Failed to generate image: ${error.message}`);
+  }
+};
+
+// --- Helper: Export to Word Document ---
+const exportToWord = async (reportData) => {
+  const children = [];
+
+  // Title
+  children.push(
+    new Paragraph({
+      text: reportData.title,
+      heading: HeadingLevel.TITLE,
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 400 },
+    })
+  );
+
+  // Author and Date
+  children.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({ text: reportData.author, size: 28 }),
+      ],
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+      children: [
+        new TextRun({ text: reportData.date, size: 24, color: "666666" }),
+      ],
+    })
+  );
+
+  // Abstract
+  children.push(
+    new Paragraph({
+      text: "Abstract",
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 400, after: 200 },
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      text: cleanContent(reportData.abstract),
+      spacing: { after: 400 },
+      alignment: AlignmentType.JUSTIFIED,
+    })
+  );
+
+  // Page break after abstract
+  children.push(
+    new Paragraph({
+      pageBreakBefore: true,
+    })
+  );
+
+  // Helper function to parse markdown content
+  const parseMarkdownToDocx = (content) => {
+    const paragraphs = [];
+    const lines = content.split('\n');
+    let currentTable = [];
+    let currentList = [];
+    let inCodeBlock = false;
+    let codeBlockContent = [];
+
+    const flushTable = () => {
+      if (currentTable.length > 0) {
+        const headerRow = currentTable[0].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+        const bodyRows = currentTable.slice(2).map(row =>
+          row.replace(/^\||\|$/g, '').split('|').map(c => c.trim())
+        );
+
+        const tableRows = [
+          new TableRow({
+            children: headerRow.map(header =>
+              new TableCell({
+                children: [new Paragraph({ text: header, bold: true })],
+                shading: { fill: "EEEEEE" },
+              })
+            ),
+          }),
+          ...bodyRows.map(row =>
+            new TableRow({
+              children: row.map(cell =>
+                new TableCell({
+                  children: [new Paragraph({ text: cell })],
+                })
+              ),
+            })
+          ),
+        ];
+
+        paragraphs.push(
+          new Table({
+            rows: tableRows,
+            width: { size: 100, type: WidthType.PERCENTAGE },
+          })
+        );
+        paragraphs.push(new Paragraph({ spacing: { after: 200 } }));
+        currentTable = [];
+      }
+    };
+
+    const flushList = () => {
+      if (currentList.length > 0) {
+        currentList.forEach(item => {
+          paragraphs.push(
+            new Paragraph({
+              text: `• ${item}`,
+              spacing: { after: 100 },
+              indent: { left: 720 },
+            })
+          );
+        });
+        currentList = [];
+      }
+    };
+
+    const flushCodeBlock = () => {
+      if (codeBlockContent.length > 0) {
+        codeBlockContent.forEach(line => {
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: line,
+                  font: "Courier New",
+                  size: 20,
+                }),
+              ],
+              shading: { fill: "F5F5F5" },
+              spacing: { after: 0 },
+            })
+          );
+        });
+        paragraphs.push(new Paragraph({ spacing: { after: 200 } }));
+        codeBlockContent = [];
+      }
+    };
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+
+      // Code block handling
+      if (trimmed.startsWith('```')) {
+        if (inCodeBlock) {
+          flushCodeBlock();
+          inCodeBlock = false;
+        } else {
+          flushTable();
+          flushList();
+          inCodeBlock = true;
+        }
+        return;
+      }
+
+      if (inCodeBlock) {
+        codeBlockContent.push(line);
+        return;
+      }
+
+      // Table handling
+      if (trimmed.startsWith('|')) {
+        flushList();
+        currentTable.push(trimmed);
+        return;
+      }
+      flushTable();
+
+      // List handling
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        currentList.push(trimmed.substring(2));
+        return;
+      }
+      flushList();
+
+      // Headings
+      if (trimmed.startsWith('### ')) {
+        paragraphs.push(
+          new Paragraph({
+            text: trimmed.substring(4),
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 300, after: 150 },
+          })
+        );
+        return;
+      }
+
+      if (trimmed.startsWith('## ')) {
+        paragraphs.push(
+          new Paragraph({
+            text: trimmed.substring(3),
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 400, after: 200 },
+          })
+        );
+        return;
+      }
+
+      // Regular paragraph with bold text handling
+      if (trimmed !== '') {
+        const textRuns = [];
+        const parts = trimmed.split(/(\*\*.*?\*\*)/g);
+
+        parts.forEach(part => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            textRuns.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+          } else if (part) {
+            textRuns.push(new TextRun({ text: part }));
+          }
+        });
+
+        paragraphs.push(
+          new Paragraph({
+            children: textRuns,
+            spacing: { after: 200 },
+            alignment: AlignmentType.JUSTIFIED,
+          })
+        );
+      }
+    });
+
+    flushTable();
+    flushList();
+    flushCodeBlock();
+
+    return paragraphs;
+  };
+
+  // Sections
+  reportData.sections.forEach(section => {
+    children.push(
+      new Paragraph({
+        text: section.heading,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 600, after: 300 },
+      })
+    );
+
+    const sectionParagraphs = parseMarkdownToDocx(cleanContent(section.content));
+    children.push(...sectionParagraphs);
+
+    // Add image if it exists
+    if (section.imageBase64 && section.image_caption) {
+      try {
+        // Extract base64 data (remove data:image/...;base64, prefix)
+        const base64Data = section.imageBase64.split(',')[1] || section.imageBase64;
+
+        children.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
+                transformation: {
+                  width: 500,
+                  height: 375,
+                },
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 300, after: 200 },
+          })
+        );
+
+        // Add image caption
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: cleanContent(section.image_caption) || "Figure: AI Generated Diagram",
+                bold: true,
+                size: 20,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 400 },
+          })
+        );
+      } catch (error) {
+        console.error('Error adding image to Word document:', error);
+        // Continue without the image if there's an error
+      }
+    }
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children: children,
+    }],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const fileName = `${reportData.title.replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+  saveAs(blob, fileName);
+};
+
+// --- Markdown Renderer Component ---
+const SimpleMarkdownRenderer = ({ content }) => {
+  if (!content) return null;
+
+  // Function to handle inline elements: bold, code/math, inline LaTeX, and plain text
+  const parseInline = (text) => {
+    if (!text) return null;
+
+    // Split by bold, code, and inline math ($...$)
+    // Order matters: check for math inside backticks first
+    const parts = text.split(/(\*\*.*?\*\*|`[^`]+`|\$[^$\n]+\$)/g);
+
+    return parts.map((part, index) => {
+      if (!part) return null;
+
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+      }
+
+      // Handle backticks - check if content inside is LaTeX math
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const innerContent = part.slice(1, -1);
+        // If content inside backticks is LaTeX math ($...$), render as math
+        if (innerContent.startsWith('$') && innerContent.endsWith('$')) {
+          const mathContent = innerContent.slice(1, -1);
+          return (
+            <span
+              key={index}
+              className="inline-math"
+              dangerouslySetInnerHTML={{ __html: renderLatex(mathContent, false) }}
+            />
+          );
+        }
+        // If content looks like LaTeX (has backslash commands or subscripts), render as math
+        if (/[_^\\{}]/.test(innerContent) && !innerContent.includes(' = ')) {
+          return (
+            <span
+              key={index}
+              className="inline-math"
+              dangerouslySetInnerHTML={{ __html: renderLatex(innerContent, false) }}
+            />
+          );
+        }
+        // Otherwise render as code
+        return (
+          <code key={index} className="bg-blue-50 text-blue-800 px-1 py-0.5 rounded font-mono text-base print:bg-white print:border print:border-blue-200">
+            {innerContent}
+          </code>
+        );
+      }
+
+      // Inline math with single $
+      if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+        const mathContent = part.slice(1, -1);
+        return (
+          <span
+            key={index}
+            className="inline-math"
+            dangerouslySetInnerHTML={{ __html: renderLatex(mathContent, false) }}
+          />
+        );
+      }
+
+      return part;
+    });
+  };
+
+  const equationBlocks = [];
+  const EQUATION_PLACEHOLDER_PREFIX = '___EQ_BLOCK_';
+  let processedContent = content;
+
+  // Convert literal \n sequences to actual newlines (fixes AI output issues)
+  processedContent = processedContent.replace(/\\n/g, '\n');
+
+  processedContent = processedContent.replace(/\$\$(.*?)\$\$/gs, (match, eqContent) => {
+      const id = equationBlocks.length;
+      equationBlocks.push(eqContent.trim());
+      return `${EQUATION_PLACEHOLDER_PREFIX}${id}___`;
+  });
+
+  const lines = processedContent.split('\n');
+  const elements = [];
+  let currentTable = [];
+  let currentList = [];
+  let inCodeBlock = false;
+  let codeBlockContent = [];
+  let codeBlockLang = '';
+
+  // Helper to render inline content including equation placeholders
+  const renderInlineWithEquations = (text) => {
+    const parts = text.split(/(___EQ_BLOCK_\d+___)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith(EQUATION_PLACEHOLDER_PREFIX)) {
+        const id = parseInt(part.substring(EQUATION_PLACEHOLDER_PREFIX.length).replace(/_/g, ''), 10);
+        const eqContent = equationBlocks[id];
+        if (eqContent) {
+          return (
+            <span
+              key={`eq-inline-${i}`}
+              className="inline-math mx-1"
+              dangerouslySetInnerHTML={{ __html: renderLatex(eqContent, false) }}
+            />
+          );
+        }
+        return null;
+      } else if (part) {
+        return <React.Fragment key={`text-${i}`}>{parseInline(part)}</React.Fragment>;
+      }
+      return null;
+    });
+  };
+
+  const processLineAsParagraph = (line, index) => {
+    const trimmed = line.trim();
+    if (trimmed === '') return;
+
+    const algorithmMatch = trimmed.match(/^(Algorithm [A-Z0-9.]+:\s*.*)/);
+    if (algorithmMatch) {
+       elements.push(
+          <p key={`alg-${index}`} className="mb-2 mt-6 p-2 font-bold text-base text-gray-900 border-l-4 border-red-500 bg-red-50 print:border-red-800 print:bg-gray-100">
+            {parseInline(algorithmMatch[1])}
+          </p>
+        );
+    } else {
+      // Check if this line is ONLY an equation block (display mode)
+      const isOnlyEquation = /^___EQ_BLOCK_\d+___$/.test(trimmed);
+
+      if (isOnlyEquation) {
+        // Render as block equation
+        const id = parseInt(trimmed.substring(EQUATION_PLACEHOLDER_PREFIX.length).replace(/_/g, ''), 10);
+        const eqContent = equationBlocks[id];
+        if (eqContent) {
+          elements.push(
+            <div key={`eq-block-${index}`} className="my-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center overflow-x-auto print:bg-white print:border-black shadow-inner">
+              <div
+                className="py-1 text-gray-800 print:text-black katex-display"
+                dangerouslySetInnerHTML={{ __html: renderLatex(eqContent, true) }}
+              />
+            </div>
+          );
+        }
+      } else {
+        // Render as paragraph with possible inline equations
+        elements.push(
+          <p key={`p-${index}`} className="mb-4 text-gray-700 leading-relaxed text-justify">
+            {renderInlineWithEquations(trimmed)}
+          </p>
+        );
+      }
+    }
+  };
+
+  const flushTable = () => {
+    if (currentTable.length > 0) {
+      const headerRow = currentTable[0].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      const bodyRows = currentTable.slice(2).map(row =>
+        row.replace(/^\||\|$/g, '').split('|').map(c => c.trim())
+      );
+
+      elements.push(
+        <div key={`table-${elements.length}`} className="overflow-x-auto my-6 border rounded-lg border-gray-200 print:border-gray-800">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50 print:bg-gray-200">
+              <tr>
+                {headerRow.map((header, i) => (
+                  <th key={i} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider print:text-black">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {bodyRows.map((row, i) => (
+                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50 print:bg-gray-100'}>
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-4 py-3 text-gray-700 whitespace-normal print:text-black">
+                      {parseInline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      currentTable = [];
+    }
+  };
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="list-disc pl-5 space-y-1 my-4 text-gray-700">
+          {currentList.map((item, i) => (
+            <li key={i}>{parseInline(item)}</li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  const flushCodeBlock = () => {
+    if (codeBlockContent.length > 0) {
+      elements.push(
+        <pre
+          key={`code-${elements.length}`}
+          className="bg-gray-900 text-white p-4 rounded-lg my-4 overflow-x-auto shadow-md font-mono text-sm print:bg-gray-100 print:text-black print:border print:border-gray-400"
+        >
+          {codeBlockLang && (
+            <div className="text-xs text-gray-400 mb-2 border-b border-gray-700 pb-1 print:text-gray-600 print:border-gray-300">
+              {codeBlockLang.toUpperCase()}
+            </div>
+          )}
+          <code>{codeBlockContent.join('\n')}</code>
+        </pre>
+      );
+      codeBlockContent = [];
+      codeBlockLang = '';
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCodeBlock();
+        inCodeBlock = false;
+      } else {
+        flushTable();
+        flushList();
+        inCodeBlock = true;
+        codeBlockLang = trimmed.substring(3).trim();
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      return;
+    }
+
+    flushCodeBlock();
+
+    if (trimmed.startsWith('|')) {
+      flushList();
+      currentTable.push(trimmed);
+      return;
+    }
+    flushTable();
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      currentList.push(trimmed.substring(2));
+      return;
+    }
+    flushList();
+
+    let headerHandled = false;
+    for (let i = 6; i >= 1; i--) {
+        const hashPrefix = '#'.repeat(i) + ' ';
+        if (trimmed.startsWith(hashPrefix)) {
+            const content = trimmed.substring(i + 1);
+            if (i === 2) {
+                elements.push(
+                    <h2 key={`h2-${index}`} className="text-xl font-bold text-blue-900 mt-8 mb-4 border-b border-gray-200 pb-2 break-after-avoid print:text-black print:border-black">
+                      {parseInline(content)}
+                    </h2>
+                );
+            } else if (i === 3) {
+                elements.push(
+                    <h3 key={`h3-${index}`} className="text-lg font-bold text-gray-900 mt-6 mb-3 break-after-avoid print:text-black">
+                      {parseInline(content)}
+                    </h3>
+                );
+            } else {
+                const Tag = `h${Math.min(i, 4)}`;
+                elements.push(
+                    React.createElement(Tag, {
+                        key: `h${i}-${index}`,
+                        className: `font-bold mt-5 mb-2 text-gray-800 ${i === 1 ? 'text-2xl' : i === 4 ? 'text-base' : 'text-sm'} break-after-avoid print:text-black`
+                    }, parseInline(content))
+                );
+            }
+            headerHandled = true;
+            break;
+        }
+    }
+    if (headerHandled) return;
+
+    if (trimmed !== '') {
+      processLineAsParagraph(line, index);
+    }
+  });
+
+  flushTable();
+  flushList();
+  flushCodeBlock();
+
+  return <div>{elements}</div>;
+};
+
+// --- Components ---
+
+const ReportSection = ({ section, onImageUpdate, apiKey }) => {
+  const [imageUrl, setImageUrl] = useState(section.imageUrl || null);
+  const [loadingImage, setLoadingImage] = useState(!!section.image_prompt && !section.imageUrl);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (section.image_prompt && !imageUrl && !section.imageUrl) {
+      generateImage(section.image_prompt, apiKey)
+        .then(imageData => {
+          // Store both URL (for display) and base64 (for export)
+          setImageUrl(imageData.url);
+          section.imageUrl = imageData.url;
+          section.imageBase64 = imageData.base64;
+          onImageUpdate();
+        })
+        .catch(err => {
+          console.error("Image gen error:", err);
+          setError("Visualization failed");
+        })
+        .finally(() => setLoadingImage(false));
+    }
+  }, [section.image_prompt, apiKey, imageUrl]);
+
+  return (
+    <div className="mb-12 break-inside-avoid">
+      <h2 className={`text-2xl font-bold mb-6 border-b-2 pb-2 uppercase tracking-wide print:text-black
+        ${section.heading.startsWith("Appendix") ? 'text-gray-700 border-gray-200' : 'text-blue-900 border-blue-100 print:border-black'}`}
+      >
+        {cleanContent(section.heading)}
+      </h2>
+
+      <div className="text-justify print:text-black">
+        <SimpleMarkdownRenderer content={cleanContent(section.content)} />
+      </div>
+
+      {section.image_prompt && (
+        <div className="my-8 flex flex-col items-center break-inside-avoid">
+          <div className="bg-white p-2 border border-gray-300 shadow-sm max-w-[80%] print:border-gray-800 print:shadow-none">
+            {loadingImage ? (
+              <div className="h-48 w-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 min-w-[300px]">
+                <Loader2 className="animate-spin mb-2" />
+                <span className="text-xs">Generating Figure...</span>
+              </div>
+            ) : imageUrl ? (
+              <img
+                src={imageUrl}
+                alt="Generated Diagram"
+                className="w-full h-auto object-contain"
+              />
+            ) : (
+              <div className="h-32 flex items-center justify-center text-red-400 bg-red-50 text-sm">
+                {error}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 text-center">
+            <span className="font-bold text-gray-900 text-sm print:text-black">
+              {cleanContent(section.image_caption) || "Figure: AI Generated Diagram"}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CoverPage = ({ data }) => (
+  <div className="min-h-[297mm] flex flex-col justify-between text-center border-b border-gray-200 mb-12 pb-12 print:min-h-screen print:border-none print:mb-0 print:pb-0 print:break-after-page">
+    <div className="mt-20">
+      <div className="w-32 h-2 bg-blue-900 mx-auto mb-12 print:bg-black"></div>
+      <h1 className="text-5xl font-bold text-gray-900 mb-8 leading-tight px-8 print:text-black">
+        {cleanContent(data.title)}
+      </h1>
+      <p className="text-2xl text-gray-600 mb-4 print:text-black">{cleanContent(data.author)}</p>
+      <p className="text-lg text-gray-400 uppercase tracking-widest mb-20 print:text-gray-600">{cleanContent(data.date)}</p>
+    </div>
+
+    <div className="mb-20 max-w-3xl mx-auto text-left px-8">
+      <h3 className="text-gray-400 font-bold uppercase text-xs tracking-wider mb-4 border-b pb-2 print:text-black print:border-black">Abstract</h3>
+      <p className="text-gray-700 italic leading-relaxed print:text-black text-lg text-justify whitespace-pre-line">
+        {cleanContent(data.abstract)}
+      </p>
+    </div>
+
+    <div className="text-xs text-gray-300 pb-8 print:text-gray-500">
+      BET Project Report • Generated Assistant
+    </div>
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 print:hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Random technical report topics for "Surprise Me" feature
+const RANDOM_TOPICS = [
+  "Design and Implementation of a Smart Home Automation System using IoT",
+  "Machine Learning-Based Predictive Maintenance for Industrial Equipment",
+  "Development of a Blockchain-Based Supply Chain Management System",
+  "Analysis of Renewable Energy Integration in Smart Grid Networks",
+  "Design of an Autonomous Drone Navigation System using Computer Vision",
+  "Implementation of a Real-Time Traffic Management System using AI",
+  "Development of a Secure Biometric Authentication System",
+  "Analysis of 5G Network Performance in Urban Environments",
+  "Design of a Solar-Powered Water Purification System",
+  "Implementation of a Natural Language Processing Chatbot for Customer Service",
+  "Development of a Wearable Health Monitoring Device",
+  "Analysis of Quantum Computing Algorithms for Cryptography",
+  "Design of an Electric Vehicle Battery Management System",
+  "Implementation of Edge Computing for Industrial IoT Applications",
+  "Development of a Computer Vision System for Quality Control",
+  "Analysis of Neural Network Architectures for Image Recognition",
+  "Design of a Microcontroller-Based Home Security System",
+  "Implementation of a Cloud-Based Data Analytics Platform",
+  "Development of a Robotic Arm Control System using PID Controllers",
+  "Analysis of Cybersecurity Threats in Healthcare Information Systems",
+  "Design of a Wireless Sensor Network for Environmental Monitoring",
+  "Implementation of Augmented Reality for Engineering Education",
+  "Development of a Voice-Controlled Smart Assistant",
+  "Analysis of Big Data Processing Techniques for Financial Markets",
+  "Design of a Fuel Cell Power System for Electric Vehicles",
+  "Implementation of a Machine Learning Model for Fraud Detection",
+  "Development of a GPS-Based Asset Tracking System",
+  "Analysis of Deep Learning for Medical Image Diagnosis",
+  "Design of a Wind Turbine Control System for Maximum Efficiency",
+  "Implementation of a Digital Twin for Manufacturing Process Optimization"
+];
+
+export default function App() {
+  const [topic, setTopic] = useState("");
+  const [refStyle, setRefStyle] = useState("IEEE"); // 'IEEE' or 'Harvard'
+  const [pageCount, setPageCount] = useState(5);
+  const [reportData, setReportData] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [progress, setProgress] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [customApiKey, setCustomApiKey] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+
+  // Authentication & Project Management State
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [showMyProjects, setShowMyProjects] = useState(false);
+  const [myProjects, setMyProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [projectTitle, setProjectTitle] = useState("");
+  const [indexWarningShown, setIndexWarningShown] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  // Add CSS for print handling
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        @page {
+          margin: 20mm;
+          size: A4;
+        }
+        body {
+          background: white !important;
+          color: black !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        /* Hide everything by default */
+        body > * {
+          display: none;
+        }
+        /* Show only the main app container and its print-safe children */
+        #root, #root > div {
+          display: block !important;
+        }
+        /* But hide navbar, input area, modals explicitly */
+        nav, .input-view, .modal-overlay {
+          display: none !important;
+        }
+        /* Ensure report container displays and flows */
+        .report-container {
+          display: block !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+        /* Ensure text justification in print */
+        p {
+          text-align: justify;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      setCurrentUser(user);
+      if (user && showMyProjects) {
+        // Refresh projects when user logs in and projects view is open
+        loadUserProjects(user.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, [showMyProjects]);
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const filePromises = files.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        const isText = file.type.startsWith('text/') || file.name.endsWith('.txt');
+
+        if (isText) {
+          reader.onload = (e) => {
+            resolve({
+              type: 'text',
+              mimeType: 'text/plain',
+              data: e.target.result,
+              name: file.name,
+              id: Math.random().toString(36).substr(2, 9)
+            });
+          };
+          reader.readAsText(file);
+        } else {
+          reader.onload = (e) => {
+            const result = e.target.result;
+            const base64Data = result.split(',')[1];
+            resolve({
+              type: 'binary',
+              mimeType: file.type,
+              data: base64Data,
+              name: file.name,
+              previewUrl: result,
+              id: Math.random().toString(36).substr(2, 9)
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+
+    Promise.all(filePromises).then(newFiles => {
+      setAttachedFiles(prev => [...prev, ...newFiles]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    });
+  };
+
+  const removeFile = (idToRemove) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== idToRemove));
+  };
+
+  // Authentication handlers
+  const handleGoogleSignIn = async () => {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      await signInWithGoogle();
+      setShowAuthModal(false);
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      if (authMode === 'login') {
+        await signInWithEmail(authEmail, authPassword);
+      } else {
+        await signUpWithEmail(authEmail, authPassword);
+      }
+      setShowAuthModal(false);
+      setAuthEmail("");
+      setAuthPassword("");
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      setMyProjects([]);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Project management handlers
+  const loadUserProjects = async (userId) => {
+    setLoadingProjects(true);
+    try {
+      const projects = await getUserProjects(userId);
+      setMyProjects(projects);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleSaveProject = async () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!reportData) return;
+
+    const title = projectTitle.trim() || reportData.title;
+
+    try {
+      await saveProject(currentUser.uid, reportData, title);
+      setShowSaveModal(false);
+      setProjectTitle("");
+    } catch (error) {
+      console.error("Error saving project:", error);
+    }
+  };
+
+  const handleLoadProject = (project) => {
+    try {
+      const data = JSON.parse(project.data);
+      setReportData(data);
+      setTopic(data.title);
+      setShowMyProjects(false);
+      setStatus("idle");
+    } catch (error) {
+      console.error("Error loading project:", error);
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    try {
+      await deleteProject(projectId);
+      setMyProjects(prev => prev.filter(p => p.id !== projectId));
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!topic.trim()) return;
+
+    setStatus("text_generating");
+    setReportData(null);
+    setProgress(`Structuring a ~${pageCount} page report according to BET guidelines...`);
+
+    try {
+      const data = await generateReportText(topic, refStyle, pageCount, attachedFiles, customApiKey);
+      data.sections = data.sections.map((s, i) => ({ ...s, id: i }));
+      setReportData(data);
+      setStatus("images_generating");
+      setProgress("Rendering technical figures...");
+    } catch (error) {
+      console.error(error);
+      setStatus("error");
+      setProgress(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 text-slate-900 font-serif print:bg-white">
+
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 print:hidden shadow-sm no-print">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer" onClick={() => { setReportData(null); setStatus("idle"); setAttachedFiles([]); setTopic(""); }}>
+            <div className="bg-blue-900 p-1 sm:p-1.5 rounded text-white">
+              <Layout size={16} className="sm:w-[18px] sm:h-[18px]" />
+            </div>
+            <span className="font-sans font-bold text-base sm:text-lg text-gray-900">BET Report Gen</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            {reportData && (
+              <>
+                <button
+                  onClick={() => { setReportData(null); setStatus("idle"); setAttachedFiles([]); setTopic(""); }}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+                  title="New Report"
+                >
+                  <RefreshCw size={18} />
+                </button>
+
+                {/* Save Project Button - Only visible when logged in */}
+                {currentUser && (
+                  <button
+                    onClick={() => {
+                      setProjectTitle(reportData.title);
+                      setShowSaveModal(true);
+                    }}
+                    className="flex items-center gap-1 sm:gap-2 bg-purple-700 text-white px-2 py-1 sm:px-3 md:px-4 sm:py-1.5 md:py-2 rounded hover:bg-purple-600 transition-colors text-xs sm:text-sm font-sans font-medium"
+                  >
+                    <Save size={14} className="sm:w-4 sm:h-4" />
+                    <span>Save</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1 sm:gap-2 bg-blue-900 text-white px-2 py-1 sm:px-3 md:px-4 sm:py-1.5 md:py-2 rounded hover:bg-blue-800 transition-colors text-xs sm:text-sm font-sans font-medium"
+                  title="Print to PDF"
+                >
+                  <Printer size={14} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Print / PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                </button>
+                <button
+                  onClick={() => exportToWord(reportData)}
+                  className="flex items-center gap-1 sm:gap-2 bg-green-700 text-white px-2 py-1 sm:px-3 md:px-4 sm:py-1.5 md:py-2 rounded hover:bg-green-600 transition-colors text-xs sm:text-sm font-sans font-medium"
+                  title="Export to Word"
+                >
+                  <Download size={14} className="sm:w-4 sm:h-4" />
+                  <span>Word</span>
+                </button>
+              </>
+            )}
+
+            <div className="w-px h-4 sm:h-6 bg-gray-200 mx-0.5 sm:mx-1"></div>
+
+            {/* My Projects Button - Only visible when logged in */}
+            {currentUser && (
+              <button
+                onClick={() => {
+                  setShowMyProjects(true);
+                  loadUserProjects(currentUser.uid);
+                }}
+                className="p-2 text-gray-500 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
+                title="My Projects"
+              >
+                <Folder size={18} />
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 text-gray-500 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
+              title="API Settings"
+            >
+              <Key size={18} />
+            </button>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="p-2 text-gray-500 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
+              title="About & Contact"
+            >
+              <Info size={18} />
+            </button>
+
+            {/* Authentication Button */}
+            {currentUser ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 sm:gap-2 bg-gray-100 text-gray-700 px-2 py-1 sm:px-3 sm:py-1.5 md:py-2 rounded-lg hover:bg-gray-200 transition-colors text-xs sm:text-sm font-sans font-medium"
+                title="Logout"
+              >
+                <User size={14} className="sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{currentUser.email?.split('@')[0] || 'User'}</span>
+                <LogOut size={14} className="sm:w-4 sm:h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setAuthMode('login');
+                  setShowAuthModal(true);
+                }}
+                className="flex items-center gap-1 sm:gap-2 bg-blue-900 text-white px-2 py-1 sm:px-3 md:px-4 sm:py-1.5 md:py-2 rounded-lg hover:bg-blue-800 transition-colors text-xs sm:text-sm font-sans font-medium"
+              >
+                <LogIn size={14} className="sm:w-4 sm:h-4" />
+                <span>Login</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 print:px-0 print:py-0 print:max-w-none print:mx-0">
+
+        {/* Input View */}
+        {!reportData && (
+          <div className="max-w-2xl mx-auto mt-2 sm:mt-6 md:mt-12 text-center font-sans input-view">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-50 text-blue-900 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-6">
+              <BookOpen size={28} className="sm:w-8 sm:h-8" />
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+              Technical Report Assistant
+            </h1>
+            <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-8">
+              Generates structured reports adhering to BET formatting rules.
+            </p>
+
+            {/* Controls */}
+            <div className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-4 sm:mb-8 text-left">
+              <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5 sm:mb-2">Report Topic & Context</label>
+
+              <div className="relative mb-3 sm:mb-4">
+                <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white overflow-hidden">
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g., Design of a Solar Battery Charger"
+                    className="flex-1 p-2 sm:p-3 text-sm sm:text-base outline-none"
+                    disabled={status !== 'idle' && status !== 'error'}
+                  />
+
+                  {/* Surprise Me & File Input Buttons */}
+                  <div className="pr-2 flex items-center border-l border-gray-100 pl-2 gap-1">
+                     {/* Surprise Me Button */}
+                     <button
+                        onClick={() => {
+                          const randomTopic = generateRandomTopic();
+                          setTopic(randomTopic);
+                        }}
+                        className="p-2 text-gray-500 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-all"
+                        title="Surprise Me - Random Topic"
+                        disabled={status !== 'idle' && status !== 'error'}
+                     >
+                        <Shuffle size={20} />
+                     </button>
+
+                     {/* File Input Button */}
+                     <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        multiple
+                        accept="image/*,.txt,.pdf,.doc,.docx"
+                     />
+                     <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 text-gray-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
+                        title="Attach Files (Images, PDF, Word, Text)"
+                     >
+                        <Paperclip size={20} />
+                     </button>
+                  </div>
+                </div>
+
+                {/* Attached Files List */}
+                {attachedFiles.length > 0 && (
+                   <div className="flex flex-wrap gap-2 mt-3">
+                      {attachedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-800 px-2 py-1.5 rounded-md text-sm shadow-sm">
+                          {file.type === 'binary' && file.mimeType.startsWith('image') ? (
+                            <div className="w-5 h-5 rounded overflow-hidden border border-blue-200 bg-white flex-shrink-0">
+                               <img src={file.previewUrl} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <FileIcon size={16} className="flex-shrink-0" />
+                          )}
+                          <span className="truncate max-w-[150px] font-medium text-xs">{file.name}</span>
+                          <button
+                            onClick={() => removeFile(file.id)}
+                            className="ml-1 p-0.5 hover:bg-blue-200 rounded-full text-blue-600"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                   </div>
+                )}
+              </div>
+
+
+              <div className={`flex flex-wrap items-center justify-between gap-2 sm:gap-4 ${attachedFiles.length > 0 ? 'mt-3 sm:mt-6' : ''}`}>
+                <div className="flex items-center gap-3 sm:gap-6">
+
+                  {/* Ref Style Group */}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-xs sm:text-sm font-medium text-gray-600">Style:</span>
+                    <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg">
+                      <button
+                        onClick={() => setRefStyle("IEEE")}
+                        className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded transition-all ${refStyle === "IEEE" ? "bg-white shadow text-blue-900" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        IEEE
+                      </button>
+                      <button
+                        onClick={() => setRefStyle("Harvard")}
+                        className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded transition-all ${refStyle === "Harvard" ? "bg-white shadow text-blue-900" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        Harvard
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Page Count Group */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 p-0.5 px-1.5 sm:p-1 sm:px-2 rounded-lg border border-gray-100">
+                    <span className="text-xs sm:text-sm font-medium text-gray-600">Pages:</span>
+                    <input
+                      type="number"
+                      min="2"
+                      max="50"
+                      value={pageCount}
+                      onChange={(e) => setPageCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-10 sm:w-12 bg-transparent text-center font-bold text-xs sm:text-sm text-blue-900 outline-none border-b border-transparent focus:border-blue-500"
+                    />
+                  </div>
+
+                </div>
+
+                <button
+                  onClick={handleGenerate}
+                  disabled={!topic.trim() || (status !== 'idle' && status !== 'error')}
+                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {status === 'text_generating' ? <Loader2 className="animate-spin" size={18} /> : "Generate Report"}
+                </button>
+              </div>
+            </div>
+
+            {/* Status Message */}
+            <div className="h-6 sm:h-8 text-xs sm:text-sm font-medium text-blue-600">
+              {status !== 'idle' && status !== 'error' && (
+                <span className="animate-pulse flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  {progress}
+                </span>
+              )}
+               {status === 'error' && (
+                <span className="text-red-500">{progress}</span>
+              )}
+            </div>
+
+            {/* Guidelines Info */}
+            <div className="mt-3 sm:mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-left">
+              <div className="p-2 sm:p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-green-700 font-bold text-xs sm:text-sm">
+                  <CheckCircle2 size={14} className="sm:w-4 sm:h-4" /> Mandatory Sections
+                </div>
+                <p className="text-[10px] sm:text-xs text-gray-500 leading-tight sm:leading-normal">Auto-includes Project Plan (Gantt) and Budget tables as required.</p>
+              </div>
+              <div className="p-2 sm:p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 text-green-700 font-bold text-xs sm:text-sm">
+                   <Settings size={14} className="sm:w-4 sm:h-4" /> Smart Formatting
+                </div>
+                <p className="text-[10px] sm:text-xs text-gray-500 leading-tight sm:leading-normal">Figures captioned below, Tables captioned above. In-text intros enforced.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Report Display */}
+        {reportData && (
+          <div className="animate-in fade-in duration-700 pb-20 report-container print:pb-0 print:w-full">
+
+            {/* Verification Warning */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded print:hidden shadow-sm no-print">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="text-yellow-600 shrink-0" />
+                <div>
+                  <h4 className="font-bold text-yellow-800 text-sm">Important: Verify All Content</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Ensure all generated references are real (AI may use placeholders).
+                    Check figure numbers align with text. You must have your supervisor review this draft before submission.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Report Paper */}
+            <article className="bg-white shadow-xl w-full sm:max-w-[210mm] mx-auto min-h-screen sm:min-h-[297mm] p-4 sm:p-8 md:p-[25mm] print:shadow-none print:p-0 print:w-full print:max-w-none print:mx-0">
+              <CoverPage data={reportData} />
+
+              {reportData.sections.map((section) => (
+                <ReportSection
+                  key={section.id}
+                  section={section}
+                  onImageUpdate={() => {}}
+                  apiKey={customApiKey}
+                />
+              ))}
+            </article>
+          </div>
+        )}
+      </main>
+
+      {/* Settings Modal */}
+      <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="API Settings">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            This application uses a default API key. If you prefer to use your own Google Gemini API key for higher limits or privacy, enter it below.
+          </p>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Google Gemini API Key</label>
+            <input
+              type="password"
+              value={customApiKey}
+              onChange={(e) => setCustomApiKey(e.target.value)}
+              placeholder="AIzaSy..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+            />
+          </div>
+           <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-800">
+             Leave empty to use the default system key. Your key is not stored permanently.
+           </div>
+        </div>
+      </Modal>
+
+      {/* About & Contact Modal */}
+      <Modal isOpen={showAbout} onClose={() => setShowAbout(false)} title="About & Contact">
+        <div className="space-y-6">
+
+          {/* About This Application */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+            <h4 className="font-bold text-blue-900 mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
+              <BookOpen size={16} /> About This Application
+            </h4>
+            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+              <strong>Technical Report Generator</strong> is an AI-powered tool designed to help students, engineers, and researchers create professional BET-standard technical reports quickly and efficiently.
+            </p>
+
+            <div className="grid grid-cols-1 gap-2 text-xs">
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>AI Text Generation</strong> - Powered by Google Gemini 2.5 Flash for intelligent content creation</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>Image Generation</strong> - Technical diagrams via Pollinations.ai (free & unlimited)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>Math Equations</strong> - Beautiful LaTeX rendering with KaTeX</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>Export Options</strong> - Print to PDF or download as Word document</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>File Attachments</strong> - Upload images/documents for context</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-600 font-bold">✓</span>
+                <span><strong>Citation Styles</strong> - IEEE and Harvard reference formats</span>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <p className="text-xs text-gray-500">
+                <strong>Tech Stack:</strong> React, Vite, Tailwind CSS, Google Gemini API, KaTeX, docx.js
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                <strong>Version:</strong> 2.0 | <strong>License:</strong> Open Source
+              </p>
+            </div>
+          </div>
+
+          {/* Social Links */}
+          <div>
+            <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Connect with the Creator</h4>
+            <div className="grid grid-cols-2 gap-3">
+               <a href="https://discord.com/users/hnk0422_76455" target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">
+                  <MessageCircle size={18} /> <span className="text-xs font-bold">Discord</span>
+               </a>
+               <a href="https://twitter.com/HnkHorizon" target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-colors">
+                  <Twitter size={18} /> <span className="text-xs font-bold">Twitter</span>
+               </a>
+               <a href="https://www.tiktok.com/@codingfever" target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors">
+                   <div className="w-4 h-4 font-bold text-lg leading-none flex items-center justify-center">♪</div> <span className="text-xs font-bold">TikTok</span>
+               </a>
+               <a href="https://youtube.com/@HNK2005" target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                  <Youtube size={18} /> <span className="text-xs font-bold">YouTube</span>
+               </a>
+               <a href="https://instagram.com/hhnk.3693" target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 transition-colors">
+                  <Instagram size={18} /> <span className="text-xs font-bold">Instagram</span>
+               </a>
+               <a href="mailto:hhnk3693@gmail.com" className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                  <Mail size={18} /> <span className="text-xs font-bold">Email</span>
+               </a>
+            </div>
+          </div>
+
+          {/* Code Repo */}
+          <div className="bg-gray-900 text-white p-4 rounded-lg flex items-center justify-between">
+             <div className="flex items-center gap-3">
+               <Github size={20} />
+               <div>
+                 <div className="text-xs text-gray-400">Source Code</div>
+                 <div className="font-bold text-sm">Technical-Report-Generator</div>
+               </div>
+             </div>
+             <a href="https://github.com/HorizonHnk/Technical-Report-Generator.git" target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-xs font-bold transition-colors">
+               View Repo
+             </a>
+          </div>
+
+          {/* Contact Form */}
+          <div>
+            <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider border-t pt-4">Contact Admin</h4>
+            <form
+              action={FORMSPREE_ENDPOINT}
+              method="POST"
+              className="space-y-3"
+            >
+               <input
+                 type="email"
+                 name="email"
+                 placeholder="Your Email"
+                 required
+                 className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+               />
+               <textarea
+                 name="message"
+                 placeholder="Your Message..."
+                 rows="3"
+                 required
+                 className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+               ></textarea>
+               <button type="submit" className="w-full bg-blue-900 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
+                 <Send size={16} /> Send Message
+               </button>
+            </form>
+          </div>
+
+        </div>
+      </Modal>
+
+      {/* Authentication Modal */}
+      <Modal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setAuthError("");
+          setAuthEmail("");
+          setAuthPassword("");
+        }}
+        title={authMode === 'login' ? 'Login' : 'Sign Up'}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            {authMode === 'login'
+              ? 'Login to save and manage your projects.'
+              : 'Create an account to save and manage your projects.'}
+          </p>
+
+          {authError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+              {authError}
+            </div>
+          )}
+
+          {/* Google Sign In */}
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={authLoading}
+            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            {authLoading ? 'Signing in...' : 'Continue with Google'}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailAuth} className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full bg-blue-900 text-white py-3 rounded-lg font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
+            >
+              {authLoading ? 'Please wait...' : (authMode === 'login' ? 'Login' : 'Sign Up')}
+            </button>
+          </form>
+
+          <div className="text-center text-sm">
+            {authMode === 'login' ? (
+              <span className="text-gray-600">
+                Don't have an account?{' '}
+                <button
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthError("");
+                  }}
+                  className="text-blue-900 font-medium hover:underline"
+                >
+                  Sign up
+                </button>
+              </span>
+            ) : (
+              <span className="text-gray-600">
+                Already have an account?{' '}
+                <button
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError("");
+                  }}
+                  className="text-blue-900 font-medium hover:underline"
+                >
+                  Login
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Save Project Modal */}
+      <Modal
+        isOpen={showSaveModal}
+        onClose={() => {
+          setShowSaveModal(false);
+          setProjectTitle("");
+        }}
+        title="Save Project"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Choose a title for your project. You can use the default title or customize it.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Project Title</label>
+            <input
+              type="text"
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              placeholder={reportData?.title || "Enter project title"}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowSaveModal(false);
+                setProjectTitle("");
+              }}
+              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveProject}
+              className="flex-1 bg-purple-700 text-white py-2.5 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <Save size={16} />
+              Save Project
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* My Projects Modal */}
+      <Modal
+        isOpen={showMyProjects}
+        onClose={() => setShowMyProjects(false)}
+        title="My Projects"
+      >
+        <div className="space-y-4">
+          {loadingProjects ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin text-blue-900" size={32} />
+            </div>
+          ) : myProjects.length === 0 ? (
+            <div className="text-center py-8">
+              <Folder size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500 font-medium">No saved projects yet</p>
+              <p className="text-sm text-gray-400 mt-1">Generate a report and save it to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {myProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 mb-1 truncate">
+                        {project.title}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        {project.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown date'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleLoadProject(project)}
+                        className="p-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
+                        title="Load Project"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                        title="Delete Project"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+    </div>
+  );
+}

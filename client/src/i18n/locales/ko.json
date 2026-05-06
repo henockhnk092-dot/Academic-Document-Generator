@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "홈",
+                "myProjects":  "내 프로젝트",
+                "templates":  "템플릿",
+                "aiAssistant":  "AI 어시스턴트",
+                "analytics":  "분석",
+                "myTemplates":  "내 템플릿"
+            },
+    "generators":  {
+                       "label":  "문서 생성기",
+                       "technicalReport":  "기술 보고서",
+                       "customReport":  "맞춤 보고서",
+                       "powerpoint":  "프레젠테이션",
+                       "conferencePaper":  "학회 논문",
+                       "thesis":  "논문",
+                       "aiImages":  "AI 이미지",
+                       "references":  "참고문헌",
+                       "aiHumanizer":  "AI 인간화",
+                       "citationChecker":  "인용 검사기"
+                   },
+    "subscription":  {
+                         "label":  "구독",
+                         "pricingPlans":  "요금제"
+                     },
+    "support":  {
+                    "label":  "지원",
+                    "about":  "소개",
+                    "contact":  "문의",
+                    "settings":  "설정"
+                },
+    "auth":  {
+                 "signIn":  "로그인 / 회원가입",
+                 "signOut":  "로그아웃"
+             },
+    "home":  {
+                 "badge":  "Google Gemini 2.5 Flash 기반",
+                 "title1":  "AI 기반 학술",
+                 "title2":  "문서 생성기",
+                 "subtitle":  "전문적인 보고서, 발표자료, 학회 논문, 학위 논문을 작성하세요. AI 텍스트를 인간화하고, 인용을 검증하며, 이미지를 생성하세요 — 모두 한 곳에서.",
+                 "myProjects":  "내 프로젝트",
+                 "getStarted":  "시작하기",
+                 "stats":  {
+                               "tools":  "AI 도구",
+                               "templates":  "주제 템플릿",
+                               "formats":  "내보내기 형식",
+                               "citations":  "인용 스타일"
+                           }
+             },
+    "common":  {
+                   "generate":  "생성",
+                   "loading":  "로딩 중...",
+                   "save":  "저장",
+                   "cancel":  "취소",
+                   "language":  "언어"
+               }
+}

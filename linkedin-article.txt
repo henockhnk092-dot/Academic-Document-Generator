@@ -1,0 +1,122 @@
+🚀 Introducing AcademicGen: The AI-Powered Academic Document Generator
+
+The academic writing landscape has long been plagued by time-consuming formatting tasks, complex citation requirements, and the challenge of maintaining consistency across lengthy documents. Students, researchers, and professionals spend countless hours wrestling with document structure rather than focusing on content quality.
+
+AcademicGen emerges as a solution to this widespread problem—a free, AI-powered platform that generates professional academic documents in seconds.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 WHAT IS ACADEMICGEN?
+
+AcademicGen is a comprehensive web application that leverages Google Gemini 2.5 Flash AI to generate professionally formatted academic documents. The platform handles all the tedious formatting work—proper figure and table labeling, citation formatting, section structuring, and more—so you can focus on your research and ideas.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📄 DOCUMENT TYPES SUPPORTED
+
+**Technical Reports**
+BET-standard technical reports with proper structure, Gantt charts, budget tables, automated citations, and LaTeX equation support. Includes all necessary sections: abstract, introduction, methodology, results, discussion, and references.
+
+**Custom Reports**
+Fully customizable report generation with flexible section arrangements and adaptable structure to accommodate unique institutional requirements.
+
+**PowerPoint Presentations**
+Professional slide deck creation including speaker notes, visual element suggestions, and presentation coaching support.
+
+**Conference Papers**
+IEEE-formatted two-column academic papers with proper citations and formatting that meets international conference submission standards.
+
+**Thesis Documents**
+Harvard-style thesis generation complete with front matter (title page, abstract, acknowledgments, table of contents), properly formatted chapters, and comprehensive bibliography.
+
+**AI Image Generator**
+Create custom visuals from text descriptions for conceptual diagrams, illustrative graphics, and presentation visuals.
+
+**Reference Library**
+Smart citation import from URLs, DOIs, and BibTeX files with support for APA, MLA, Chicago, Harvard, and IEEE citation styles.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️ KEY FEATURES
+
+**Real-Time Document Preview**
+Watch your document generate live with streaming AI responses. No more waiting for downloads to see the result.
+
+**Multiple Export Formats**
+Export to PDF, DOCX, PPTX, or HTML to accommodate different submission requirements.
+
+**Five Citation Styles**
+Full support for APA, MLA, Chicago, Harvard, and IEEE citation formats.
+
+**File Upload Processing**
+Upload existing PDFs, DOCX, TXT files or images to extract content and use as context for generation.
+
+**Cloud Storage**
+Save projects to Firebase and access them from any device.
+
+**Responsive Design**
+Works seamlessly on all devices—from mobile phones to ultra-wide desktop monitors.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 BUILT WITH MODERN TECHNOLOGY
+
+**Frontend:** React 18, TypeScript, Tailwind CSS, Shadcn/UI, TanStack Query
+
+**AI:** Google Gemini 2.5 Flash, Pollinations.ai for image generation, KaTeX for LaTeX rendering
+
+**Backend:** Express.js, Firebase Authentication, Firebase Firestore, Railway hosting
+
+**Export:** docx library, pptxgenjs, html-pdf-node
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 FREE TO USE
+
+**Guest Users:** 3 free document generations (no account required)
+**Registered Users:** 5 free document generations
+**Members:** Unlimited generations with weekly, monthly, or yearly plans
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 WHO IS IT FOR?
+
+• University students preparing coursework, lab reports, and research papers
+• Graduate researchers working on thesis documents and conference submissions
+• Professors and lecturers preparing publications and grant proposals
+• Engineers and technical writers in corporate environments
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 PRIVACY FIRST
+
+• No document storage on servers—content generates in real-time
+• Uploaded files are processed temporarily and deleted immediately
+• Minimal data collection for authentication and usage tracking only
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌐 TRY IT NOW
+
+**Live Platform:** https://academicgen.com
+
+**Source Code:** https://github.com/henockhnk092-dot/Academic-Document-Generator
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Academic writing will always require human insight, critical thinking, and scholarly expertise. AcademicGen simply removes the formatting burden, allowing your expertise to shine through in well-presented, professionally formatted documents.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+#AI #AcademicWriting #EdTech #HigherEducation #Research #ThesisWriting #TechnicalWriting #DocumentAutomation #GoogleGemini #React #TypeScript #OpenSource #StudentLife #GradSchool #PhD #Masters #Engineering #Science #University #Productivity
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**About the Developer**
+
+HNK - Computer Engineer based in Cape Town, South Africa. Expertise spans software development, scientific computing, network infrastructure, electronics, and embedded systems.
+
+🐦 Twitter/X: @HnkHorizon
+📺 YouTube: @HNK2005
+🎵 TikTok: @codingfever
+💻 GitHub: github.com/henockhnk092-dot

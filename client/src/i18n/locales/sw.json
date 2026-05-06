@@ -1,0 +1,57 @@
+﻿{
+    "nav":  {
+                "home":  "Nyumbani",
+                "myProjects":  "Miradi Yangu",
+                "templates":  "Mifano",
+                "aiAssistant":  "Msaidizi wa AI",
+                "analytics":  "Takwimu",
+                "myTemplates":  "Templeti Zangu"
+            },
+    "generators":  {
+                       "label":  "Vizalishi vya Nyaraka",
+                       "technicalReport":  "Ripoti ya Kiufundi",
+                       "customReport":  "Ripoti Maalum",
+                       "powerpoint":  "Uwasilishaji",
+                       "conferencePaper":  "Makala ya Mkutano",
+                       "thesis":  "Tasnifu",
+                       "aiImages":  "Picha za AI",
+                       "references":  "Marejeo",
+                       "aiHumanizer":  "Uhunaji wa AI",
+                       "citationChecker":  "Kikagua Manukuu"
+                   },
+    "subscription":  {
+                         "label":  "Usajili",
+                         "pricingPlans":  "Bei na Mipango"
+                     },
+    "support":  {
+                    "label":  "Msaada",
+                    "about":  "Kuhusu",
+                    "contact":  "Wasiliana",
+                    "settings":  "Mipangilio"
+                },
+    "auth":  {
+                 "signIn":  "Ingia / Jisajili",
+                 "signOut":  "Toka"
+             },
+    "home":  {
+                 "badge":  "Inayotumia Google Gemini 2.5 Flash",
+                 "title1":  "Kizalishi cha Nyaraka",
+                 "title2":  "za Kisayansi kwa AI",
+                 "subtitle":  "Unda ripoti za kitaalamu, uwasilishaji, makala za mkutano, na tasnifu. Fanya maandishi ya AI kuwa ya kibinadamu, thibitisha manukuu, na tengeneza picha — yote mahali pamoja.",
+                 "myProjects":  "Miradi Yangu",
+                 "getStarted":  "Anza",
+                 "stats":  {
+                               "tools":  "Zana za AI",
+                               "templates":  "Mifano ya Mada",
+                               "formats":  "Miundo ya Usafirishaji",
+                               "citations":  "Mitindo ya Manukuu"
+                           }
+             },
+    "common":  {
+                   "generate":  "Zalisha",
+                   "loading":  "Inapakia...",
+                   "save":  "Hifadhi",
+                   "cancel":  "Ghairi",
+                   "language":  "Lugha"
+               }
+}

@@ -1,0 +1,104 @@
+Here is a breakdown of the pricing strategy calculations to maximize conversion, along with the logic flow for managing the user attempts (Guest vs. Logged In).
+
+### 1\. The Pricing Calculations
+
+To make the subscriptions attractive, we need to use "Anchor Pricing." The Weekly price anchors the value, making the Monthly and Yearly options look like "steals."
+
+Here are my recommendations to fill in your blanks:
+
+  * **Weekly:** $3.00
+  * **Monthly:** $10.00
+      * *Math:* $3 x 4 weeks = $12. By charging $10, the user saves \~17%.
+  * **Yearly:** **$90.00 to $99.00**
+      * *Math:* $10 x 12 months = $120.
+      * *Strategy:* Offer it at **$99**. This gives the user essentially "2 months free" compared to the monthly plan. It is a standard industry discount (approx. 20% off).
+  * **Customize (1 Day Pass):** **$1.00**
+      * *Math:* A weekly pass is $3 (approx $0.42/day).
+      * *Strategy:* You must charge a premium for a single day to encourage the Weekly upgrade. Also, payment processors (like Stripe) often have a fixed fee (e.g., $0.30 + 2.9%). If you charge less than $1.00, the fees will eat all your profit.
+
+-----
+
+### 2\. The User Flow Logic
+
+Here is how to handle the logic to ensure users don't cheat the system easily while keeping the experience smooth.
+
+#### Phase A: The Guest (No Login)
+
+We use **Local Storage** to track this.
+
+1.  User lands on the page.
+2.  Check `localStorage.getItem('guest_attempts')`.
+3.  If `null`, set to `0`.
+4.  **Action:** User clicks "Generate".
+5.  **Check:** If `guest_attempts < 3`:
+      * Allow generation.
+      * Increment count: `guest_attempts + 1`.
+6.  **Check:** If `guest_attempts >= 3`:
+      * **Stop.** Trigger Modal: *"You have used your 3 guest credits. Please Log In or Sign Up to get 5 more free credits\!"*
+
+#### Phase B: The Registered User (Free Tier)
+
+We use the **Database** to track this (so clearing browser cache doesn't reset it).
+
+1.  User Logs in.
+2.  **Check:** Look at the User Document in the database (e.g., `user.credits`).
+3.  **On First Sign-up:** Set `user.credits = 5` (or set `usage_count = 0` and `limit = 5`).
+4.  **Action:** User clicks "Generate".
+5.  **Check:** If `usage_count < 5`:
+      * Allow generation.
+      * Update Database: `usage_count + 1`.
+6.  **Check:** If `usage_count >= 5`:
+      * **Stop.** Trigger Pricing Modal.
+
+-----
+
+### 3\. Database Schema Idea
+
+To handle this effectively (assuming a NoSQL structure like Firebase or MongoDB), your user object should look something like this:
+
+```json
+{
+  "uid": "user_123",
+  "email": "user@example.com",
+  "subscriptionStatus": "free", // or 'active', 'expired'
+  "subscriptionType": null, // 'weekly', 'monthly', 'yearly', 'day_pass'
+  "subscriptionExpiry": null, // Timestamp
+  "usage": {
+    "free_attempts_used": 0,
+    "max_free_attempts": 5
+  }
+}
+```
+
+### 4\. Algorithm for the "Generate" Button
+
+When the user clicks the button, run this exact check:
+
+1.  **Is User Logged In?**
+      * **NO:**
+          * Check LocalStorage count.
+          * If count \< 3: Run Function -\> Increment LocalStorage.
+          * If count \>= 3: **Show Login Modal.**
+      * **YES:**
+          * Check Database Subscription Status.
+          * **Is Subscription Active?** (Expiry Date \> Current Date)
+              * **YES:** Run Function (Unlimited).
+              * **NO:**
+                  * Check Database `free_attempts_used`.
+                  * If `used` \< `max` (5): Run Function -\> Increment DB Count.
+                  * If `used` \>= `max`: **Show Payment/Subscription Modal.**
+
+### 5\. Summary of Prices
+
+Here is the final table for your pricing UI:
+
+| Plan | Price | Value Proposition |
+| :--- | :--- | :--- |
+| **Day Pass** | **$1.00** | Perfect for a quick, one-time project. |
+| **Weekly** | **$3.00** | Great for short-term sprints. |
+| **Monthly** | **$10.00** | Save ~17% vs Weekly. Most popular. |
+| **Yearly** | **$99.00** | **Best Value.** Get 2 months free. |
+
+-----
+
+**Would you like me to write the React/JavaScript code snippet to handle this logic check?**

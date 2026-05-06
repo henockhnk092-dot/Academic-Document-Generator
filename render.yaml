@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: academicgen
+    runtime: node
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BMC_USERNAME
+        value: HorizonHNK
