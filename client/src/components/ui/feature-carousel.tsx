@@ -44,7 +44,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
 
         <div className="z-10 flex w-full flex-col items-center text-center space-y-8">
           {/* Title */}
-          <h1 className="font-fredericka text-4xl sm:text-5xl md:text-6xl tracking-tight max-w-4xl">
+          <h1 className="font-playfair text-4xl sm:text-5xl md:text-6xl max-w-4xl">
             {title}
           </h1>
 

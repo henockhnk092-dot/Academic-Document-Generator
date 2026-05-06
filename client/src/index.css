@@ -304,6 +304,14 @@ body {
   font-family: inherit !important;
 }
 
+/* Playfair Display font for hero heading */
+.font-playfair {
+  font-family: "Playfair Display", serif !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  letter-spacing: -0.01em !important;
+}
+
 /* Fredericka the Great font for hero heading */
 .font-fredericka {
   font-family: "Fredericka the Great", serif !important;
