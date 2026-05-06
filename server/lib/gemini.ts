@@ -138,8 +138,28 @@ export async function generateContent(
       config,
     });
 
-    return response.text || "";
-  } catch (error) {
+    const text = response.text;
+
+    // Safety filter or empty response — surface a clear message instead of
+    // letting downstream JSON parsing fail with a cryptic error.
+    if (!text || text.trim() === "") {
+      const candidate = response.candidates?.[0];
+      const reason = candidate?.finishReason;
+      if (reason === "SAFETY" || reason === "BLOCKED") {
+        throw new Error("The AI declined to generate this content due to safety filters. Please rephrase your topic.");
+      }
+      if (reason === "MAX_TOKENS") {
+        throw new Error("The AI response was too long and got cut off. Try a shorter target length.");
+      }
+      throw new Error("The AI returned an empty response. Please try again.");
+    }
+
+    return text;
+  } catch (error: any) {
+    // Re-throw errors we already formatted
+    if (error.message && !error.message.startsWith("Failed to generate content:")) {
+      throw error;
+    }
     console.error("Gemini API error:", error);
     throw new Error(`Failed to generate content: ${error}`);
   }
