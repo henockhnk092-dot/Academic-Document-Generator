@@ -17,7 +17,8 @@
     "aiImages": "AI 이미지",
     "references": "참고문헌",
     "aiHumanizer": "AI 인간화",
-    "citationChecker": "인용 검사기"
+    "citationChecker": "인용 검사기",
+    "templateReport": "템플릿 보고서"
   },
   "subscription": { "label": "구독", "pricingPlans": "요금제 & 플랜" },
   "support": { "label": "지원", "about": "소개", "contact": "문의", "settings": "설정" },
@@ -29,7 +30,8 @@
     "subtitle": "전문적인 보고서, 발표자료, 학회 논문, 학위 논문을 작성하세요. AI 텍스트를 인간화하고, 인용을 검증하며, 이미지를 생성하세요 — 모두 한 곳에서.",
     "myProjects": "내 프로젝트",
     "getStarted": "시작하기",
-    "stats": { "tools": "AI 도구", "templates": "주제 템플릿", "formats": "내보내기 형식", "citations": "인용 스타일" }
+    "stats": { "tools": "AI 도구", "templates": "주제 템플릿", "formats": "내보내기 형식", "citations": "인용 스타일" },
+    "howItWorks": { "title": "사용 방법", "subtitle": "세 가지 간단한 단계로 완전한 학술 문서 생성", "step1Title": "주제 입력", "step1Desc": "주제를 입력하세요 - 재생 에너지 논문, IEEE 논문 또는 학술 주제.", "step2Title": "AI가 즉시 생성", "step2Desc": "Gemini AI가 구조화된 섹션, 인용문 및 이미지 프롬프트를 몇 초 만에 작성합니다.", "step3Title": "다운로드 및 사용", "step3Desc": "PDF, Word, PowerPoint 또는 HTML로 내보내기. 제출 또는 발표 준비 완료." }
   },
   "common": {
     "generate": "생성",

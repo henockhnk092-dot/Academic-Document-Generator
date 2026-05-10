@@ -17,7 +17,8 @@
     "aiImages": "AI ምስሎች",
     "references": "ማጣቀሻዎች",
     "aiHumanizer": "AI ሰብዓዊ ማድረጊያ",
-    "citationChecker": "የጥቅስ ፈታሽ"
+    "citationChecker": "የጥቅስ ፈታሽ",
+    "templateReport": "የቅጥ ሪፖርት"
   },
   "subscription": { "label": "የሂሳብ ምዝገባ", "pricingPlans": "ዋጋዎች እና ዕቅዶች" },
   "support": { "label": "ድጋፍ", "about": "ስለ እኛ", "contact": "አግኙን", "settings": "ቅንብሮች" },
@@ -29,7 +30,8 @@
     "subtitle": "ሙያዊ ሪፖርቶችን፣ ፕሬዘንቴሽኖችን፣ የጉባዔ ጽሑፎችን እና ዲሰርቴሽኖችን ይፍጠሩ። AI ጽሑፍን ሰብዓዊ ያድርጉ፣ ጥቅሶችን ያረጋግጡ እና ምስሎችን ያመንጩ — ሁሉም በአንድ ቦታ።",
     "myProjects": "የእኔ ፕሮጄክቶች",
     "getStarted": "ጀምር",
-    "stats": { "tools": "AI መሳሪያዎች", "templates": "የርዕስ አብነቶች", "formats": "የወጪ ቅርጸቶች", "citations": "የጥቅስ ዘይቤዎች" }
+    "stats": { "tools": "AI መሳሪያዎች", "templates": "የርዕስ አብነቶች", "formats": "የወጪ ቅርጸቶች", "citations": "የጥቅስ ዘይቤዎች" },
+    "howItWorks": { "title": "እንዴት ይሰራል", "subtitle": "በሶስት ቀላል ደረጃዎች ሙሉ ሃሳባዊ ሰነድ ይፍጠሩ", "step1Title": "ርዕስዎን ያስገቡ", "step1Desc": "ርዕስዎን ይተይቡ - ስለ ታዳሽ ኃይል ጽሑፍ ወይም ማንኛውም የሃሳባዊ ርዕስ።", "step2Title": "AI ወዲያውኑ ይፈጥራል", "step2Desc": "Gemini AI በጥቂት ሴኮንዶች ውስጥ ምዕራፎችን፣ ጥቅሶችን እና ምስል ሀሳቦችን ይጽፋል።", "step3Title": "ያውርዱ እና ይጠቀሙ", "step3Desc": "ወደ PDF፣ Word፣ PowerPoint ወይም HTML ይላኩ። ለማስረከብ ዝግጁ።" }
   },
   "common": {
     "generate": "አመንጭ",

@@ -105,7 +105,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] h-[600px] max-h-[80vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-[425px] h-[600px] max-h-[80vh] flex flex-col p-0" aria-describedby={undefined}>
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">

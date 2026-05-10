@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileText, Presentation, GraduationCap, Wand2, FolderOpen, Download, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
@@ -85,11 +85,11 @@ export function OnboardingModal() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">Step {step + 1} of {STEPS.length}</p>
-              <h2 className="text-xl font-bold">{S.title}</h2>
+              <DialogTitle className="text-xl font-bold">{S.title}</DialogTitle>
             </div>
           </div>
 
-          <p className="text-muted-foreground text-sm leading-relaxed">{S.description}</p>
+          <DialogDescription className="text-muted-foreground text-sm leading-relaxed">{S.description}</DialogDescription>
 
           <ul className="space-y-2">
             {S.bullets.map((b, i) => (

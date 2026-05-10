@@ -17,7 +17,8 @@
     "aiImages": "AI 图像",
     "references": "参考文献",
     "aiHumanizer": "AI 人性化",
-    "citationChecker": "引用检查器"
+    "citationChecker": "引用检查器",
+    "templateReport": "模板报告"
   },
   "subscription": { "label": "订阅", "pricingPlans": "价格与计划" },
   "support": { "label": "支持", "about": "关于", "contact": "联系我们", "settings": "设置" },
@@ -29,7 +30,8 @@
     "subtitle": "创建专业报告、演示文稿、会议论文和学位论文。人性化AI文本、验证引用并生成图像——一站式服务。",
     "myProjects": "我的项目",
     "getStarted": "开始使用",
-    "stats": { "tools": "AI 工具", "templates": "主题模板", "formats": "导出格式", "citations": "引用样式" }
+    "stats": { "tools": "AI 工具", "templates": "主题模板", "formats": "导出格式", "citations": "引用样式" },
+    "howItWorks": { "title": "如何使用", "subtitle": "三个简单步骤生成完整的学术文档", "step1Title": "输入您的主题", "step1Desc": "输入您的主题 - 关于可再生能源的论文、IEEE论文，或任何学术主题。", "step2Title": "AI即时生成", "step2Desc": "Gemini AI在几秒钟内撰写结构化章节、引用和图片提示。", "step3Title": "下载并使用", "step3Desc": "导出为PDF、Word、PowerPoint或HTML。随时可供提交或演示。" }
   },
   "common": {
     "generate": "生成",

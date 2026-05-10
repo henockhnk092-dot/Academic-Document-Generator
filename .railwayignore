@@ -1,4 +1,5 @@
 node_modules
+electron
 electron-dist
 android
 ios
@@ -19,4 +20,14 @@ replit.nix
 .upm
 attached_assets
 .local
+.config
 MultiDocUI_backup*
+*.log
+design_guidelines.md
+github-readme.txt
+linkedin-article.txt
+linkedin_article.txt
+linkedin_post.txt
+replit.md
+*.md
+railway.exe

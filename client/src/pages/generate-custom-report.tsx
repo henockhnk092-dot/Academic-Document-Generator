@@ -833,7 +833,7 @@ export default function GenerateCustomReport() {
                   <label htmlFor="file-upload" className="cursor-pointer">
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      Upload text, images, PDFs, or Word files
+                      Upload reference text, images, PDFs, or Word files
                     </p>
                   </label>
                 </div>

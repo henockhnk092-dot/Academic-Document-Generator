@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Home, FolderOpen, FileText, Presentation, BookOpen, BookMarked,
   GraduationCap, Sparkles, Info, Mail, Settings, LogIn, LogOut, User,
-  Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star,
+  Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star, LayoutTemplate,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
@@ -40,7 +40,8 @@ export function AppSidebar() {
 
   const generatorItems = [
     { titleKey: "generators.technicalReport",  url: "/generate/report",        icon: FileText,      descKey: "BET-standard format" },
-    { titleKey: "generators.customReport",     url: "/generate/custom-report", icon: FileSignature, descKey: "Full customization" },
+    { titleKey: "generators.customReport",     url: "/generate/custom-report",   icon: FileSignature,  descKey: "Full customization" },
+    { titleKey: "generators.templateReport",   url: "/generate/template-report", icon: LayoutTemplate, descKey: "Upload your template" },
     { titleKey: "generators.powerpoint",       url: "/generate/powerpoint",    icon: Presentation,  descKey: "Professional slides" },
     { titleKey: "generators.conferencePaper",  url: "/generate/conference",    icon: BookOpen,      descKey: "IEEE format" },
     { titleKey: "generators.thesis",           url: "/generate/thesis",        icon: GraduationCap, descKey: "Complete thesis" },

@@ -17,7 +17,8 @@
     "aiImages": "AI Images",
     "references": "References",
     "aiHumanizer": "AI Humanizer",
-    "citationChecker": "Citation Checker"
+    "citationChecker": "Citation Checker",
+    "templateReport": "Template Report"
   },
   "subscription": { "label": "Subscription", "pricingPlans": "Pricing & Plans" },
   "support": { "label": "Support", "about": "About", "contact": "Contact", "settings": "Settings" },
@@ -29,7 +30,17 @@
     "subtitle": "Create professional reports, presentations, conference papers, and theses. Humanize AI text, verify citations, and generate images — all in one place.",
     "myProjects": "My Projects",
     "getStarted": "Get Started",
-    "stats": { "tools": "AI Tools", "templates": "Topic Templates", "formats": "Export Formats", "citations": "Citation Styles" }
+    "stats": { "tools": "AI Tools", "templates": "Topic Templates", "formats": "Export Formats", "citations": "Citation Styles" },
+    "howItWorks": {
+      "title": "How it works",
+      "subtitle": "Generate a full academic document in three simple steps",
+      "step1Title": "Enter your topic",
+      "step1Desc": "Type your subject — a thesis on renewable energy, an IEEE paper on deep learning, or any academic topic.",
+      "step2Title": "AI generates instantly",
+      "step2Desc": "Gemini AI writes structured sections, citations, and image prompts in seconds.",
+      "step3Title": "Download and use",
+      "step3Desc": "Export to PDF, Word, PowerPoint, or HTML. Ready for submission or presentation."
+    }
   },
   "common": {
     "generate": "Generate",

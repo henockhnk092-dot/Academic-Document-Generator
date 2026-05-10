@@ -17,7 +17,8 @@
     "aiImages": "Picha za AI",
     "references": "Marejeo",
     "aiHumanizer": "Uhunaji wa AI",
-    "citationChecker": "Kikagua Manukuu"
+    "citationChecker": "Kikagua Manukuu",
+    "templateReport": "Ripoti ya Kiolezo"
   },
   "subscription": { "label": "Usajili", "pricingPlans": "Bei & Mipango" },
   "support": { "label": "Msaada", "about": "Kuhusu", "contact": "Wasiliana", "settings": "Mipangilio" },
@@ -29,7 +30,8 @@
     "subtitle": "Unda ripoti za kitaalamu, uwasilishaji, makala za mkutano, na tasnifu. Fanya maandishi ya AI kuwa ya kibinadamu, thibitisha manukuu, na tengeneza picha — yote mahali pamoja.",
     "myProjects": "Miradi Yangu",
     "getStarted": "Anza",
-    "stats": { "tools": "Zana za AI", "templates": "Mifano ya Mada", "formats": "Miundo ya Usafirishaji", "citations": "Mitindo ya Manukuu" }
+    "stats": { "tools": "Zana za AI", "templates": "Mifano ya Mada", "formats": "Miundo ya Usafirishaji", "citations": "Mitindo ya Manukuu" },
+    "howItWorks": { "title": "Jinsi inavyofanya kazi", "subtitle": "Tengeneza hati kamili ya kitaaluma katika hatua tatu rahisi", "step1Title": "Ingiza mada yako", "step1Desc": "Andika mada yako - tasnifu kuhusu nishati mbadala, karatasi ya IEEE, au mada yoyote ya kitaaluma.", "step2Title": "AI inazalisha mara moja", "step2Desc": "Gemini AI inaandika sehemu zilizopangwa, nukuu, na mapendekezo ya picha kwa sekunde.", "step3Title": "Pakua na utumie", "step3Desc": "Hamisha kwenye PDF, Word, PowerPoint, au HTML. Tayari kwa uwasilishaji." }
   },
   "common": {
     "generate": "Zalisha",

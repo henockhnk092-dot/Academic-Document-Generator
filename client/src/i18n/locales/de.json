@@ -17,7 +17,8 @@
     "aiImages": "KI-Bilder",
     "references": "Referenzen",
     "aiHumanizer": "KI-Humanisierer",
-    "citationChecker": "Zitatprüfer"
+    "citationChecker": "Zitatprüfer",
+    "templateReport": "Vorlagenbericht"
   },
   "subscription": { "label": "Abonnement", "pricingPlans": "Preise & Pläne" },
   "support": { "label": "Support", "about": "Über uns", "contact": "Kontakt", "settings": "Einstellungen" },
@@ -29,7 +30,8 @@
     "subtitle": "Erstellen Sie professionelle Berichte, Präsentationen, Konferenzbeiträge und Dissertationen. Humanisieren Sie KI-Text, überprüfen Sie Zitate und generieren Sie Bilder — alles an einem Ort.",
     "myProjects": "Meine Projekte",
     "getStarted": "Loslegen",
-    "stats": { "tools": "KI-Tools", "templates": "Themenvorlagen", "formats": "Exportformate", "citations": "Zitierstile" }
+    "stats": { "tools": "KI-Tools", "templates": "Themenvorlagen", "formats": "Exportformate", "citations": "Zitierstile" },
+    "howItWorks": { "title": "So funktioniert es", "subtitle": "Erstelle ein vollstandiges akademisches Dokument in drei einfachen Schritten", "step1Title": "Thema eingeben", "step1Desc": "Gib dein Thema ein - eine Thesis uber erneuerbare Energien, ein IEEE-Paper oder ein beliebiges akademisches Thema.", "step2Title": "KI generiert sofort", "step2Desc": "Gemini KI schreibt strukturierte Abschnitte, Zitate und Bildvorschlage in Sekunden.", "step3Title": "Herunterladen und nutzen", "step3Desc": "Exportiere als PDF, Word, PowerPoint oder HTML. Bereit fur Einreichung oder Prasentation." }
   },
   "common": {
     "generate": "Generieren",

@@ -17,7 +17,8 @@
     "aiImages": "AI画像",
     "references": "参考文献",
     "aiHumanizer": "AIヒューマナイザー",
-    "citationChecker": "引用チェッカー"
+    "citationChecker": "引用チェッカー",
+    "templateReport": "テンプレートレポート"
   },
   "subscription": { "label": "サブスクリプション", "pricingPlans": "料金プラン" },
   "support": { "label": "サポート", "about": "について", "contact": "お問い合わせ", "settings": "設定" },
@@ -29,7 +30,8 @@
     "subtitle": "専門的なレポート、プレゼンテーション、学会論文、学位論文を作成。AIテキストを人間らしくし、引用を検証し、画像を生成 — すべて一か所で。",
     "myProjects": "マイプロジェクト",
     "getStarted": "始める",
-    "stats": { "tools": "AIツール", "templates": "トピックテンプレート", "formats": "エクスポート形式", "citations": "引用スタイル" }
+    "stats": { "tools": "AIツール", "templates": "トピックテンプレート", "formats": "エクスポート形式", "citations": "引用スタイル" },
+    "howItWorks": { "title": "使い方", "subtitle": "3つの簡単なステップで学術文書を作成", "step1Title": "トピックを入力", "step1Desc": "テーマを入力してください - 再生可能エネルギーに関する論文、IEEEペーパー、その他の学術トピック。", "step2Title": "AIが即座に生成", "step2Desc": "Gemini AIが構造化されたセクション、引用、画像プロンプトを数秒で作成します。", "step3Title": "ダウンロードして使用", "step3Desc": "PDF、Word、PowerPoint、HTMLにエクスポート。提出やプレゼンにすぐ使えます。" }
   },
   "common": {
     "generate": "生成",

@@ -72,6 +72,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/generate/template-report", async (req, res) => {
+    try {
+      const { templateContent, topic, guidelines, tone = "academic", citationStyle = "auto", targetLength = "auto" } = req.body;
+      if (!templateContent && !topic && !guidelines) return res.status(400).json({ error: "Provide a template, topic, or guidelines to generate a report" });
+
+      const pageCount = targetLength === "auto" ? "5-8" : (targetLength.split("-")[0] || "5");
+
+      const prompt = `You are an expert academic document writer. Generate a complete, high-quality academic report.
+
+${templateContent ? `TEMPLATE TO FOLLOW:
+The user provided this template document. Preserve its exact section headings and overall structure. Fill every section with detailed, relevant academic content.
+---
+${templateContent.slice(0, 5000)}
+---
+` : ""}
+REPORT TOPIC: ${topic || (guidelines ? "Inferred from guidelines" : "Inferred from template")}
+${guidelines ? `AUTHOR GUIDELINES & REQUIREMENTS:\n${guidelines}\n` : ""}
+TONE: ${tone}
+CITATION STYLE: ${citationStyle === "auto" ? "appropriate academic style" : citationStyle.toUpperCase()}
+TARGET LENGTH: approximately ${pageCount} pages
+
+RULES:
+- Preserve every section heading from the template exactly as written
+- Write comprehensive, detailed content for every section (no placeholders)
+- Use markdown: ### for sub-headings, ** for bold, - for lists, markdown tables
+- Include in-text citations and a References section
+- All tables must have proper headers and real data (no placeholder dashes)
+
+OUTPUT — return ONLY valid JSON, no markdown wrapper:
+{
+  "title": "Full Document Title",
+  "date": "May 2026",
+  "abstract": "150-word executive summary",
+  "sections": [
+    {
+      "heading": "Section Heading",
+      "content": "Full markdown content...",
+      "image_prompt": "descriptive search query for a relevant academic image (e.g. 'neural network diagram', 'solar panel installation')",
+      "image_caption": "Figure 1: Descriptive caption for the figure"
+    }
+  ],
+  "references": ["[1] Author, A. (Year). Title. Journal, vol(issue), pages."]
+}`;
+
+      const raw = await generateContent(prompt, {
+        systemInstruction: "You are an expert academic writer. Return only valid JSON.",
+        temperature: 0.65,
+        maxTokens: 16384,
+        responseFormat: "json",
+      });
+
+      // Strip bare control characters (0x00-0x1F except tab/newline/CR) that invalidate JSON
+      const sanitized = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+      let content;
+      try {
+        content = JSON.parse(sanitized);
+      } catch {
+        const m = sanitized.match(/\{[\s\S]*\}/);
+        if (m) {
+          try { content = JSON.parse(m[0]); }
+          catch { throw new Error("Failed to parse AI response as JSON"); }
+        } else {
+          throw new Error("Failed to parse AI response as JSON");
+        }
+      }
+
+      res.json({ success: true, content });
+    } catch (error: any) {
+      console.error("Template report generation error:", error);
+      res.status(500).json({ error: error.message || "Failed to generate template report" });
+    }
+  });
+
   app.post("/api/generate/report", async (req, res) => {
     try {
       const { topic, targetLength, tone, generateImages, language } = req.body;
@@ -1616,7 +1689,9 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
 
   // ── Admin Config Routes ─────────────────────────────────────────────────────
   const ADMIN_EMAILS_SERVER = ["henockhnk092@gmail.com", "admin@test.com"];
-  const ADMIN_TOKEN = process.env.ADMIN_SECRET_TOKEN || "hnk-admin-2026";
+  const ADMIN_TOKEN = process.env.ADMIN_SECRET_TOKEN;
+  const ADMIN_TOKEN_FALLBACK = process.env.NODE_ENV !== "production" ? "hnk-admin-2026" : null;
+  const EFFECTIVE_ADMIN_TOKEN = ADMIN_TOKEN || ADMIN_TOKEN_FALLBACK;
 
   // Keys exposed to admin (display names + env var names)
   const MANAGED_KEYS = [
@@ -1631,8 +1706,9 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
   ];
 
   function isAdminRequest(req: any): boolean {
+    if (!EFFECTIVE_ADMIN_TOKEN) return false;
     const token = req.headers["x-admin-token"] as string;
-    return token === ADMIN_TOKEN;
+    return !!(token && token === EFFECTIVE_ADMIN_TOKEN);
   }
 
   function maskValue(val: string | undefined): string {

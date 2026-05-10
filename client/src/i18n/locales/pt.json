@@ -17,7 +17,8 @@
     "aiImages": "Imagens IA",
     "references": "Referências",
     "aiHumanizer": "Humanizador IA",
-    "citationChecker": "Verificador de Citações"
+    "citationChecker": "Verificador de Citações",
+    "templateReport": "Relatório por Modelo"
   },
   "subscription": { "label": "Assinatura", "pricingPlans": "Preços & Planos" },
   "support": { "label": "Suporte", "about": "Sobre", "contact": "Contato", "settings": "Configurações" },
@@ -29,7 +30,8 @@
     "subtitle": "Crie relatórios profissionais, apresentações, artigos de conferência e teses. Humanize texto de IA, verifique citações e gere imagens — tudo em um só lugar.",
     "myProjects": "Meus Projetos",
     "getStarted": "Começar",
-    "stats": { "tools": "Ferramentas IA", "templates": "Modelos de Tópicos", "formats": "Formatos de Exportação", "citations": "Estilos de Citação" }
+    "stats": { "tools": "Ferramentas IA", "templates": "Modelos de Tópicos", "formats": "Formatos de Exportação", "citations": "Estilos de Citação" },
+    "howItWorks": { "title": "Como funciona", "subtitle": "Gere um documento academico completo em tres passos simples", "step1Title": "Insira o seu tema", "step1Desc": "Digite o seu assunto - uma tese sobre energia renovavel, um artigo IEEE ou qualquer tema academico.", "step2Title": "A IA gera instantaneamente", "step2Desc": "A IA Gemini redige secoes estruturadas, citacoes e sugestoes de imagens em segundos.", "step3Title": "Baixe e use", "step3Desc": "Exporte para PDF, Word, PowerPoint ou HTML. Pronto para submissao ou apresentacao." }
   },
   "common": {
     "generate": "Gerar",
