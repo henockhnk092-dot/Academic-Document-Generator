@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, FileCode, Printer, Cloud, Loader2, Volume2, FileText } from "lucide-react";
+import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, FileCode, Printer, Cloud, Loader2, FileText, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { UsageGate } from "@/components/usage-gate";
 import { useDocumentGenerator } from "@/hooks/use-document-generator";
+import { useCtrlEnter } from "@/hooks/use-ctrl-enter";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useToast } from "@/hooks/use-toast";
@@ -34,10 +37,10 @@ interface Author {
 
 export default function GenerateConference() {
   const { t } = useTranslation();
-  const [topic, setTopic] = useState("");
-  const [targetPages, setTargetPages] = useState("auto");
-  const [tone, setTone] = useState<ToneType>("academic");
-  const [citationStyle, setCitationStyle] = useState("ieee");
+  const [topic, setTopic] = usePersistedState("conf_form_topic", "");
+  const [targetPages, setTargetPages] = usePersistedState("conf_form_pages", "auto");
+  const [tone, setTone] = usePersistedState<ToneType>("conf_form_tone", "academic");
+  const [citationStyle, setCitationStyle] = usePersistedState("conf_form_citation", "ieee");
   const [generateImages, setGenerateImages] = useState(true);
   const [sectionImageUrls, setSectionImageUrls] = useState<Record<number, string>>({});
 
@@ -58,13 +61,15 @@ export default function GenerateConference() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const generateButtonRef = useRef<HTMLButtonElement>(null);
 
   const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("conference");
+  useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating || isSubmitting);
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
   const { uploadedFiles, isProcessing, extractedText, handleFileUpload, removeFile } = useFileUpload();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   // TTS hook for reading document aloud (high-quality Gemini TTS)
   const tts = useGeminiTTS({ tone });
@@ -550,6 +555,18 @@ export default function GenerateConference() {
   const htmlContent = getHtmlContent();
   const hasContent = htmlContent.length > 0;
 
+  const handleHumanize = () => {
+    if (!hasContent || !generatedContent) return;
+    storeForHumanizer(generatedContent);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!hasContent || !generatedContent) return;
+    storeForCitations(generatedContent);
+    navigate("/citations");
+  };
+
   return (
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
@@ -905,6 +922,7 @@ export default function GenerateConference() {
                 <Button
                   className="w-full"
                   size="lg"
+                  ref={generateButtonRef}
                   disabled={!topic?.trim() || isGenerating || isProcessing || isSubmitting}
                   onClick={() => handleGenerate(checkUsage)}
                   data-testid="button-generate-conference"
@@ -921,6 +939,11 @@ export default function GenerateConference() {
                     </>
                   )}
                 </Button>
+                {!isGenerating && !isSubmitting && (
+                  <p className="text-xs text-center text-muted-foreground mt-1 no-print">
+                    Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -970,6 +993,28 @@ export default function GenerateConference() {
                     )}
                     {isSaving ? t("common.saving") : t("common.save")}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleHumanize}
+                    disabled={!hasContent}
+                    title="Send to AI Humanizer"
+                    aria-label="Send to AI Humanizer"
+                  >
+                    <Wand2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Humanize</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCitationCheck}
+                    disabled={!hasContent}
+                    title="Check Citations"
+                    aria-label="Check Citations"
+                  >
+                    <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Check Citations</span>
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" disabled={!hasContent} data-testid="button-export-menu">
@@ -997,7 +1042,7 @@ export default function GenerateConference() {
             </CardHeader>
             <CardContent>
               {isGenerating && (
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating conference paper: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
                     {progress < 50 ? "Generating IEEE-formatted conference paper..." :

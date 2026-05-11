@@ -22,7 +22,8 @@ import {
   Library,
   Wand2,
   BookMarked,
-  Volume2
+  Volume2,
+  Cpu
 } from "lucide-react";
 import { SiGithub, SiYoutube, SiTiktok } from "react-icons/si";
 import { FaXTwitter } from "react-icons/fa6";
@@ -248,6 +249,26 @@ export default function About() {
             <p className="text-muted-foreground leading-relaxed">
               {t("pages.about.authorBio")}
             </p>
+            <div className="p-4 border rounded-lg bg-primary/5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-primary" />
+                <span className="font-medium">Bridge Hardware and Software Logic</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Tech consulting and development services — from embedded systems to full-stack web applications.
+              </p>
+              <Button variant="default" asChild data-testid="link-book-services">
+                <a
+                  href="https://hnk-your-tech-solutions.hnk-tech.workers.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Book My Services
+                </a>
+              </Button>
+            </div>
             <div className="flex items-center gap-4 flex-wrap pt-2">
               <Button variant="outline" asChild data-testid="link-github-repo">
                 <a

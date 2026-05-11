@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /projects
+Disallow: /my-templates
+Disallow: /analytics
+Disallow: /settings
+Disallow: /checkout/
+Disallow: /api/
 
 Sitemap: https://academicgen.com/sitemap.xml

@@ -9,10 +9,11 @@ import {
   Mail,
   Send,
   MessageCircle,
-  Loader2
+  Loader2,
+  ExternalLink,
+  Cpu
 } from "lucide-react";
-import { SiGithub, SiDiscord, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
-import { FaXTwitter } from "react-icons/fa6";
+import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
 import { useTranslation } from "react-i18next";
 
 export default function Contact() {
@@ -71,8 +72,6 @@ export default function Contact() {
 
   const socialLinks = [
     { icon: SiGithub, label: "GitHub", href: "https://github.com/henockhnk092-dot/Academic-Document-Generator", username: "henockhnk092-dot" },
-    { icon: FaXTwitter, label: "Twitter", href: "https://twitter.com/HnkHorizon", username: "@HnkHorizon" },
-    { icon: SiDiscord, label: "Discord", href: "#", username: "hnk0422_76455" },
     { icon: SiYoutube, label: "YouTube", href: "https://youtube.com/@HNK2005", username: "@HNK2005" },
     { icon: SiTiktok, label: "TikTok", href: "https://tiktok.com/@codingfever", username: "@codingfever" },
     { icon: SiInstagram, label: "Instagram", href: "https://instagram.com/hhnk.3693", username: "@hhnk.3693" },
@@ -229,6 +228,34 @@ export default function Contact() {
                     </div>
                   </a>
                 ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5" />
+                  About the Author
+                </CardTitle>
+                <CardDescription>
+                  Bridge Hardware and Software Logic
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  I offer tech consulting and development services that bridge the gap between hardware and software — from embedded systems to full-stack web applications.
+                </p>
+                <a
+                  href="https://hnk-your-tech-solutions.hnk-tech.workers.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 w-full justify-center"
+                >
+                  <Button className="w-full" variant="outline">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Book My Services
+                  </Button>
+                </a>
               </CardContent>
             </Card>
 

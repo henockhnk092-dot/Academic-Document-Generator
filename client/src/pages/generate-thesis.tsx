@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, Volume2, FileText } from "lucide-react";
+import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentGenerator } from "@/hooks/use-document-generator";
+import { useCtrlEnter } from "@/hooks/use-ctrl-enter";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useToast } from "@/hooks/use-toast";
@@ -30,10 +32,10 @@ import type { ToneType } from "@shared/schema";
 
 export default function GenerateThesis() {
   const { t } = useTranslation();
-  const [topic, setTopic] = useState("");
-  const [targetLength, setTargetLength] = useState("auto");
-  const [tone, setTone] = useState<ToneType>("academic");
-  const [citationStyle, setCitationStyle] = useState("auto");
+  const [topic, setTopic] = usePersistedState("thesis_form_topic", "");
+  const [targetLength, setTargetLength] = usePersistedState("thesis_form_length", "auto");
+  const [tone, setTone] = usePersistedState<ToneType>("thesis_form_tone", "academic");
+  const [citationStyle, setCitationStyle] = usePersistedState("thesis_form_citation", "auto");
   const [generateImages, setGenerateImages] = useState(true);
   const [sectionImageUrls, setSectionImageUrls] = usePersistedState<Record<number, string>>("thesis_image_urls", {});
   
@@ -44,7 +46,10 @@ export default function GenerateThesis() {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const generateButtonRef = useRef<HTMLButtonElement>(null);
+
+  useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating || isSubmitting);
 
   // TTS hook for reading document aloud (high-quality Gemini TTS)
   const tts = useGeminiTTS({ tone });
@@ -99,8 +104,9 @@ export default function GenerateThesis() {
         return;
       }
 
-      // Reset image URLs when generating new report
+      // Reset image URLs when generating new thesis (clear state + localStorage directly)
       setSectionImageUrls({});
+      localStorage.removeItem("thesis_image_urls");
 
       const finalTopic = extractedText ? `${topic}\n\nAdditional Context:\n${extractedText}` : topic;
       generate({
@@ -487,6 +493,18 @@ export default function GenerateThesis() {
     }
   };
 
+  const handleHumanize = () => {
+    if (!generatedContent) return;
+    storeForHumanizer(generatedContent);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!generatedContent) return;
+    storeForCitations(generatedContent);
+    navigate("/citations");
+  };
+
   return (
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
@@ -642,6 +660,7 @@ export default function GenerateThesis() {
                   </div>
                 )}
                 <Button
+                  ref={generateButtonRef}
                   className="w-full"
                   size="lg"
                   disabled={!topic?.trim() || isGenerating || isProcessing || isSubmitting}
@@ -657,6 +676,11 @@ export default function GenerateThesis() {
                     </>
                   )}
                 </Button>
+                {!isGenerating && !isSubmitting && (
+                  <p className="text-xs text-center text-muted-foreground mt-1 no-print">
+                    Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -726,6 +750,28 @@ export default function GenerateThesis() {
                     <Cloud className="w-4 h-4 mr-2" />
                     {isSaving ? t("common.saving") : t("common.save")}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleHumanize}
+                    disabled={!generatedContent}
+                    title="Send to AI Humanizer"
+                    aria-label="Send to AI Humanizer"
+                  >
+                    <Wand2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Humanize</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCitationCheck}
+                    disabled={!generatedContent}
+                    title="Check Citations"
+                    aria-label="Check Citations"
+                  >
+                    <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Check Citations</span>
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" data-testid="button-export-menu">
@@ -757,7 +803,7 @@ export default function GenerateThesis() {
             </CardHeader>
             <CardContent>
               {isGenerating && (
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating thesis: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
                     Generating content with AI...

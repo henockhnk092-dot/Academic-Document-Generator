@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, Volume2, Clipboard, RefreshCw } from "lucide-react";
+import { FileText, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, Clipboard, RefreshCw, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useDocumentGenerator } from "@/hooks/use-document-generator";
 import { usePersistedState } from "@/hooks/use-persisted-state";
+import { useCtrlEnter } from "@/hooks/use-ctrl-enter";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useToast } from "@/hooks/use-toast";
@@ -30,10 +33,10 @@ import type { ToneType } from "@shared/schema";
 
 export default function GenerateReport() {
   const { t } = useTranslation();
-  const [topic, setTopic] = useState("");
-  const [targetLength, setTargetLength] = useState("auto");
-  const [tone, setTone] = useState<ToneType>("academic");
-  const [citationStyle, setCitationStyle] = useState("auto");
+  const [topic, setTopic] = usePersistedState("report_form_topic", "");
+  const [targetLength, setTargetLength] = usePersistedState("report_form_length", "auto");
+  const [tone, setTone] = usePersistedState<ToneType>("report_form_tone", "academic");
+  const [citationStyle, setCitationStyle] = usePersistedState("report_form_citation", "auto");
   const [generateImages, setGenerateImages] = useState(true);
   const [sectionImageUrls, setSectionImageUrls] = usePersistedState<Record<number, string>>("report_section_images", {});
   
@@ -43,9 +46,15 @@ export default function GenerateReport() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [regeneratingSections, setRegeneratingSections] = useState<Set<number>>(new Set());
-  const [location] = useLocation();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const pendingCheckUsage = useRef<(() => Promise<boolean>) | null>(null);
+  const [location, navigate] = useLocation();
+  const generateButtonRef = useRef<HTMLButtonElement>(null);
+
+  useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating || isSubmitting);
 
   // TTS hook for reading document aloud (high-quality Gemini TTS)
   const tts = useGeminiTTS({ tone });
@@ -66,6 +75,11 @@ export default function GenerateReport() {
       }
     }
   }, [location]);
+
+  // Reset saved flag when new content is generated
+  useEffect(() => {
+    if (generatedContent) setIsSaved(false);
+  }, [generatedContent]);
 
   // Fetch images client-side when report is generated (like PowerPoint does)
   useEffect(() => {
@@ -91,6 +105,14 @@ export default function GenerateReport() {
   const handleGenerate = async (checkUsage: () => Promise<boolean>) => {
     // Prevent double-clicks by setting submitting state immediately
     if (isSubmitting || isGenerating) return;
+
+    // If content already exists, ask for confirmation before overwriting
+    if (generatedContent) {
+      pendingCheckUsage.current = checkUsage;
+      setShowConfirmDialog(true);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -100,8 +122,9 @@ export default function GenerateReport() {
         return;
       }
 
-      // Reset image URLs when generating new report
+      // Reset image URLs when generating new report (clear state + localStorage directly)
       setSectionImageUrls({});
+      localStorage.removeItem("report_section_images");
 
       const finalTopic = extractedText ? `${topic}\n\nAdditional Context:\n${extractedText}` : topic;
       generate({
@@ -113,6 +136,24 @@ export default function GenerateReport() {
       });
     } finally {
       // Reset submitting state after a short delay to allow isGenerating to take over
+      setTimeout(() => setIsSubmitting(false), 100);
+    }
+  };
+
+  const handleConfirmRegenerate = async () => {
+    setShowConfirmDialog(false);
+    const checkUsage = pendingCheckUsage.current;
+    pendingCheckUsage.current = null;
+    if (!checkUsage) return;
+    setIsSubmitting(true);
+    try {
+      const allowed = await checkUsage();
+      if (!allowed) { setIsSubmitting(false); return; }
+      setSectionImageUrls({});
+      localStorage.removeItem("report_section_images");
+      const finalTopic = extractedText ? `${topic}\n\nAdditional Context:\n${extractedText}` : topic;
+      generate({ topic: finalTopic, targetLength, tone, citationStyle, generateImages });
+    } finally {
       setTimeout(() => setIsSubmitting(false), 100);
     }
   };
@@ -411,10 +452,18 @@ export default function GenerateReport() {
 
   const wordCount = useMemo(() => {
     if (!generatedContent?.sections) return 0;
-    return generatedContent.sections.reduce((acc: number, s: any) => {
-      return acc + (s.content?.split(/\s+/).filter(Boolean).length ?? 0);
-    }, 0);
+    const text = [
+      generatedContent.abstract ?? "",
+      ...generatedContent.sections.map((s: any) => s.content ?? ""),
+    ].join(" ");
+    return text.trim().split(/\s+/).filter(Boolean).length;
   }, [generatedContent]);
+
+  const handleCopySection = (heading: string, content: string) => {
+    navigator.clipboard.writeText(`${heading}\n\n${content}`).then(() => {
+      toast({ title: "Section copied", description: `"${heading}" copied to clipboard.`, duration: 2500 });
+    });
+  };
 
   const handleCopy = () => {
     if (!generatedContent?.sections) return;
@@ -513,6 +562,7 @@ export default function GenerateReport() {
       // Invalidate documents query to refresh Document History
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
+      setIsSaved(true);
       toast({
         title: t("common.save"),
         description: "Your report has been saved successfully",
@@ -529,9 +579,22 @@ export default function GenerateReport() {
     }
   };
 
+  const handleHumanize = () => {
+    if (!generatedContent) return;
+    storeForHumanizer(generatedContent);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!generatedContent) return;
+    storeForCitations(generatedContent);
+    navigate("/citations");
+  };
+
   return (
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
+        <>
         <GeneratorLayout
           title={t("pages.report.title")}
           description={t("pages.report.subtitle")}
@@ -684,6 +747,7 @@ export default function GenerateReport() {
                   </div>
                 )}
                 <Button
+                  ref={generateButtonRef}
                   className="w-full"
                   size="lg"
                   disabled={!topic?.trim() || isGenerating || isProcessing || isSubmitting}
@@ -699,6 +763,11 @@ export default function GenerateReport() {
                     </>
                   )}
                 </Button>
+                {!isGenerating && !isSubmitting && (
+                  <p className="text-xs text-center text-muted-foreground mt-1 no-print">
+                    Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -772,15 +841,45 @@ export default function GenerateReport() {
                   >
                     <Clipboard className="w-4 h-4" />
                   </Button>
+                  <div className="relative">
+                    {generatedContent && !isSaved && !isSaving && (
+                      <span className="absolute -top-1.5 -right-1.5 z-10 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
+                      </span>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={!generatedContent || isSaving}
+                      data-testid="button-cloud-save"
+                    >
+                      <Cloud className="w-4 h-4 mr-2" />
+                      {isSaving ? t("common.saving") : t("common.save")}
+                    </Button>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleSave}
-                    disabled={!generatedContent || isSaving}
-                    data-testid="button-cloud-save"
+                    onClick={handleHumanize}
+                    disabled={!generatedContent}
+                    title="Send to AI Humanizer"
+                    aria-label="Send to AI Humanizer"
                   >
-                    <Cloud className="w-4 h-4 mr-2" />
-                    {isSaving ? t("common.saving") : t("common.save")}
+                    <Wand2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Humanize</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCitationCheck}
+                    disabled={!generatedContent}
+                    title="Check Citations"
+                    aria-label="Check Citations"
+                  >
+                    <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Check Citations</span>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -813,7 +912,7 @@ export default function GenerateReport() {
             </CardHeader>
             <CardContent>
               {isGenerating && (
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating report: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
                     Generating content with AI...
@@ -824,6 +923,16 @@ export default function GenerateReport() {
               <div className="border rounded-lg bg-white dark:bg-card min-h-[600px] p-8 overflow-auto shadow-inner">
                 {generatedContent ? (
                   <div className="max-w-none text-foreground">
+                    {wordCount > 0 && (
+                      <div className="flex gap-3 justify-end mb-4 no-print">
+                        <span className="text-xs text-muted-foreground bg-muted rounded px-2 py-1">
+                          ~{wordCount.toLocaleString()} words
+                        </span>
+                        <span className="text-xs text-muted-foreground bg-muted rounded px-2 py-1">
+                          ~{Math.ceil(wordCount / 250)} pages
+                        </span>
+                      </div>
+                    )}
                     <h1 className="text-2xl font-bold text-center mb-6 pb-4 border-b">{generatedContent.title}</h1>
                     {generatedContent.abstract && (
                       <div className="mb-8 p-4 bg-muted/30 rounded-lg">
@@ -849,16 +958,25 @@ export default function GenerateReport() {
                             }`}>
                               {sectionHeading}
                             </h2>
-                            {!isReferencesSection && (
+                            <div className="flex items-center gap-1 mt-1 shrink-0 print:hidden">
                               <button
-                                onClick={() => handleRegenerateSection(index, sectionHeading)}
-                                disabled={regeneratingSections.has(index)}
-                                title="Regenerate this section"
-                                className="mt-1 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 shrink-0 print:hidden"
+                                onClick={() => handleCopySection(sectionHeading, section.content ?? "")}
+                                title="Copy this section"
+                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               >
-                                <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSections.has(index) ? 'animate-spin' : ''}`} />
+                                <Clipboard className="w-3.5 h-3.5" />
                               </button>
-                            )}
+                              {!isReferencesSection && (
+                                <button
+                                  onClick={() => handleRegenerateSection(index, sectionHeading)}
+                                  disabled={regeneratingSections.has(index)}
+                                  title="Regenerate this section"
+                                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
+                                >
+                                  <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSections.has(index) ? 'animate-spin' : ''}`} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div
                             className="document-content leading-relaxed text-justify"
@@ -872,6 +990,7 @@ export default function GenerateReport() {
                                 <img
                                   src={sectionImageUrls[index]}
                                   alt={section.image_caption || `Figure ${index + 1}`}
+                                  loading="lazy"
                                   className="w-full h-auto"
                                   style={{ maxHeight: '400px', objectFit: 'contain' }}
                                   onError={(e) => {
@@ -928,6 +1047,22 @@ export default function GenerateReport() {
         </div>
           </div>
         </GeneratorLayout>
+
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Overwrite existing report?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You already have a generated report. Generating a new one will replace it. Make sure you've saved or exported anything you want to keep.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmRegenerate}>Generate New Report</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        </>
       )}
     </UsageGate>
   );

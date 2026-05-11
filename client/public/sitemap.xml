@@ -36,6 +36,31 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://academicgen.com/humanize</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://academicgen.com/citations</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://academicgen.com/references</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://academicgen.com/templates</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://academicgen.com/ai-assistant</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://academicgen.com/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

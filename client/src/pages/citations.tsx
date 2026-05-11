@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { readCitationsPrefill } from "@/lib/humanize-transfer";
 import {
   BookOpen, Loader2, Upload, ClipboardPaste, Sparkles, X,
   Trash2, Download, Copy, CheckCheck, FileBarChart, AlertTriangle,
@@ -141,6 +142,15 @@ export default function Citations() {
   const [engineMode, setEngineMode]   = useState<string>(prefs0.engineMode ?? "azure");
 
   useEffect(() => () => stop(), []); // eslint-disable-line
+
+  // Load text passed from a generator page via sessionStorage
+  useEffect(() => {
+    const prefill = readCitationsPrefill();
+    if (prefill.trim()) {
+      setInputText(prefill);
+      setInputMode("paste");
+    }
+  }, []);
 
   const wordCount = countWords(inputText);
   const overLimit = wordCount > MAX_WORDS;

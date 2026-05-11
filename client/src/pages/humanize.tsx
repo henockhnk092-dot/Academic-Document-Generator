@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { readHumanizerPrefill, storeForCitations } from "@/lib/humanize-transfer";
 import {
   Wand2, Copy, Download, CheckCheck, Loader2, RefreshCw,
   FileText, Sparkles, X, AlertTriangle, ShieldCheck,
   UploadCloud, ClipboardPaste, Trash2, FileBarChart,
-  FileDown, FileCode,
+  FileDown, FileCode, BookOpenCheck,
 } from "lucide-react";
+import { useLocation } from "wouter";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -187,7 +189,17 @@ export default function Humanize() {
   const [engineMode, setEngineMode]     = useState<string>(prefs0.engineMode ?? "azure");
   const sentRefs = useRef<Record<number, HTMLSpanElement | null>>({});
 
+  const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  // Load text passed from a generator page via sessionStorage
+  useEffect(() => {
+    const prefill = readHumanizerPrefill();
+    if (prefill.trim()) {
+      setInputText(prefill);
+      setInputMode("paste");
+    }
+  }, []);
 
   const hasResult  = !!humanizedText;
   const wordCount  = countWords(inputText);
@@ -309,6 +321,13 @@ export default function Humanize() {
     setInputText(""); setFileName(""); setHumanizedText(""); setOriginalText("");
     setScores([]); setOriginalScores([]); setOriginalAiScore(null); setHumanizedAiScore(null);
     setRounds([]); setStep("");
+  };
+
+  const handleCitationCheck = () => {
+    const text = humanizedText || inputText;
+    if (!text) return;
+    storeForCitations(text);
+    navigate("/citations");
   };
 
   // ── Speech handlers ──────────────────────────────────────────────────────────
@@ -589,6 +608,9 @@ export default function Humanize() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
+                <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleCitationCheck}>
+                  <BookOpenCheck className="w-4 h-4" /> Check Citations
+                </Button>
                 <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleReset}>
                   <RefreshCw className="w-4 h-4" /> New Document
                 </Button>
@@ -615,7 +637,7 @@ export default function Humanize() {
                     </TabsList>
 
                     {/* Re-run */}
-                    <Button variant="outline" size="sm" onClick={handleHumanize} disabled={isLoading} className="gap-1.5">
+                    <Button variant="outline" size="sm" onClick={handleHumanize} disabled={isLoading || isParaphrasing} className="gap-1.5">
                       <RefreshCw className="w-3.5 h-3.5" />Re-run
                     </Button>
                   </div>

@@ -83,6 +83,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
                     <img
                       src={image.src}
                       alt={image.alt}
+                      loading={isCenter ? "eager" : "lazy"}
                       className="object-cover w-full h-full rounded-2xl border-2 border-foreground/10 shadow-2xl"
                     />
                   </div>

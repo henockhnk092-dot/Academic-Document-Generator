@@ -6,6 +6,8 @@ import express, {
   Response,
   NextFunction,
 } from "express";
+import helmet from "helmet";
+import compression from "compression";
 
 import { registerRoutes } from "./routes";
 import { WebhookHandlers } from "./webhookHandlers";
@@ -28,6 +30,18 @@ export function log(message: string, source = "express") {
 }
 
 export const app = express();
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled — Vite/React inline scripts would break
+  crossOriginEmbedderPolicy: false, // disabled — needed for Google Fonts iframes
+}));
+
+// Gzip compression for all responses
+app.use(compression());
+
+// Health check (must be before auth/rate-limiting middleware)
+app.get("/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
 // Check payment provider configuration on startup
 function checkPaymentConfig() {

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Sparkles, Upload, Settings, Download, Save, X, FileIcon,
   FileDown, FileCode, Printer, Clipboard, RefreshCw, LayoutTemplate,
-  Loader2, FileText, PenLine, Shuffle,
+  Loader2, FileText, PenLine, Shuffle, Wand2, BookOpenCheck,
 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +34,7 @@ import type { ToneType } from "@shared/schema";
 const ALL_FORMATS = ".pdf,.docx,.doc,.txt,.rtf,.odt,.pptx,.ppt,.xlsx,.xls,.csv,.md,.jpg,.jpeg,.png,.webp,.gif";
 
 export default function GenerateTemplateReport() {
+  const [, navigate] = useLocation();
   // ── template input ──────────────────────────────────────────────────────────
   const [templateTab, setTemplateTab] = useState<"upload" | "paste">("upload");
   const [pastedTemplate, setPastedTemplate] = useState("");
@@ -295,6 +298,18 @@ export default function GenerateTemplateReport() {
     : 0;
 
   const hasContent = !!generatedContent;
+
+  const handleHumanize = () => {
+    if (!generatedContent) return;
+    storeForHumanizer(generatedContent);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!generatedContent) return;
+    storeForCitations(generatedContent);
+    navigate("/citations");
+  };
 
   return (
     <UsageGate>
@@ -632,6 +647,28 @@ export default function GenerateTemplateReport() {
                             <Clipboard className="w-4 h-4 mr-1" /> Copy
                           </Button>
 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleHumanize}
+                            disabled={!hasContent}
+                            title="Send to AI Humanizer"
+                            aria-label="Send to AI Humanizer"
+                          >
+                            <Wand2 className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Humanize</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCitationCheck}
+                            disabled={!hasContent}
+                            title="Check Citations"
+                            aria-label="Check Citations"
+                          >
+                            <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Check Citations</span>
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="outline" size="sm">

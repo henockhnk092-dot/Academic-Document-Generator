@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Volume2 } from "lucide-react";
+import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,7 @@ export default function GenerateCustomReport() {
   const { user, isAuthenticated } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const previewRef = useRef<HTMLDivElement>(null);
 
   // TTS hook for reading document aloud (high-quality Gemini TTS)
@@ -289,6 +290,18 @@ export default function GenerateCustomReport() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleHumanize = () => {
+    if (!generatedContent) return;
+    storeForHumanizer(generatedContent);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!generatedContent) return;
+    storeForCitations(generatedContent);
+    navigate("/citations");
   };
 
   const handleExportHTML = () => {
@@ -964,6 +977,28 @@ export default function GenerateCustomReport() {
                         <Save className="w-4 h-4 mr-1" />
                       )}
                       Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleHumanize}
+                      disabled={!generatedContent}
+                      title="Send to AI Humanizer"
+                      aria-label="Send to AI Humanizer"
+                    >
+                      <Wand2 className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Humanize</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCitationCheck}
+                      disabled={!generatedContent}
+                      title="Check Citations"
+                      aria-label="Check Citations"
+                    >
+                      <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Check Citations</span>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -11,6 +11,7 @@ import { PRICING_TIERS } from "@shared/schema";
 import {
   Crown,
   Check,
+  X,
   Zap,
   Clock,
   Calendar,
@@ -489,6 +490,86 @@ export default function Pricing() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Comparison Table */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-center">Plan Comparison</h2>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left px-4 py-3 font-semibold w-1/2">Feature</th>
+                  <th className="text-center px-4 py-3 font-semibold">Free</th>
+                  <th className="text-center px-4 py-3 font-semibold">Day Pass</th>
+                  <th className="text-center px-4 py-3 font-semibold text-primary">Monthly ★</th>
+                  <th className="text-center px-4 py-3 font-semibold">Yearly</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {[
+                  { label: "Document generations", free: "3 total", paid: "Unlimited" },
+                  { label: "Technical reports", free: true, paid: true },
+                  { label: "Thesis & dissertations", free: false, paid: true },
+                  { label: "Conference (IEEE) papers", free: false, paid: true },
+                  { label: "PowerPoint presentations", free: true, paid: true },
+                  { label: "AI image generation", free: false, paid: true },
+                  { label: "AI Humanizer", free: false, paid: true },
+                  { label: "Citation checker", free: true, paid: true },
+                  { label: "Export to PDF / DOCX / PPTX", free: true, paid: true },
+                  { label: "Cloud project storage", free: false, paid: true },
+                  { label: "Reference manager", free: true, paid: true },
+                  { label: "12-language support", free: true, paid: true },
+                  { label: "Text-to-Speech (Azure HD)", free: false, paid: true },
+                  { label: "Priority support", free: false, paid: true },
+                ].map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                    <td className="px-4 py-2.5 font-medium">{row.label}</td>
+                    {/* Free */}
+                    <td className="px-4 py-2.5 text-center">
+                      {typeof row.free === "string" ? (
+                        <span className="text-muted-foreground">{row.free}</span>
+                      ) : row.free ? (
+                        <Check className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                      )}
+                    </td>
+                    {/* Day Pass */}
+                    <td className="px-4 py-2.5 text-center">
+                      {typeof row.paid === "string" ? (
+                        <span className="text-muted-foreground">{row.paid}</span>
+                      ) : row.paid ? (
+                        <Check className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                      )}
+                    </td>
+                    {/* Monthly */}
+                    <td className="px-4 py-2.5 text-center bg-primary/5">
+                      {typeof row.paid === "string" ? (
+                        <span className="text-muted-foreground">{row.paid}</span>
+                      ) : row.paid ? (
+                        <Check className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                      )}
+                    </td>
+                    {/* Yearly */}
+                    <td className="px-4 py-2.5 text-center">
+                      {typeof row.paid === "string" ? (
+                        <span className="text-muted-foreground">{row.paid}</span>
+                      ) : row.paid ? (
+                        <Check className="h-4 w-4 text-green-500 mx-auto" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* FAQ Section */}
         <div className="space-y-4">

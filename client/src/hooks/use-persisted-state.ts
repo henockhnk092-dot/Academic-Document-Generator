@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
-/**
- * Custom hook to persist state in localStorage
- * @param key - The localStorage key
- * @param defaultValue - Default value if nothing in localStorage
- */
 export function usePersistedState<T>(key: string, defaultValue: T) {
   const [state, setState] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.error(`Error loading ${key} from localStorage:`, error);
+    } catch {
       return defaultValue;
     }
   });
@@ -19,17 +14,27 @@ export function usePersistedState<T>(key: string, defaultValue: T) {
   useEffect(() => {
     try {
       window.localStorage.setItem(key, JSON.stringify(state));
-    } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
+    } catch (error: any) {
+      const isQuota =
+        error instanceof DOMException &&
+        (error.name === "QuotaExceededError" ||
+          error.name === "NS_ERROR_DOM_QUOTA_REACHED");
+      if (isQuota) {
+        toast({
+          title: "Storage full",
+          description: "Your browser storage is full. Clear some space or old documents to continue saving progress.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        console.error(`Error saving ${key} to localStorage:`, error);
+      }
     }
   }, [key, state]);
 
   return [state, setState] as const;
 }
 
-/**
- * Hook to clear persisted state
- */
 export function useClearPersistedState(key: string) {
   return () => {
     try {

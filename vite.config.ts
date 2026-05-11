@@ -97,6 +97,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,svg,woff,woff2}"],
         globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MB
+        offlineFallbackPage: "/offline.html",
+        navigationFallback: "/offline.html",
+        navigationFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

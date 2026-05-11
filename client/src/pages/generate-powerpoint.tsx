@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText } from "lucide-react";
+import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText, Wand2, BookOpenCheck } from "lucide-react";
 import { useLocation } from "wouter";
+import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentGenerator } from "@/hooks/use-document-generator";
+import { useCtrlEnter } from "@/hooks/use-ctrl-enter";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useToast } from "@/hooks/use-toast";
@@ -385,9 +388,9 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
 
 export default function GeneratePowerPoint() {
   const { t } = useTranslation();
-  const [topic, setTopic] = useState("");
-  const [slideCount, setSlideCount] = useState("auto");
-  const [tone, setTone] = useState<ToneType>("professional");
+  const [topic, setTopic] = usePersistedState("ppt_form_topic", "");
+  const [slideCount, setSlideCount] = usePersistedState("ppt_form_slides", "auto");
+  const [tone, setTone] = usePersistedState<ToneType>("ppt_form_tone", "professional");
   const [generateImages, setGenerateImages] = useState(true);
   const [speakerNotes, setSpeakerNotes] = useState(true);
   const [ttsCoaching, setTtsCoaching] = useState(false);
@@ -398,6 +401,8 @@ export default function GeneratePowerPoint() {
   const [presentation, setPresentation] = useState<any>(null);
 
   const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("powerpoint");
+  const generateButtonRef = useRef<HTMLButtonElement>(null);
+  useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating);
 
   // Sync generatedContent to presentation state when it changes
   useEffect(() => {
@@ -409,7 +414,7 @@ export default function GeneratePowerPoint() {
   const { uploadedFiles, isProcessing, extractedText, handleFileUpload, removeFile } = useFileUpload();
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   // Load template data from URL parameters
   useEffect(() => {
@@ -688,6 +693,18 @@ export default function GeneratePowerPoint() {
     }
   };
 
+  const handleHumanize = () => {
+    if (!presentation) return;
+    storeForHumanizer(presentation);
+    navigate("/humanize");
+  };
+
+  const handleCitationCheck = () => {
+    if (!presentation) return;
+    storeForCitations(presentation);
+    navigate("/citations");
+  };
+
   const totalSlides = presentation?.slides?.length || 0;
 
   return (
@@ -875,6 +892,7 @@ export default function GeneratePowerPoint() {
                     <Button
                       className="w-full"
                       size="lg"
+                      ref={generateButtonRef}
                       disabled={!topic?.trim() || isGenerating || isProcessing}
                       onClick={() => handleGenerate(checkUsage)}
                       data-testid="button-generate-presentation"
@@ -888,6 +906,11 @@ export default function GeneratePowerPoint() {
                         </>
                       )}
                     </Button>
+                    {!isGenerating && (
+                      <p className="text-xs text-center text-muted-foreground mt-1 no-print">
+                        Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -965,6 +988,28 @@ export default function GeneratePowerPoint() {
                         )}
                         {isSaving ? t("common.saving") : t("common.save")}
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleHumanize}
+                        disabled={!presentation}
+                        title="Send to AI Humanizer"
+                        aria-label="Send to AI Humanizer"
+                      >
+                        <Wand2 className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Humanize</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCitationCheck}
+                        disabled={!presentation}
+                        title="Check Citations"
+                        aria-label="Check Citations"
+                      >
+                        <BookOpenCheck className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Check Citations</span>
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm" data-testid="button-export-menu">
@@ -996,7 +1041,7 @@ export default function GeneratePowerPoint() {
                 </CardHeader>
                 <CardContent>
                   {isGenerating && (
-                    <div className="space-y-4 mb-6">
+                    <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating presentation: ${progress}% complete`}>
                       <Progress value={progress} className="w-full" />
                       <div className="text-sm text-muted-foreground text-center">
                         Creating slides with AI...

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown } from "lucide-react";
+import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -148,6 +148,25 @@ export default function GenerateImages() {
         description: error.message || "Failed to generate image. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleVariation = async (checkUsage: () => Promise<boolean>) => {
+    if (!generatedImage) return;
+    const allowed = await checkUsage();
+    if (!allowed) return;
+    setIsGenerating(true);
+    setGeneratedImage(null);
+    setImageUrl(null);
+    try {
+      const url = await generateImageAPI();
+      setImageUrl(url);
+      setGeneratedImage(url);
+      toast({ title: "Variation generated", description: "A new variation of your image is ready" });
+    } catch (error: any) {
+      toast({ title: "Generation failed", description: error.message || "Failed to generate variation.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -507,7 +526,17 @@ export default function GenerateImages() {
                       <CardDescription>Your AI-generated image will appear here</CardDescription>
                     </div>
                     {generatedImage && (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVariation(checkUsage)}
+                          disabled={isGenerating}
+                          data-testid="button-variation"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Variation
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
