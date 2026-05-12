@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles, Upload, Settings, Download, Save, X, FileIcon,
   FileDown, FileCode, Printer, Clipboard, RefreshCw, LayoutTemplate,
-  Loader2, FileText, PenLine, Shuffle, Wand2, BookOpenCheck,
+  Loader2, FileText, PenLine, Shuffle, Wand2, BookOpenCheck, Trash2, Undo2,
 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ import type { ToneType } from "@shared/schema";
 const ALL_FORMATS = ".pdf,.docx,.doc,.txt,.rtf,.odt,.pptx,.ppt,.xlsx,.xls,.csv,.md,.jpg,.jpeg,.png,.webp,.gif";
 
 export default function GenerateTemplateReport() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   // ── template input ──────────────────────────────────────────────────────────
   const [templateTab, setTemplateTab] = useState<"upload" | "paste">("upload");
@@ -103,7 +105,7 @@ export default function GenerateTemplateReport() {
     const result = await generateTopic();
     if (result?.topic) {
       setTopic(result.topic);
-      toast({ title: "Topic suggested", description: `From: ${result.category}` });
+      toast({ title: t("pages.templateReport.topicSuggested"), description: t("pages.templateReport.topicSuggestedDesc", { category: result.category }) });
     }
   };
 
@@ -141,14 +143,14 @@ export default function GenerateTemplateReport() {
 
       if (res?.content) {
         setGeneratedContent(res.content);
-        toast({ title: "Report generated!", description: "Your template report is ready." });
+        toast({ title: t("pages.templateReport.generated"), description: t("pages.templateReport.generatedDesc") });
       } else {
         throw new Error("No content returned from server");
       }
     } catch (err: any) {
       toast({
-        title: "Generation failed",
-        description: err.message?.replace(/^\d+:\s*/, "") || "Failed to generate report",
+        title: t("pages.templateReport.generationFailed"),
+        description: err.message?.replace(/^\d+:\s*/, "") || t("pages.templateReport.generationFailed"),
         variant: "destructive",
       });
     } finally {
@@ -183,7 +185,7 @@ export default function GenerateTemplateReport() {
     setRegeneratingSections(prev => new Set(prev).add(index));
     try {
       const res: any = await apiRequest("POST", "/api/generate/section", {
-        topic: topic || "Based on uploaded template",
+        topic: topic || t("pages.templateReport.basedOnTemplate"),
         sectionHeading: heading,
         tone,
       });
@@ -194,7 +196,7 @@ export default function GenerateTemplateReport() {
         setGeneratedContent({ ...generatedContent, sections: updated });
       }
     } catch {
-      toast({ title: "Failed to regenerate section", variant: "destructive" });
+      toast({ title: t("pages.templateReport.sectionRegenFailed"), variant: "destructive" });
     } finally {
       setRegeneratingSections(prev => { const s = new Set(prev); s.delete(index); return s; });
     }
@@ -205,11 +207,11 @@ export default function GenerateTemplateReport() {
     if (!generatedContent?.sections) return;
     const text = [
       generatedContent.title ?? "",
-      generatedContent.abstract ? `Abstract\n${generatedContent.abstract}` : "",
+      generatedContent.abstract ? `${t("common.abstractHeading")}\n${generatedContent.abstract}` : "",
       ...generatedContent.sections.map((s: any) => `${s.heading ?? s.title}\n\n${s.content ?? ""}`),
     ].filter(Boolean).join("\n\n---\n\n");
     navigator.clipboard.writeText(text).then(() =>
-      toast({ title: "Copied to clipboard" })
+      toast({ title: t("pages.templateReport.copied") })
     );
   };
 
@@ -217,9 +219,9 @@ export default function GenerateTemplateReport() {
   const handleExportDocx = async () => {
     if (!generatedContent?.sections) return;
     try {
-      let html = `<h1>${generatedContent.title ?? "Template Report"}</h1>`;
+      let html = `<h1>${generatedContent.title ?? t("pages.templateReport.title")}</h1>`;
       if (generatedContent.abstract) {
-        html += `<div><h2>Abstract</h2><p>${generatedContent.abstract}</p></div>`;
+        html += `<div><h2>${t("common.abstractHeading")}</h2><p>${generatedContent.abstract}</p></div>`;
       }
       generatedContent.sections.forEach((s: any, i: number) => {
         html += `<h2>${s.heading ?? s.title}</h2>${sanitizeHtml(parseMarkdownToHtml(s.content ?? ""))}`;
@@ -231,9 +233,9 @@ export default function GenerateTemplateReport() {
         html += `<h2>References</h2>` + generatedContent.references.map((r: string) => `<p>${r}</p>`).join("");
       }
       await exportHtmlToDocx(html, { title: generatedContent.title ?? "template-report" });
-      toast({ title: "DOCX exported" });
+      toast({ title: t("pages.templateReport.docxExported") });
     } catch {
-      toast({ title: "Export failed", variant: "destructive" });
+      toast({ title: t("pages.templateReport.exportFailed"), variant: "destructive" });
     }
   };
 
@@ -241,7 +243,7 @@ export default function GenerateTemplateReport() {
     if (!generatedContent?.sections) return;
     const lines: string[] = [];
     if (generatedContent.title) lines.push(generatedContent.title, "");
-    if (generatedContent.abstract) lines.push("Abstract", generatedContent.abstract, "");
+    if (generatedContent.abstract) lines.push(t("common.abstractHeading"), generatedContent.abstract, "");
     generatedContent.sections.forEach((s: any) => {
       lines.push(s.heading ?? s.title, "─".repeat(40), s.content ?? "", "");
     });
@@ -254,7 +256,7 @@ export default function GenerateTemplateReport() {
 
   const handlePrint = () => {
     const win = window.open("", "_blank");
-    if (!win) { toast({ title: "Allow popups to print", variant: "destructive" }); return; }
+    if (!win) { toast({ title: t("common.printFailed"), description: t("common.printFailedDesc"), variant: "destructive" }); return; }
     let html = `<h1>${generatedContent?.title ?? ""}</h1>`;
     if (generatedContent?.abstract) html += `<p><em>${generatedContent.abstract}</em></p>`;
     generatedContent?.sections?.forEach((s: any, i: number) => {
@@ -263,7 +265,7 @@ export default function GenerateTemplateReport() {
         html += `<figure style="text-align:center;margin:1.5em 0"><img src="${sectionImageUrls[i]}" alt="${s.image_caption || `Figure ${i + 1}`}" style="max-width:100%" />${s.image_caption ? `<figcaption>${s.image_caption}</figcaption>` : ""}</figure>`;
       }
     });
-    win.document.write(`<html><head><title>${generatedContent?.title ?? "Report"}</title><style>body{font-family:serif;max-width:800px;margin:40px auto;line-height:1.7}h2{margin-top:2em}</style></head><body>${html}</body></html>`);
+    win.document.write(`<html><head><title>${generatedContent?.title ?? t("pages.templateReport.printTitle")}</title><style>body{font-family:serif;max-width:800px;margin:40px auto;line-height:1.7}h2{margin-top:2em}</style></head><body>${html}</body></html>`);
     win.document.close();
     win.print();
   };
@@ -271,22 +273,22 @@ export default function GenerateTemplateReport() {
   // ── save ────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!generatedContent) return;
-    if (!isAuthenticated) { toast({ title: "Sign in to save", variant: "destructive" }); return; }
+    if (!isAuthenticated) { toast({ title: t("common.authRequired"), description: t("common.signInToSave"), variant: "destructive" }); return; }
     setIsSaving(true);
     try {
       await saveDocument({
         type: "report",
-        title: generatedContent.title ?? "Template Report",
-        topic: topic || guidelines || "Template-based report",
+        title: generatedContent.title ?? t("pages.templateReport.title"),
+        topic: topic || guidelines || t("pages.templateReport.templateBasedReport"),
         content: generatedContent,
         settings: { tone, citationStyle, targetLength, guidelines },
         language: "en",
       });
       if (user) queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
       setIsSaved(true);
-      toast({ title: "Saved!", description: "Report saved to My Projects." });
+      toast({ title: t("pages.templateReport.saved"), description: t("pages.templateReport.savedDesc") });
     } catch (err: any) {
-      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+      toast({ title: t("common.saveFailed"), description: err.message, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -298,6 +300,22 @@ export default function GenerateTemplateReport() {
     : 0;
 
   const hasContent = !!generatedContent;
+  const [undoContent, setUndoContent] = useState<any>(null);
+  const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
+
+  const handleClear = () => {
+    setUndoContent(generatedContent);
+    setUndoImageUrls(sectionImageUrls);
+    setGeneratedContent(null);
+    setSectionImageUrls({});
+  };
+
+  const handleUndo = () => {
+    setGeneratedContent(undoContent);
+    setSectionImageUrls(undoImageUrls);
+    setUndoContent(null);
+    setUndoImageUrls({});
+  };
 
   const handleHumanize = () => {
     if (!generatedContent) return;
@@ -316,8 +334,8 @@ export default function GenerateTemplateReport() {
       {({ checkUsage, remainingAttempts, openPricing }) => (
         <>
           <GeneratorLayout
-            title="Template Report Generator"
-            description="Upload or paste your template, add guidelines, and let AI generate a report that follows your exact structure"
+            title={t("pages.templateReport.title")}
+            description={t("pages.templateReport.subtitle")}
             icon={<LayoutTemplate className="w-8 h-8" />}
             gradient="from-violet-500 to-purple-600"
           >
@@ -331,20 +349,20 @@ export default function GenerateTemplateReport() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <LayoutTemplate className="w-5 h-5" />
-                      Template
+                      {t("pages.templateReport.templateTitle")}
                     </CardTitle>
                     <CardDescription>
-                      Upload a file or paste your template — the AI follows its structure exactly
+                      {t("pages.templateReport.templateDesc")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Tabs value={templateTab} onValueChange={(v) => setTemplateTab(v as "upload" | "paste")}>
                       <TabsList className="w-full mb-4">
                         <TabsTrigger value="upload" className="flex-1 gap-1.5">
-                          <Upload className="w-3.5 h-3.5" /> Upload File
+                          <Upload className="w-3.5 h-3.5" /> {t("pages.citations.uploadFile")}
                         </TabsTrigger>
                         <TabsTrigger value="paste" className="flex-1 gap-1.5">
-                          <PenLine className="w-3.5 h-3.5" /> Paste Text
+                          <PenLine className="w-3.5 h-3.5" /> {t("pages.citations.pasteText")}
                         </TabsTrigger>
                       </TabsList>
 
@@ -355,8 +373,8 @@ export default function GenerateTemplateReport() {
                           onClick={() => document.getElementById("template-upload")?.click()}
                         >
                           <Upload className="w-7 h-7 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-sm font-medium">Click to upload template</p>
-                          <p className="text-xs text-muted-foreground mt-1">All formats supported</p>
+                          <p className="text-sm font-medium">{t("pages.templateReport.clickToUpload")}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("pages.templateReport.allFormatsSupported")}</p>
                           <input
                             id="template-upload"
                             type="file"
@@ -370,7 +388,7 @@ export default function GenerateTemplateReport() {
                         {templateUpload.isProcessing && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Extracting content…
+                            {t("pages.templateReport.extractingContent")}
                           </div>
                         )}
 
@@ -390,7 +408,7 @@ export default function GenerateTemplateReport() {
                             ))}
                             {templateUpload.extractedText && (
                               <Badge variant="secondary" className="text-xs">
-                                ✓ {templateUpload.extractedText.split(/\s+/).filter(Boolean).length} words extracted
+                                ✓ {t("pages.templateReport.wordsExtracted", { count: templateUpload.extractedText.split(/\s+/).filter(Boolean).length })}
                               </Badge>
                             )}
                           </div>
@@ -402,12 +420,12 @@ export default function GenerateTemplateReport() {
                         <Textarea
                           value={pastedTemplate}
                           onChange={(e) => setPastedTemplate(e.target.value)}
-                          placeholder="Paste your template here — headings, sections, placeholders, anything you want the AI to follow…"
+                          placeholder={t("pages.templateReport.templatePlaceholder")}
                           className="min-h-[160px] resize-y font-mono text-xs"
                         />
                         {pastedTemplate && (
                           <p className="text-xs text-muted-foreground mt-1.5">
-                            {pastedTemplate.split(/\s+/).filter(Boolean).length} words
+                            {pastedTemplate.split(/\s+/).filter(Boolean).length} {t("common.words")}
                           </p>
                         )}
                       </TabsContent>
@@ -420,24 +438,24 @@ export default function GenerateTemplateReport() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="w-5 h-5" />
-                      Guidelines
+                      {t("pages.templateReport.guidelinesTitle")}
                     </CardTitle>
                     <CardDescription>
-                      Type your requirements or upload a guidelines file — both are combined
+                      {t("pages.templateReport.guidelinesDesc")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <Textarea
                       value={guidelines}
                       onChange={(e) => setGuidelines(e.target.value)}
-                      placeholder="Describe requirements, target audience, mandatory sections, formatting rules, word count targets, etc."
+                      placeholder={t("pages.templateReport.requirementsPlaceholder")}
                       className="min-h-[120px] resize-y"
                     />
 
                     {/* Guidelines file upload */}
                     <div>
                       <Label className="text-xs text-muted-foreground mb-2 block">
-                        Or attach a guidelines file — its content will be appended above
+                        {t("pages.templateReport.guidelinesFileLabel")}
                       </Label>
                       <div
                         className="border border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/20 transition-colors"
@@ -445,7 +463,7 @@ export default function GenerateTemplateReport() {
                       >
                         <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">
-                          {guidelinesUpload.isProcessing ? "Processing…" : "Attach file (all formats)"}
+                          {guidelinesUpload.isProcessing ? t("pages.templateReport.processing") : t("pages.templateReport.attachFileAllFormats")}
                         </p>
                         <input
                           id="guidelines-upload"
@@ -482,7 +500,7 @@ export default function GenerateTemplateReport() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Settings className="w-5 h-5" />
-                      Settings
+                      {t("pages.templateReport.settingsTitle")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -491,8 +509,8 @@ export default function GenerateTemplateReport() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="topic">
-                          Report Topic
-                          <span className="text-muted-foreground text-xs font-normal ml-1">(optional)</span>
+                          {t("pages.templateReport.reportTopic")}
+                          <span className="text-muted-foreground text-xs font-normal ml-1">{t("pages.templateReport.optional")}</span>
                         </Label>
                         <Button
                           type="button"
@@ -503,9 +521,9 @@ export default function GenerateTemplateReport() {
                           className="text-xs h-7 px-2"
                         >
                           {isLoadingTopic ? (
-                            <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Suggesting…</>
+                            <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> {t("pages.templateReport.suggesting")}</>
                           ) : (
-                            <><Shuffle className="w-3 h-3 mr-1" /> Random Topic</>
+                            <><Shuffle className="w-3 h-3 mr-1" /> {t("pages.templateReport.randomTopic")}</>
                           )}
                         </Button>
                       </div>
@@ -513,7 +531,7 @@ export default function GenerateTemplateReport() {
                         id="topic"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        placeholder="e.g. Impact of AI on academic research productivity"
+                        placeholder={t("pages.templateReport.topicPlaceholder")}
                         rows={2}
                         className="resize-none"
                         data-testid="input-topic"
@@ -522,25 +540,25 @@ export default function GenerateTemplateReport() {
 
                     {/* Tone */}
                     <div className="space-y-2">
-                      <Label htmlFor="tone">Writing Tone</Label>
+                      <Label htmlFor="tone">{t("common.writingTone")}</Label>
                       <Select value={tone} onValueChange={(v) => setTone(v as ToneType)}>
                         <SelectTrigger id="tone"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="academic">Academic</SelectItem>
-                          <SelectItem value="professional">Professional</SelectItem>
-                          <SelectItem value="technical">Technical</SelectItem>
-                          <SelectItem value="persuasive">Persuasive</SelectItem>
+                          <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
+                          <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
+                          <SelectItem value="technical">{t("common.toneTechnical")}</SelectItem>
+                          <SelectItem value="persuasive">{t("common.tonePersuasive")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {/* Citation Style */}
                     <div className="space-y-2">
-                      <Label htmlFor="citation">Citation Style</Label>
+                      <Label htmlFor="citation">{t("common.citationStyle")}</Label>
                       <Select value={citationStyle} onValueChange={setCitationStyle}>
                         <SelectTrigger id="citation"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto">Auto (from template)</SelectItem>
+                          <SelectItem value="auto">{t("pages.templateReport.autoFromTemplate")}</SelectItem>
                           <SelectItem value="apa">APA</SelectItem>
                           <SelectItem value="ieee">IEEE</SelectItem>
                           <SelectItem value="harvard">Harvard</SelectItem>
@@ -552,15 +570,15 @@ export default function GenerateTemplateReport() {
 
                     {/* Target Length */}
                     <div className="space-y-2">
-                      <Label htmlFor="length">Target Length</Label>
+                      <Label htmlFor="length">{t("common.targetLength")}</Label>
                       <Select value={targetLength} onValueChange={setTargetLength}>
                         <SelectTrigger id="length"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto">Auto</SelectItem>
-                          <SelectItem value="3-5">Short (3–5 pages)</SelectItem>
-                          <SelectItem value="5-10">Medium (5–10 pages)</SelectItem>
-                          <SelectItem value="10-20">Long (10–20 pages)</SelectItem>
-                          <SelectItem value="20-40">Extended (20–40 pages)</SelectItem>
+                          <SelectItem value="auto">{t("common.auto")}</SelectItem>
+                          <SelectItem value="3-5">{t("pages.templateReport.lengthShort")}</SelectItem>
+                          <SelectItem value="5-10">{t("pages.templateReport.lengthMedium")}</SelectItem>
+                          <SelectItem value="10-20">{t("pages.templateReport.lengthLong")}</SelectItem>
+                          <SelectItem value="20-40">{t("pages.templateReport.lengthExtended")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -568,9 +586,9 @@ export default function GenerateTemplateReport() {
                     {/* Usage */}
                     {remainingAttempts !== Infinity && (
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <span>{remainingAttempts} generation{remainingAttempts !== 1 ? "s" : ""} remaining</span>
+                        <span>{t("pages.templateReport.generationsRemainingFull", { count: remainingAttempts })}</span>
                         <button type="button" onClick={openPricing} className="text-primary hover:underline font-medium">
-                          View Pricing
+                          {t("common.viewPricing")}
                         </button>
                       </div>
                     )}
@@ -578,7 +596,7 @@ export default function GenerateTemplateReport() {
                     {/* Generate */}
                     {remainingAttempts === 0 ? (
                       <Button className="w-full" size="lg" onClick={openPricing}>
-                        <Sparkles className="w-4 h-4 mr-2" /> Upgrade to Generate
+                        <Sparkles className="w-4 h-4 mr-2" /> {t("pages.templateReport.upgradeToGenerate")}
                       </Button>
                     ) : (
                       <Button
@@ -589,9 +607,9 @@ export default function GenerateTemplateReport() {
                         data-testid="button-generate"
                       >
                         {isGenerating || isSubmitting ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating…</>
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("pages.templateReport.generatingEllipsis")}</>
                         ) : (
-                          <><Sparkles className="w-4 h-4 mr-2" /> Generate Report</>
+                          <><Sparkles className="w-4 h-4 mr-2" /> {t("pages.templateReport.generateButton")}</>
                         )}
                       </Button>
                     )}
@@ -599,7 +617,7 @@ export default function GenerateTemplateReport() {
                     {isGenerating && progress > 0 && (
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Generating…</span><span>{progress}%</span>
+                          <span>{t("pages.templateReport.generatingEllipsis")}</span><span>{progress}%</span>
                         </div>
                         <Progress value={progress} className="h-1.5" />
                       </div>
@@ -614,10 +632,10 @@ export default function GenerateTemplateReport() {
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
-                        <CardTitle>Preview</CardTitle>
+                        <CardTitle>{t("common.preview")}</CardTitle>
                         {hasContent && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {wordCount.toLocaleString()} words · {generatedContent.sections?.length ?? 0} sections
+                            {t("pages.templateReport.wordSectionCount", { words: wordCount.toLocaleString(), sections: generatedContent.sections?.length ?? 0 })}
                           </p>
                         )}
                       </div>
@@ -644,7 +662,7 @@ export default function GenerateTemplateReport() {
                           />
 
                           <Button variant="outline" size="sm" onClick={handleCopy}>
-                            <Clipboard className="w-4 h-4 mr-1" /> Copy
+                            <Clipboard className="w-4 h-4 mr-1" /> {t("common.copy")}
                           </Button>
 
                           <Button
@@ -652,39 +670,62 @@ export default function GenerateTemplateReport() {
                             size="sm"
                             onClick={handleHumanize}
                             disabled={!hasContent}
-                            title="Send to AI Humanizer"
-                            aria-label="Send to AI Humanizer"
+                            title={t("common.sendToHumanizer")}
+                            aria-label={t("common.sendToHumanizer")}
                           >
                             <Wand2 className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Humanize</span>
+                            <span className="hidden sm:inline">{t("common.humanize")}</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={handleCitationCheck}
                             disabled={!hasContent}
-                            title="Check Citations"
-                            aria-label="Check Citations"
+                            title={t("common.checkCitations")}
+                            aria-label={t("common.checkCitations")}
                           >
                             <BookOpenCheck className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Check Citations</span>
+                            <span className="hidden sm:inline">{t("common.checkCitations")}</span>
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleClear}
+                            disabled={!hasContent}
+                            title={t("common.clearDocument")}
+                            aria-label={t("common.clearDocument")}
+                          >
+                            <Trash2 className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">{t("common.clear")}</span>
+                          </Button>
+                          {undoContent && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleUndo}
+                              title={t("common.undoClear")}
+                              aria-label={t("common.undoClear")}
+                            >
+                              <Undo2 className="w-4 h-4 sm:mr-2" />
+                              <span className="hidden sm:inline">{t("common.undo")}</span>
+                            </Button>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="outline" size="sm">
-                                <Download className="w-4 h-4 mr-1" /> Export
+                                <Download className="w-4 h-4 mr-1" /> {t("common.export")}
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={handleExportDocx}>
-                                <FileDown className="w-4 h-4 mr-2" /> Download DOCX
+                                <FileDown className="w-4 h-4 mr-2" /> {t("pages.templateReport.downloadDOCX")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={handleExportTxt}>
-                                <FileCode className="w-4 h-4 mr-2" /> Download TXT
+                                <FileCode className="w-4 h-4 mr-2" /> {t("pages.templateReport.downloadTXT")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={handlePrint}>
-                                <Printer className="w-4 h-4 mr-2" /> Print
+                                <Printer className="w-4 h-4 mr-2" /> {t("common.print")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -704,7 +745,7 @@ export default function GenerateTemplateReport() {
                               {isSaving
                                 ? <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                                 : <Save className="w-4 h-4 mr-1" />}
-                              {isSaved ? "Saved" : "Save"}
+                              {isSaved ? t("common.saved") : t("common.save")}
                             </Button>
                           </div>
                         </div>
@@ -718,12 +759,21 @@ export default function GenerateTemplateReport() {
                       data-testid="preview-content"
                     >
                       {!hasContent ? (
-                        <div className="flex flex-col items-center justify-center h-[560px] text-center text-muted-foreground">
-                          <LayoutTemplate className="w-16 h-16 mb-4 opacity-20" />
-                          <p className="text-lg font-medium">No report yet</p>
-                          <p className="text-sm mt-2 max-w-sm">
-                            Upload or paste your template, add a topic and guidelines, then click Generate.
-                          </p>
+                        <div className="text-center text-muted-foreground py-16 px-4">
+                          <LayoutTemplate className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                          <p className="font-medium">{t("pages.templateReport.emptyState")}</p>
+                          <p className="text-sm mt-2">{t("pages.templateReport.emptyStateHint")}</p>
+                          <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
+                            <p className="font-medium text-center mb-3">{t("pages.templateReport.features")}</p>
+                            <ul className="space-y-1">
+                              <li>• {t("pages.templateReport.feature1")}</li>
+                              <li>• {t("pages.templateReport.feature2")}</li>
+                              <li>• {t("pages.templateReport.feature3")}</li>
+                              <li>• {t("pages.templateReport.feature4")}</li>
+                              <li>• {t("pages.templateReport.feature5")}</li>
+                              <li>• {t("pages.templateReport.feature6")}</li>
+                            </ul>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -731,7 +781,7 @@ export default function GenerateTemplateReport() {
 
                           {generatedContent.abstract && (
                             <div className="bg-muted p-4 rounded-lg mb-6">
-                              <h2>Abstract</h2>
+                              <h2>{t("common.abstractHeading")}</h2>
                               <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(parseMarkdownToHtml(generatedContent.abstract)) }} />
                             </div>
                           )}
@@ -747,7 +797,7 @@ export default function GenerateTemplateReport() {
                                   className="h-7 px-2 text-xs shrink-0"
                                 >
                                   <RefreshCw className={`w-3 h-3 mr-1 ${regeneratingSections.has(index) ? "animate-spin" : ""}`} />
-                                  Regenerate
+                                  {t("common.regenerate")}
                                 </Button>
                               </div>
                               <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(parseMarkdownToHtml(section.content ?? "")) }} />
@@ -770,7 +820,7 @@ export default function GenerateTemplateReport() {
 
                           {generatedContent.references?.length > 0 && (
                             <div className="mt-12 border-t pt-6">
-                              <h2>References</h2>
+                              <h2>{t("pages.report.referencesHeading")}</h2>
                               <div className="space-y-2">
                                 {generatedContent.references.map((ref: string, idx: number) => (
                                   <div key={idx} className="text-sm pl-5 -indent-5">{ref}</div>
@@ -790,14 +840,14 @@ export default function GenerateTemplateReport() {
           <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Overwrite existing report?</AlertDialogTitle>
+                <AlertDialogTitle>{t("common.overwriteTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  You already have a generated report. Generating a new one will replace it. Make sure you have saved or exported anything you want to keep.
+                  {t("common.overwriteDesc")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmRegenerate}>Generate New</AlertDialogAction>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmRegenerate}>{t("common.generateNew")}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

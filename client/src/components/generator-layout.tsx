@@ -31,9 +31,9 @@ export function GeneratorLayout({
             <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center`}>
               {icon}
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">{title}</h1>
-              <p className="text-sm text-muted-foreground">{description}</p>
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <h1 className="text-2xl font-bold break-words">{title}</h1>
+              <p className="text-sm text-muted-foreground break-words">{description}</p>
             </div>
           </div>
         </div>

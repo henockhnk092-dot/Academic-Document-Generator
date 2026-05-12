@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import {
   FileText, Presentation, FileSpreadsheet, GraduationCap, Plus, Trash2,
@@ -29,14 +30,6 @@ interface CustomTemplate {
 }
 
 const STORAGE_KEY = "academicgen_custom_templates";
-const GENERATOR_TYPES = [
-  { value: "report",          label: "Technical Report",   icon: FileText },
-  { value: "custom-report",   label: "Custom Report",      icon: FileText },
-  { value: "powerpoint",      label: "PowerPoint",         icon: Presentation },
-  { value: "conference",      label: "Conference Paper",   icon: FileSpreadsheet },
-  { value: "thesis",          label: "Thesis",             icon: GraduationCap },
-  { value: "images",          label: "AI Images",          icon: ImageIcon },
-];
 
 const CATEGORIES = ["report", "presentation", "paper", "thesis", "essay", "image", "custom"];
 const TONES = ["academic", "professional", "essay", "creative"];
@@ -77,6 +70,17 @@ const emptyForm = (): Omit<CustomTemplate, "id" | "createdAt" | "usageCount"> =>
 });
 
 export default function MyTemplates() {
+  const { t } = useTranslation();
+
+  const GENERATOR_TYPES = [
+    { value: "report",        label: t("pages.myTemplates.genTypeReport"),        icon: FileText },
+    { value: "custom-report", label: t("pages.myTemplates.genTypeCustomReport"),  icon: FileText },
+    { value: "powerpoint",    label: t("pages.myTemplates.genTypePowerPoint"),    icon: Presentation },
+    { value: "conference",    label: t("pages.myTemplates.genTypeConference"),    icon: FileSpreadsheet },
+    { value: "thesis",        label: t("pages.myTemplates.genTypeThesis"),        icon: GraduationCap },
+    { value: "images",        label: t("pages.myTemplates.genTypeImages"),        icon: ImageIcon },
+  ];
+
   const [templates, setTemplates] = useState<CustomTemplate[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -107,32 +111,32 @@ export default function MyTemplates() {
   };
 
   const handleSave = () => {
-    if (!form.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
-    if (!form.prompt.trim()) { toast({ title: "Prompt required", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: t("pages.myTemplates.nameRequired"), variant: "destructive" }); return; }
+    if (!form.prompt.trim()) { toast({ title: t("pages.myTemplates.promptRequired"), variant: "destructive" }); return; }
 
     const updated = editingId
-      ? templates.map(t => t.id === editingId ? { ...t, ...form } : t)
+      ? templates.map(tmpl => tmpl.id === editingId ? { ...tmpl, ...form } : tmpl)
       : [...templates, { ...form, id: crypto.randomUUID(), createdAt: Date.now(), usageCount: 0 }];
 
     saveTemplates(updated);
     setTemplates(updated);
     setDialogOpen(false);
-    toast({ title: editingId ? "Template updated" : "Template created", description: form.name });
+    toast({ title: editingId ? t("pages.myTemplates.templateUpdated") : t("pages.myTemplates.templateCreated"), description: form.name });
   };
 
   const handleDelete = (id: string) => {
-    const updated = templates.filter(t => t.id !== id);
+    const updated = templates.filter(tmpl => tmpl.id !== id);
     saveTemplates(updated);
     setTemplates(updated);
-    toast({ title: "Template deleted" });
+    toast({ title: t("pages.myTemplates.templateDeleted") });
   };
 
-  const handleDuplicate = (t: CustomTemplate) => {
-    const copy: CustomTemplate = { ...t, id: crypto.randomUUID(), name: `${t.name} (copy)`, createdAt: Date.now(), usageCount: 0 };
+  const handleDuplicate = (tmpl: CustomTemplate) => {
+    const copy: CustomTemplate = { ...tmpl, id: crypto.randomUUID(), name: `${tmpl.name} (copy)`, createdAt: Date.now(), usageCount: 0 };
     const updated = [...templates, copy];
     saveTemplates(updated);
     setTemplates(updated);
-    toast({ title: "Template duplicated", description: copy.name });
+    toast({ title: t("pages.myTemplates.templateDuplicated"), description: copy.name });
   };
 
   const handleUse = (t: CustomTemplate) => {
@@ -158,12 +162,12 @@ export default function MyTemplates() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold">My Templates</h1>
-            <p className="text-muted-foreground mt-1">Save your own prompts and settings as reusable templates</p>
+            <h1 className="text-3xl font-bold">{t("pages.myTemplates.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("pages.myTemplates.subtitle")}</p>
           </div>
           <Button onClick={openNew} className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:opacity-90">
             <Plus className="w-4 h-4" />
-            New Template
+            {t("pages.myTemplates.newTemplate")}
           </Button>
         </div>
 
@@ -171,7 +175,7 @@ export default function MyTemplates() {
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search templates…"
+            placeholder={t("pages.myTemplates.searchPlaceholder")}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
@@ -187,13 +191,13 @@ export default function MyTemplates() {
         {templates.length === 0 && (
           <div className="text-center py-20">
             <Wand2 className="w-16 h-16 mx-auto text-muted-foreground/40 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No custom templates yet</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("pages.myTemplates.emptyTitle")}</h2>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Create templates from your favourite prompts and settings so you can reuse them in one click.
+              {t("pages.myTemplates.emptyDesc")}
             </p>
             <Button onClick={openNew} className="gap-2">
               <Plus className="w-4 h-4" />
-              Create your first template
+              {t("pages.myTemplates.createFirst")}
             </Button>
           </div>
         )}
@@ -201,50 +205,50 @@ export default function MyTemplates() {
         {/* No search results */}
         {templates.length > 0 && filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
-            No templates match "<strong>{search}</strong>"
+            {t("pages.myTemplates.noSearchResults")} "<strong>{search}</strong>"
           </div>
         )}
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(t => (
-            <Card key={t.id} className="hover-elevate transition-all border-card-border group">
+          {filtered.map(tmpl => (
+            <Card key={tmpl.id} className="hover-elevate transition-all border-card-border group">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                      {Icon(t.generatorType)}
+                      {Icon(tmpl.generatorType)}
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="text-base truncate">{t.name}</CardTitle>
-                      <Badge className={`text-[10px] mt-0.5 ${categoryColors[t.category] ?? categoryColors.custom}`}>
-                        {t.category}
+                      <CardTitle className="text-base truncate">{tmpl.name}</CardTitle>
+                      <Badge className={`text-[10px] mt-0.5 ${categoryColors[tmpl.category] ?? categoryColors.custom}`}>
+                        {tmpl.category}
                       </Badge>
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button onClick={() => openEdit(t)} className="p-1.5 rounded hover:bg-muted" title="Edit">
+                    <button onClick={() => openEdit(tmpl)} className="p-1.5 rounded hover:bg-muted" title={t("pages.myTemplates.editTitle")}>
                       <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDuplicate(t)} className="p-1.5 rounded hover:bg-muted" title="Duplicate">
+                    <button onClick={() => handleDuplicate(tmpl)} className="p-1.5 rounded hover:bg-muted" title={t("pages.myTemplates.templateDuplicated")}>
                       <Copy className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded hover:bg-destructive/10" title="Delete">
+                    <button onClick={() => handleDelete(tmpl.id)} className="p-1.5 rounded hover:bg-destructive/10" title={t("pages.myTemplates.templateDeleted")}>
                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </button>
                   </div>
                 </div>
-                <CardDescription className="text-xs line-clamp-2 mt-2">{t.description || t.prompt}</CardDescription>
+                <CardDescription className="text-xs line-clamp-2 mt-2">{tmpl.description || tmpl.prompt}</CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {t.tone && <Badge variant="outline" className="text-[10px]">{t.tone}</Badge>}
-                  {t.citationStyle && t.citationStyle !== "auto" && <Badge variant="outline" className="text-[10px]">{t.citationStyle.toUpperCase()}</Badge>}
-                  {t.targetLength && t.targetLength !== "auto" && <Badge variant="outline" className="text-[10px]">{t.targetLength} pages</Badge>}
-                  <Badge variant="secondary" className="text-[10px]">{t.usageCount} uses</Badge>
+                  {tmpl.tone && <Badge variant="outline" className="text-[10px]">{tmpl.tone}</Badge>}
+                  {tmpl.citationStyle && tmpl.citationStyle !== "auto" && <Badge variant="outline" className="text-[10px]">{tmpl.citationStyle.toUpperCase()}</Badge>}
+                  {tmpl.targetLength && tmpl.targetLength !== "auto" && <Badge variant="outline" className="text-[10px]">{tmpl.targetLength} {t("pages.myTemplates.pages")}</Badge>}
+                  <Badge variant="secondary" className="text-[10px]">{tmpl.usageCount} {t("pages.templates.uses")}</Badge>
                 </div>
-                <Button size="sm" className="w-full" onClick={() => handleUse(t)}>
-                  Use Template
+                <Button size="sm" className="w-full" onClick={() => handleUse(tmpl)}>
+                  {t("pages.myTemplates.useTemplate")}
                 </Button>
               </CardContent>
             </Card>
@@ -256,26 +260,26 @@ export default function MyTemplates() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Template" : "New Template"}</DialogTitle>
+            <DialogTitle>{editingId ? t("pages.myTemplates.editTitle") : t("pages.myTemplates.newTitle")}</DialogTitle>
             <DialogDescription>
-              {editingId ? "Update your template details." : "Save a prompt and settings as a reusable template."}
+              {editingId ? t("pages.myTemplates.editDesc") : t("pages.myTemplates.newDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Template Name *</Label>
-              <Input placeholder="e.g. My IEEE Paper Starter" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Label>{t("pages.myTemplates.nameLabel")} *</Label>
+              <Input placeholder={t("pages.myTemplates.namePlaceholder")} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Input placeholder="Short description of what this template does" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <Label>{t("pages.myTemplates.descriptionLabel")}</Label>
+              <Input placeholder={t("pages.myTemplates.descriptionPlaceholder")} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Generator Type</Label>
+                <Label>{t("pages.myTemplates.generatorTypeLabel")}</Label>
                 <Select value={form.generatorType} onValueChange={v => setForm(f => ({ ...f, generatorType: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -286,7 +290,7 @@ export default function MyTemplates() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Category</Label>
+                <Label>{t("pages.myTemplates.categoryLabel")}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -298,16 +302,16 @@ export default function MyTemplates() {
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label>Tone</Label>
+                <Label>{t("pages.myTemplates.toneLabel")}</Label>
                 <Select value={form.tone} onValueChange={v => setForm(f => ({ ...f, tone: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {TONES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {TONES.map(tone => <SelectItem key={tone} value={tone}>{tone}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Citation Style</Label>
+                <Label>{t("pages.myTemplates.citationStyleLabel")}</Label>
                 <Select value={form.citationStyle} onValueChange={v => setForm(f => ({ ...f, citationStyle: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -316,33 +320,33 @@ export default function MyTemplates() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Length</Label>
+                <Label>{t("pages.myTemplates.lengthLabel")}</Label>
                 <Select value={form.targetLength} onValueChange={v => setForm(f => ({ ...f, targetLength: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {LENGTHS.map(l => <SelectItem key={l} value={l}>{l === "auto" ? "Auto" : `${l} pages`}</SelectItem>)}
+                    {LENGTHS.map(l => <SelectItem key={l} value={l}>{l === "auto" ? t("common.auto") : `${l} ${t("pages.myTemplates.pages")}`}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Prompt / Topic *</Label>
+              <Label>{t("pages.myTemplates.promptLabel")} *</Label>
               <Textarea
-                placeholder="Write the full topic or prompt that will be pre-filled when this template is used…"
+                placeholder={t("pages.myTemplates.promptPlaceholder")}
                 value={form.prompt}
                 onChange={e => setForm(f => ({ ...f, prompt: e.target.value }))}
                 rows={5}
                 className="resize-none"
               />
-              <p className="text-xs text-muted-foreground">{form.prompt.length} characters</p>
+              <p className="text-xs text-muted-foreground">{form.prompt.length} {t("common.characters")}</p>
             </div>
 
             <div className="flex gap-2 justify-end pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("pages.myTemplates.cancel")}</Button>
               <Button onClick={handleSave} className="gap-2">
                 <Save className="w-4 h-4" />
-                {editingId ? "Update" : "Save Template"}
+                {editingId ? t("pages.myTemplates.update") : t("pages.myTemplates.saveTemplate")}
               </Button>
             </div>
           </div>

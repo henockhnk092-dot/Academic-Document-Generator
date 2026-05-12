@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { azureAvailable, AZURE_VOICES, fetchAzureAudio, getSpeechPrefs } from "@/hooks/use-speech";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Send, Bot, User, Loader2, Sparkles, BookOpen, MessageSquare, Eraser, CheckCircle2, XCircle, RefreshCw, RotateCcw, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File } from "lucide-react";
+import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File } from "lucide-react";
 import { useFileUpload } from "@/hooks/use-file-upload";
 
 function formatMarkdown(text: string): JSX.Element {
@@ -90,13 +91,9 @@ function stripMarkdown(text: string): string {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -105,22 +102,6 @@ interface Message {
   content: string;
   createdAt: Date;
 }
-
-interface GrammarSuggestion {
-  original: string;
-  suggested: string;
-  type: string;
-  explanation: string;
-}
-
-const suggestionPrompts = [
-  "How can I improve my thesis statement?",
-  "Suggest a better introduction for my paper",
-  "Help me structure my methodology section",
-  "What are common mistakes in academic writing?",
-  "How do I properly cite sources in APA format?",
-  "Review this paragraph for clarity",
-];
 
 const CHAT_STORAGE_KEY = "papergen-ai-chat-messages";
 
@@ -143,19 +124,24 @@ const loadStoredMessages = (): Message[] => {
 };
 
 export default function AiAssistant() {
-  const [activeTab, setActiveTab] = useState("chat");
   const [message, setMessage] = useState("");
-  const [textToCheck, setTextToCheck] = useState("");
-  const [originalText, setOriginalText] = useState("");
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>(loadStoredMessages);
-  const [grammarSuggestions, setGrammarSuggestions] = useState<GrammarSuggestion[]>([]);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
-  const userId = "demo-user";
+
+  const suggestionPrompts = [
+    t("pages.aiAssistant.prompt1"),
+    t("pages.aiAssistant.prompt2"),
+    t("pages.aiAssistant.prompt3"),
+    t("pages.aiAssistant.prompt4"),
+    t("pages.aiAssistant.prompt5"),
+    t("pages.aiAssistant.prompt6"),
+  ];
 
   // File upload hook for chat attachments
   const { uploadedFiles, isProcessing: isProcessingFiles, extractedText, handleFileUpload, removeFile, clearAll } = useFileUpload();
@@ -188,7 +174,7 @@ export default function AiAssistant() {
       setCopiedId(messageId);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
-      toast({ title: "Copy failed", variant: "destructive" });
+      toast({ title: t("common.copyFailed"), variant: "destructive" });
     }
   };
 
@@ -241,33 +227,16 @@ export default function AiAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  interface SessionResponse {
-    session: { id: number };
-  }
-
   interface ChatResponse {
     response: string;
   }
-
-  interface GrammarResponse {
-    suggestions: GrammarSuggestion[];
-  }
-
-  const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/ai/session", { userId, sessionType: "writing_assistant" });
-      return response as unknown as SessionResponse;
-    },
-    onSuccess: (data) => {
-      setSessionId(data.session.id);
-    },
-  });
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       const chatResponse = await apiRequest("POST", "/api/ai/chat", {
         sessionId: sessionId || undefined,
-        message: content
+        message: content,
+        language: i18n.language
       });
       return chatResponse as unknown as ChatResponse;
     },
@@ -279,31 +248,8 @@ export default function AiAssistant() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const grammarCheckMutation = useMutation({
-    mutationFn: async (text: string) => {
-      const response = await apiRequest("POST", "/api/ai/grammar", { userId, text });
-      return response as unknown as GrammarResponse;
-    },
-    onSuccess: (data) => {
-      setGrammarSuggestions(data.suggestions || []);
-      if (data.suggestions?.length === 0) {
-        toast({
-          title: "No Issues Found",
-          description: "Your text looks good!",
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to check grammar",
+        title: t("common.errorTitle"),
+        description: error.message || t("common.failedSendMessage"),
         variant: "destructive",
       });
     },
@@ -322,7 +268,7 @@ export default function AiAssistant() {
 
     // Display message with file info if any
     const displayMessage = uploadedFiles.length > 0
-      ? `${message.trim() || "Analyze this file"}\n\n📎 ${uploadedFiles.map(f => f.name).join(", ")}`
+      ? `${message.trim() || t("components.chatbotWidget.analyzeFile", { name: uploadedFiles.map(f => f.name).join(", ") })}\n\n📎 ${uploadedFiles.map(f => f.name).join(", ")}`
       : message.trim();
 
     setMessages(prev => [
@@ -338,125 +284,35 @@ export default function AiAssistant() {
     setMessage(prompt);
   };
 
-  const handleGrammarCheck = () => {
-    if (!textToCheck.trim()) {
-      toast({
-        title: "No Text",
-        description: "Please enter some text to check",
-        variant: "destructive",
-      });
-      return;
-    }
-    // Save original text before checking
-    setOriginalText(textToCheck);
-    grammarCheckMutation.mutate(textToCheck);
-  };
-
-  const applySuggestion = (suggestion: GrammarSuggestion) => {
-    if (suggestion.original && suggestion.suggested) {
-      setTextToCheck(textToCheck.replace(suggestion.original, suggestion.suggested));
-      setGrammarSuggestions(prev => prev.filter(s => s.original !== suggestion.original));
-      toast({
-        title: "Suggestion Applied",
-        description: "The correction has been applied to your text",
-      });
-    }
-  };
-
-  const applyAllSuggestions = () => {
-    let updatedText = textToCheck;
-    let appliedCount = 0;
-
-    grammarSuggestions.forEach(suggestion => {
-      if (suggestion.original && suggestion.suggested) {
-        updatedText = updatedText.replace(suggestion.original, suggestion.suggested);
-        appliedCount++;
-      }
-    });
-
-    setTextToCheck(updatedText);
-    setGrammarSuggestions([]);
-
-    toast({
-      title: "All Suggestions Applied",
-      description: `${appliedCount} correction(s) have been applied to your text`,
-    });
-  };
-
-  const resetToOriginal = () => {
-    if (originalText) {
-      setTextToCheck(originalText);
-      setGrammarSuggestions([]);
-      toast({
-        title: "Text Reset",
-        description: "Text has been reset to the original version",
-      });
-    }
-  };
-
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied!",
-        description: `${label} text copied to clipboard`,
-      });
-    } catch (err) {
-      toast({
-        title: "Copy Failed",
-        description: "Unable to copy text to clipboard",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const hasChanges = originalText && originalText !== textToCheck;
-  const wordCount = textToCheck.trim() ? textToCheck.trim().split(/\s+/).length : 0;
-  const charCount = textToCheck.length;
-
   const clearChat = () => {
     setMessages([]);
     setSessionId(null);
     localStorage.removeItem(CHAT_STORAGE_KEY);
     toast({
-      title: "Chat Cleared",
-      description: "Starting a fresh conversation",
+      title: t("pages.aiAssistant.chatClearedTitle"),
+      description: t("pages.aiAssistant.chatClearedDesc"),
     });
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl" data-testid="page-ai-assistant">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">AI Writing Assistant</h1>
-        <p className="text-muted-foreground">
-          Get help with your academic writing, check grammar, and improve your documents
-        </p>
+        <h1 className="text-3xl font-bold mb-2">{t("pages.aiAssistant.title")}</h1>
+        <p className="text-muted-foreground">{t("pages.aiAssistant.subtitle")}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="chat" data-testid="tab-chat">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Writing Assistant
-          </TabsTrigger>
-          <TabsTrigger value="grammar" data-testid="tab-grammar">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Grammar Check
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="chat">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <Card className="lg:col-span-3">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Bot className="w-5 h-5 text-primary" />
-                    Chat with AI
+                    {t("pages.aiAssistant.chatTitle")}
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={clearChat}>
                     <Eraser className="w-4 h-4 mr-2" />
-                    Clear
+                    {t("pages.aiAssistant.clear")}
                   </Button>
                 </div>
               </CardHeader>
@@ -466,9 +322,9 @@ export default function AiAssistant() {
                   {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <Bot className="w-16 h-16 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Start a Conversation</h3>
+                      <h3 className="text-lg font-semibold mb-2">{t("pages.aiAssistant.emptyChat")}</h3>
                       <p className="text-muted-foreground mb-4 max-w-md">
-                        Ask me anything about academic writing, citations, structure, or get feedback on your work.
+                        {t("pages.aiAssistant.emptyChatDesc")}
                       </p>
                     </div>
                   ) : (
@@ -504,7 +360,7 @@ export default function AiAssistant() {
                                   variant="ghost"
                                   className="h-7 w-7"
                                   onClick={() => handleCopyMessage(msg.content, msg.id)}
-                                  title="Copy"
+                                  title={t("common.copy")}
                                 >
                                   {copiedId === msg.id ? (
                                     <Check className="h-3.5 w-3.5 text-green-500" />
@@ -517,7 +373,7 @@ export default function AiAssistant() {
                                   variant="ghost"
                                   className="h-7 w-7"
                                   onClick={() => handleSpeak(msg.content, msg.id)}
-                                  title={speakingId === msg.id ? "Stop" : "Read aloud"}
+                                  title={speakingId === msg.id ? t("components.tts.stop") : t("components.tts.readAloud")}
                                 >
                                   {speakingId === msg.id ? (
                                     <Square className="h-3.5 w-3.5 text-primary" />
@@ -578,7 +434,7 @@ export default function AiAssistant() {
                       {isProcessingFiles && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Extracting text...
+                          {t("pages.aiAssistant.extractingText")}
                         </div>
                       )}
                     </div>
@@ -599,7 +455,7 @@ export default function AiAssistant() {
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={sendMessageMutation.isPending || isProcessingFiles}
-                      title="Attach file (PDF, Word, Image)"
+                      title={t("common.attachFilePDF")}
                       data-testid="button-attach-file"
                     >
                       <Paperclip className="w-4 h-4" />
@@ -608,7 +464,7 @@ export default function AiAssistant() {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                      placeholder={uploadedFiles.length > 0 ? "Add a message or just send the file..." : "Ask about academic writing..."}
+                      placeholder={uploadedFiles.length > 0 ? t("pages.aiAssistant.messagePlaceholderFile") : t("pages.aiAssistant.messagePlaceholder")}
                       disabled={sendMessageMutation.isPending}
                       data-testid="input-chat-message"
                     />
@@ -625,7 +481,7 @@ export default function AiAssistant() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Attach images, PDFs, or Word documents to analyze
+                    {t("pages.aiAssistant.attachHint")}
                   </p>
                 </div>
               </CardContent>
@@ -633,9 +489,9 @@ export default function AiAssistant() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Quick Prompts</CardTitle>
+                <CardTitle className="text-sm">{t("pages.aiAssistant.quickPrompts")}</CardTitle>
                 <CardDescription className="text-xs">
-                  Click to use a suggested prompt
+                  {t("pages.aiAssistant.quickPromptsDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -655,210 +511,21 @@ export default function AiAssistant() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="grammar">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  Grammar & Style Check
-                </CardTitle>
-                <CardDescription>
-                  Paste your text below to check for grammar, style, and clarity issues
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="relative">
-                  <Textarea
-                    value={textToCheck}
-                    onChange={(e) => setTextToCheck(e.target.value)}
-                    placeholder="Paste your academic text here to check for issues..."
-                    rows={12}
-                    data-testid="textarea-grammar-check"
-                  />
-                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
-                    {wordCount} words | {charCount} characters
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleGrammarCheck}
-                    disabled={grammarCheckMutation.isPending || !textToCheck.trim()}
-                    className="flex-1"
-                    data-testid="button-check-grammar"
-                  >
-                    {grammarCheckMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Checking...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Check Grammar
-                      </>
-                    )}
-                  </Button>
-                  {textToCheck.trim() && (
-                    <Button
-                      variant="outline"
-                      onClick={() => copyToClipboard(textToCheck, "Current")}
-                      title="Copy text"
-                      data-testid="button-copy-text"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {hasChanges && (
-                    <Button
-                      variant="outline"
-                      onClick={resetToOriginal}
-                      title="Reset to original"
-                      data-testid="button-reset"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setTextToCheck("");
-                      setOriginalText("");
-                      setGrammarSuggestions([]);
-                    }}
-                  >
-                    <Eraser className="w-4 h-4" />
-                  </Button>
-                </div>
-
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Suggestions</CardTitle>
-                    <CardDescription>
-                      {grammarSuggestions.length > 0
-                        ? `Found ${grammarSuggestions.length} suggestion(s)`
-                        : "Suggestions will appear here after checking"
-                      }
-                    </CardDescription>
-                  </div>
-                  {grammarSuggestions.length > 1 && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={applyAllSuggestions}
-                      data-testid="button-apply-all"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                      Apply All
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[350px]">
-                  {grammarSuggestions.length === 0 ? (
-                    hasChanges ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span className="font-medium">All corrections applied!</span>
-                        </div>
-                        <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
-                          <div className="flex items-center justify-between mb-2">
-                            <Label className="text-xs font-medium text-green-700 dark:text-green-300">Corrected Text</Label>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2"
-                              onClick={() => copyToClipboard(textToCheck, "Corrected")}
-                            >
-                              <Copy className="w-3 h-3 mr-1" />
-                              <span className="text-xs">Copy</span>
-                            </Button>
-                          </div>
-                          <p className="whitespace-pre-wrap text-sm text-green-800 dark:text-green-200">{textToCheck}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                        <CheckCircle2 className="w-12 h-12 text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">
-                          {grammarCheckMutation.isPending
-                            ? "Analyzing your text..."
-                            : "Enter text and click 'Check Grammar' to get suggestions"
-                          }
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    <div className="space-y-4">
-                      {grammarSuggestions.map((suggestion, index) => {
-                        // Color coding for different suggestion types
-                        const typeColors: Record<string, string> = {
-                          grammar: "border-l-red-500",
-                          spelling: "border-l-orange-500",
-                          punctuation: "border-l-yellow-500",
-                          style: "border-l-blue-500",
-                          clarity: "border-l-purple-500",
-                          word_choice: "border-l-green-500",
-                        };
-                        const borderColor = typeColors[suggestion.type.toLowerCase()] || "border-l-primary";
-
-                        return (
-                          <Card key={index} className={`border-l-4 ${borderColor}`} data-testid={`card-suggestion-${index}`}>
-                            <CardContent className="p-4 space-y-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {suggestion.type.replace(/_/g, ' ')}
-                                </Badge>
-                              </div>
-                              {suggestion.original && (
-                                <div className="text-sm">
-                                  <span className="text-muted-foreground">Original: </span>
-                                  <span className="line-through text-red-500">{suggestion.original}</span>
-                                </div>
-                              )}
-                              {suggestion.suggested && (
-                                <div className="text-sm">
-                                  <span className="text-muted-foreground">Suggested: </span>
-                                  <span className="text-green-600 dark:text-green-400">{suggestion.suggested}</span>
-                                </div>
-                              )}
-                              {suggestion.explanation && (
-                                <p className="text-xs text-muted-foreground">
-                                  {suggestion.explanation}
-                                </p>
-                              )}
-                              {suggestion.original && suggestion.suggested && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => applySuggestion(suggestion)}
-                                  data-testid={`button-apply-suggestion-${index}`}
-                                >
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Apply
-                                </Button>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-sm font-semibold text-primary mb-2">{t("pages.aiAssistant.tipTitle")}</p>
+              <ul className="space-y-1">
+                {(["tipBullet1", "tipBullet2", "tipBullet3"] as const).map((key) => (
+                  <li key={key} className="flex gap-2 items-start text-sm text-muted-foreground">
+                    <span className="text-primary font-bold shrink-0">•</span>
+                    <span>{t(`pages.aiAssistant.${key}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+      </div>
     </div>
   );
 }

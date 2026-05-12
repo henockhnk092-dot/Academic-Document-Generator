@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Cpu
 } from "lucide-react";
-import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
+import { SiGithub, SiYoutube, SiTiktok, SiInstagram, SiLinkedin } from "react-icons/si";
 import { useTranslation } from "react-i18next";
 
 export default function Contact() {
@@ -54,15 +54,15 @@ export default function Contact() {
       }
 
       toast({
-        title: "Message Sent",
-        description: "Thank you for your message. We'll get back to you soon!",
+        title: t("pages.contact.sentTitle"),
+        description: t("pages.contact.sentDesc"),
       });
 
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: t("pages.contact.errorTitle"),
+        description: t("pages.contact.errorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -71,6 +71,7 @@ export default function Contact() {
   };
 
   const socialLinks = [
+    { icon: SiLinkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/henock-mukonkole-178b26258", username: "Henock Hnk" },
     { icon: SiGithub, label: "GitHub", href: "https://github.com/henockhnk092-dot/Academic-Document-Generator", username: "henockhnk092-dot" },
     { icon: SiYoutube, label: "YouTube", href: "https://youtube.com/@HNK2005", username: "@HNK2005" },
     { icon: SiTiktok, label: "TikTok", href: "https://tiktok.com/@codingfever", username: "@codingfever" },
@@ -88,6 +89,7 @@ export default function Contact() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
+          <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -102,7 +104,7 @@ export default function Contact() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label htmlFor="name">{t("pages.contact.nameLabel")}</Label>
                     <Input
                       id="name"
                       placeholder={t("pages.contact.namePlaceholder")}
@@ -113,7 +115,7 @@ export default function Contact() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("pages.contact.emailLabel")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -126,7 +128,7 @@ export default function Contact() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <Label htmlFor="subject">{t("pages.contact.subjectLabel")}</Label>
                   <Input
                     id="subject"
                     placeholder={t("pages.contact.subjectPlaceholder")}
@@ -137,7 +139,7 @@ export default function Contact() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="message">{t("pages.contact.messageLabel")}</Label>
                   <Textarea
                     id="message"
                     placeholder={t("pages.contact.messagePlaceholder")}
@@ -165,6 +167,24 @@ export default function Contact() {
             </CardContent>
           </Card>
 
+          <div className="flex-1 overflow-hidden rounded-lg border min-h-[220px] flex flex-col">
+            <div className="px-4 py-3 border-b bg-card">
+              <h3 className="font-semibold text-sm">{t("pages.contact.ourLocation")}</h3>
+              <p className="text-xs text-muted-foreground">{t("pages.contact.locationName")}</p>
+            </div>
+            <iframe
+              title={t("pages.contact.locationName")}
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d211953.10071455358!2d18.295288!3d-33.928992!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1dcc500f8826eed7%3A0x687fe1fc2828aa87!2sCape%20Town%2C%20South%20Africa!5e0!3m2!1sen!2sza!4v1715000000000!5m2!1sen!2sza"
+              width="100%"
+              height="100%"
+              style={{ border: 0, display: "block", flex: 1 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+          </div>
+
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -176,7 +196,7 @@ export default function Contact() {
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium">Email</p>
+                    <p className="font-medium">{t("pages.contact.emailLabel")}</p>
                     <a
                       href="mailto:hhnk3693@gmail.com"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -190,14 +210,14 @@ export default function Contact() {
                     <SiGithub className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium">Source Code</p>
+                    <p className="font-medium">{t("pages.contact.sourceCode")}</p>
                     <a
                       href="https://github.com/henockhnk092-dot/Academic-Document-Generator"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      GitHub Repository
+                      {t("pages.contact.githubRepo")}
                     </a>
                   </div>
                 </div>
@@ -235,15 +255,27 @@ export default function Contact() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Cpu className="h-5 w-5" />
-                  About the Author
+                  {t("pages.contact.aboutAuthor")}
                 </CardTitle>
                 <CardDescription>
-                  Bridge Hardware and Software Logic
+                  {t("pages.contact.authorTagline")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/images/author.jpg"
+                    alt="Henock Hnk"
+                    className="h-14 w-14 rounded-full object-cover border-2 border-primary/20 shrink-0"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                  <div>
+                    <p className="font-semibold text-sm">Henock Hnk</p>
+                    <p className="text-xs text-muted-foreground">{t("pages.contact.locationName")}</p>
+                  </div>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  I offer tech consulting and development services that bridge the gap between hardware and software — from embedded systems to full-stack web applications.
+                  {t("pages.contact.authorDesc")}
                 </p>
                 <a
                   href="https://hnk-your-tech-solutions.hnk-tech.workers.dev/"
@@ -253,37 +285,15 @@ export default function Contact() {
                 >
                   <Button className="w-full" variant="outline">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Book My Services
+                    {t("pages.contact.bookServices")}
                   </Button>
                 </a>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("pages.contact.faqTitle")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <p className="font-medium">{t("pages.contact.faq1Q")}</p>
-                  <p className="text-muted-foreground">{t("pages.contact.faq1A")}</p>
-                </div>
-                <div>
-                  <p className="font-medium">{t("pages.contact.faq2Q")}</p>
-                  <p className="text-muted-foreground">{t("pages.contact.faq2A")}</p>
-                </div>
-                <div>
-                  <p className="font-medium">{t("pages.contact.faq3Q")}</p>
-                  <p className="text-muted-foreground">{t("pages.contact.faq3A")}</p>
-                </div>
-                <div>
-                  <p className="font-medium">{t("pages.contact.faq4Q")}</p>
-                  <p className="text-muted-foreground">{t("pages.contact.faq4A")}</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
+
       </div>
     </div>
   );

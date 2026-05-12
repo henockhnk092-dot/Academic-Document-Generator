@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { BookOpen, Plus, Search, Trash2, Edit2, Link as LinkIcon, Copy, FileText, Globe, Tag, Download, FileCode, Upload, Loader2, Sparkles, Printer, FileOutput, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -20,21 +21,25 @@ import { collection, query, where, getDocs, deleteDoc, doc, addDoc, Timestamp } 
 import type { Reference } from "@shared/schema";
 import { CITATION_STYLES } from "@shared/schema";
 
-const referenceTypes = [
-  { value: "article", label: "Journal Article" },
-  { value: "book", label: "Book" },
-  { value: "conference", label: "Conference Paper" },
-  { value: "website", label: "Website" },
-  { value: "thesis", label: "Thesis/Dissertation" },
-  { value: "report", label: "Technical Report" },
-  { value: "other", label: "Other" },
-];
-
 export default function References() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>("apa");
   const [references, setReferences] = useState<any[]>([]);
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
+
+  const referenceTypes = [
+    { value: "article",    label: t("pages.references.typeArticle") },
+    { value: "book",       label: t("pages.references.typeBook") },
+    { value: "conference", label: t("pages.references.typeConference") },
+    { value: "website",    label: t("pages.references.typeWebsite") },
+    { value: "thesis",     label: t("pages.references.typeThesis") },
+    { value: "report",     label: t("pages.references.typeReport") },
+    { value: "other",      label: t("pages.references.typeOther") },
+  ];
+
   const [newReference, setNewReference] = useState({
     title: "",
     authors: "",
@@ -54,8 +59,6 @@ export default function References() {
   const [isDoiFetching, setIsDoiFetching] = useState(false);
   const [isSavingToProjects, setIsSavingToProjects] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-  const { user, isAuthenticated } = useAuth();
 
   const { data: referencesData, isLoading } = useQuery({
     queryKey: ["references", user?.uid],
@@ -119,14 +122,14 @@ export default function References() {
         tags: [],
       });
       toast({
-        title: "Reference Added",
-        description: "Your reference has been saved to the library",
+        title: t("pages.references.refAdded"),
+        description: t("pages.references.refAddedDesc"),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add reference",
+        title: t("pages.references.errorTitle"),
+        description: error.message || t("pages.references.addRefFailed"),
         variant: "destructive",
       });
     },
@@ -144,31 +147,38 @@ export default function References() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["references", user?.uid] });
       toast({
-        title: "Reference Deleted",
-        description: "Reference has been removed from your library",
+        title: t("pages.references.refDeleted"),
+        description: t("pages.references.refDeletedDesc"),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t("pages.references.errorTitle"),
+        description: error.message || t("pages.references.deleteRefFailed"),
+        variant: "destructive",
       });
     },
   });
 
   // Format citation client-side
   const formatCitation = (ref: Reference, style: string): string => {
-    const authors = ref.authors || "Unknown Author";
+    const authors = ref.authors || t("pages.references.unknownAuthor");
     const year = ref.year || "n.d.";
-    const title = ref.title || "Untitled";
+    const title = ref.title || t("pages.references.untitled");
     const source = ref.source || "";
     const url = ref.url || "";
 
     switch (style.toLowerCase()) {
       case "apa":
-        return `${authors} (${year}). ${title}.${source ? ` ${source}.` : ""}${url ? ` Retrieved from ${url}` : ""}`;
+        return `${authors} (${year}). ${title}.${source ? ` ${source}.` : ""}${url ? ` ${t("pages.references.retrievedFrom")} ${url}` : ""}`;
       case "mla":
         return `${authors}. "${title}."${source ? ` ${source},` : ""} ${year}.${url ? ` ${url}.` : ""}`;
       case "chicago":
         return `${authors}. "${title}."${source ? ` ${source}` : ""} (${year}).${url ? ` ${url}.` : ""}`;
       case "harvard":
-        return `${authors} (${year}) '${title}',${source ? ` ${source}.` : ""}${url ? ` Available at: ${url}` : ""}`;
+        return `${authors} (${year}) '${title}',${source ? ` ${source}.` : ""}${url ? ` ${t("pages.references.availableAt")}: ${url}` : ""}`;
       case "ieee":
-        return `${authors}, "${title},"${source ? ` ${source},` : ""} ${year}.${url ? ` [Online]. Available: ${url}` : ""}`;
+        return `${authors}, "${title},"${source ? ` ${source},` : ""} ${year}.${url ? ` [${t("pages.references.online")}]. ${t("pages.references.available")}: ${url}` : ""}`;
       default:
         return `${authors} (${year}). ${title}.${source ? ` ${source}.` : ""}`;
     }
@@ -185,15 +195,15 @@ export default function References() {
       if (data.citation?.formatted) {
         navigator.clipboard.writeText(data.citation.formatted);
         toast({
-          title: "Citation Copied",
-          description: `${selectedStyle.toUpperCase()} citation copied to clipboard`,
+          title: t("pages.references.citationCopied"),
+          description: t("pages.references.citationCopiedDesc", { style: selectedStyle.toUpperCase() }),
         });
       }
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to format citation",
+        title: t("pages.references.errorTitle"),
+        description: error.message || t("pages.references.formatCitationFailed"),
         variant: "destructive",
       });
     },
@@ -220,8 +230,8 @@ export default function References() {
   const fetchFromUrl = async () => {
     if (!urlInput.trim()) {
       toast({
-        title: "URL Required",
-        description: "Please enter a URL to fetch metadata from",
+        title: t("pages.references.urlRequired"),
+        description: t("pages.references.urlRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -251,21 +261,21 @@ export default function References() {
         });
         setImportTab("manual");
         toast({
-          title: "Metadata Fetched",
-          description: "Reference details filled from URL. Review and save.",
+          title: t("pages.references.metadataFetched"),
+          description: t("pages.references.metadataFetchedURLDesc"),
         });
       } else {
         toast({
-          title: "Fetch Failed",
-          description: data.error || "Could not extract metadata from this URL",
+          title: t("pages.references.fetchFailed"),
+          description: data.error || t("pages.references.fetchFailedURLDesc"),
           variant: "destructive",
         });
       }
     } catch (error: any) {
       console.error("URL fetch error:", error);
       toast({
-        title: "Error",
-        description: error?.message || "Failed to fetch URL metadata. Please try again.",
+        title: t("pages.references.errorTitle"),
+        description: error?.message || t("pages.references.fetchError"),
         variant: "destructive",
       });
     } finally {
@@ -276,8 +286,8 @@ export default function References() {
   const fetchFromDoi = async () => {
     if (!doiInput.trim()) {
       toast({
-        title: "DOI Required",
-        description: "Please enter a DOI to fetch metadata from",
+        title: t("pages.references.doiRequired"),
+        description: t("pages.references.doiRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -307,20 +317,20 @@ export default function References() {
         });
         setImportTab("manual");
         toast({
-          title: "Metadata Fetched",
-          description: "Reference details filled from DOI. Review and save.",
+          title: t("pages.references.metadataFetched"),
+          description: t("pages.references.metadataFetchedDOIDesc"),
         });
       } else {
         toast({
-          title: "Fetch Failed",
-          description: data.error || "Could not find metadata for this DOI",
+          title: t("pages.references.fetchFailed"),
+          description: data.error || t("pages.references.fetchFailedDOIDesc"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to fetch DOI metadata. Please try again.",
+        title: t("pages.references.errorTitle"),
+        description: t("pages.references.fetchError"),
         variant: "destructive",
       });
     } finally {
@@ -391,8 +401,8 @@ export default function References() {
 
       if (entries.length === 0) {
         toast({
-          title: "No entries found",
-          description: "Could not parse any valid BibTeX entries from the file",
+          title: t("pages.references.noBibTeXEntries"),
+          description: t("pages.references.noBibTeXEntriesDesc"),
           variant: "destructive",
         });
         return;
@@ -403,8 +413,8 @@ export default function References() {
         setNewReference(entries[0]);
         setImportTab("manual");
         toast({
-          title: "BibTeX Imported",
-          description: "Reference details filled. Review and save.",
+          title: t("pages.references.bibTeXImported"),
+          description: t("pages.references.bibTeXImportedDesc"),
         });
       } else {
         // Multiple entries - import all
@@ -418,15 +428,15 @@ export default function References() {
           }
         }
         toast({
-          title: "BibTeX Imported",
-          description: `Successfully imported ${successCount} of ${entries.length} references`,
+          title: t("pages.references.bibTeXImported"),
+          description: t("pages.references.bibTeXImportedMulti", { success: successCount, total: entries.length }),
         });
         setIsAddDialogOpen(false);
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to read BibTeX file",
+        title: t("pages.references.errorTitle"),
+        description: t("pages.references.bibTeXReadError"),
         variant: "destructive",
       });
     }
@@ -441,8 +451,8 @@ export default function References() {
   const exportToBibTeX = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to export",
-        description: "Add some references first",
+        title: t("pages.references.noExportRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -472,16 +482,16 @@ export default function References() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: `Exported ${filteredReferences.length} reference(s) to BibTeX`,
+      title: t("pages.references.exportSuccess"),
+      description: t("pages.references.exportedBibTeXDesc", { count: filteredReferences.length }),
     });
   };
 
   const exportToRIS = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to export",
-        description: "Add some references first",
+        title: t("pages.references.noExportRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -523,22 +533,32 @@ export default function References() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: `Exported ${filteredReferences.length} reference(s) to RIS`,
+      title: t("pages.references.exportSuccess"),
+      description: t("pages.references.exportedRISDesc", { count: filteredReferences.length }),
     });
   };
 
   const exportToCSV = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to export",
-        description: "Add some references first",
+        title: t("pages.references.noExportRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
     }
 
-    const headers = ["Title", "Authors", "Year", "Type", "Source", "URL", "DOI", "Notes", "Tags"];
+    const headers = [
+      t("pages.references.titleLabel"),
+      t("pages.references.authorsLabel"),
+      t("pages.references.yearLabel"),
+      t("pages.references.typeLabel"),
+      t("pages.references.sourceLabel"),
+      t("pages.references.urlFieldLabel"),
+      t("pages.references.doiFieldLabel"),
+      t("pages.references.notesLabel"),
+      t("pages.references.tagsLabel"),
+    ];
     const rows = filteredReferences.map((ref: Reference) => [
       ref.title || "",
       ref.authors || "",
@@ -567,16 +587,16 @@ export default function References() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: `Exported ${filteredReferences.length} reference(s) to CSV`,
+      title: t("pages.references.exportSuccess"),
+      description: t("pages.references.exportedCSVDesc", { count: filteredReferences.length }),
     });
   };
 
   const exportToWord = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to export",
-        description: "Add some references first",
+        title: t("pages.references.noExportRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -596,7 +616,7 @@ export default function References() {
       const citation = formatCitation(ref, selectedStyle);
       docxBody += `<w:p><w:r><w:t>${index + 1}. ${citation.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</w:t></w:r></w:p>`;
       if (ref.notes) {
-        docxBody += `<w:p><w:pPr><w:ind w:left="720"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>Notes: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</w:t></w:r></w:p>`;
+        docxBody += `<w:p><w:pPr><w:ind w:left="720"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>${t("pages.references.notesLabel")}: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</w:t></w:r></w:p>`;
       }
       docxBody += `<w:p><w:r><w:t></w:t></w:r></w:p>`;
     });
@@ -615,16 +635,16 @@ export default function References() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: `Exported ${filteredReferences.length} reference(s) to Word`,
+      title: t("pages.references.exportSuccess"),
+      description: t("pages.references.exportedWordDesc", { count: filteredReferences.length }),
     });
   };
 
   const exportToHTML = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to export",
-        description: "Add some references first",
+        title: t("pages.references.noExportRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -658,7 +678,7 @@ export default function References() {
     <span class="reference-type">${ref.type || 'other'}</span>
     <div class="citation">${formatCitation(ref, selectedStyle).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
     ${ref.url ? `<div><a href="${ref.url}" target="_blank">${ref.url}</a></div>` : ''}
-    ${ref.notes ? `<div class="notes">Notes: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ''}
+    ${ref.notes ? `<div class="notes">${t("pages.references.notesLabel")}: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ''}
     ${ref.tags && ref.tags.length > 0 ? `<div class="tags">${ref.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}</div>` : ''}
   </div>`).join('')}
 </body>
@@ -675,16 +695,16 @@ export default function References() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: `Exported ${filteredReferences.length} reference(s) to HTML`,
+      title: t("pages.references.exportSuccess"),
+      description: t("pages.references.exportedHTMLDesc", { count: filteredReferences.length }),
     });
   };
 
   const printReferences = () => {
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to print",
-        description: "Add some references first",
+        title: t("pages.references.noPrintRefs"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -716,7 +736,7 @@ export default function References() {
   <p class="meta">${selectedStyle.toUpperCase()} Format | ${filteredReferences.length} reference(s)</p>
   ${filteredReferences.map((ref: Reference) => `
   <div class="reference">${formatCitation(ref, selectedStyle).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-  ${ref.notes ? `<div class="notes">Notes: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ''}`).join('')}
+  ${ref.notes ? `<div class="notes">${t("pages.references.notesLabel")}: ${ref.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ''}`).join('')}
 </body>
 </html>`;
 
@@ -730,8 +750,8 @@ export default function References() {
       }, 250);
     } else {
       toast({
-        title: "Print blocked",
-        description: "Please allow popups to print references",
+        title: t("pages.references.printBlocked"),
+        description: t("pages.references.printBlockedDesc"),
         variant: "destructive",
       });
     }
@@ -741,8 +761,8 @@ export default function References() {
 
     if (!isAuthenticated || !user?.uid) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to save references to your projects",
+        title: t("pages.references.authRequired"),
+        description: t("pages.references.authRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -750,8 +770,8 @@ export default function References() {
 
     if (filteredReferences.length === 0) {
       toast({
-        title: "No references to save",
-        description: "Add some references first",
+        title: t("pages.references.noRefsToSave"),
+        description: t("pages.references.noExportRefsDesc"),
         variant: "destructive",
       });
       return;
@@ -769,8 +789,8 @@ export default function References() {
   <div class="reference" style="margin-bottom: 16px;">
     <p><strong>${index + 1}.</strong> ${formatCitation(ref, selectedStyle)}</p>
     ${ref.url ? `<p style="font-size: 0.9em;"><a href="${ref.url}">${ref.url}</a></p>` : ''}
-    ${ref.notes ? `<p style="font-style: italic; color: #666;">Notes: ${ref.notes}</p>` : ''}
-    ${ref.tags && ref.tags.length > 0 ? `<p style="font-size: 0.85em;">Tags: ${ref.tags.join(', ')}</p>` : ''}
+    ${ref.notes ? `<p style="font-style: italic; color: #666;">${t("pages.references.notesLabel")}: ${ref.notes}</p>` : ''}
+    ${ref.tags && ref.tags.length > 0 ? `<p style="font-size: 0.85em;">${t("pages.references.tagsLabel")}: ${ref.tags.join(', ')}</p>` : ''}
   </div>`).join('')}
 </div>`;
 
@@ -793,8 +813,8 @@ export default function References() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: "Saved to Projects",
-        description: `Reference library with ${filteredReferences.length} references saved successfully. View it in My Projects.`,
+        title: t("pages.references.savedToProjects"),
+        description: t("pages.references.savedToProjectsDesc", { count: filteredReferences.length }),
       });
     } catch (error: any) {
       console.error("=== SAVE TO PROJECTS ERROR ===");
@@ -802,8 +822,8 @@ export default function References() {
       console.error("Error message:", error?.message);
       console.error("Error code:", error?.code);
       toast({
-        title: "Save Failed",
-        description: error?.message || "Failed to save reference library to projects",
+        title: t("pages.references.saveFailed"),
+        description: error?.message || t("pages.references.saveFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -816,9 +836,9 @@ export default function References() {
       <div className="mb-8 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Reference Library</h1>
+            <h1 className="text-3xl font-bold mb-2">{t("pages.references.title")}</h1>
             <p className="text-muted-foreground">
-              Store and manage your research sources for easy citation
+              {t("pages.references.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -826,33 +846,33 @@ export default function References() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" data-testid="button-export-references">
                   <Download className="w-4 h-4 mr-2" />
-                  Export
+                  {t("pages.references.exportButton")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={exportToBibTeX}>
                   <FileCode className="w-4 h-4 mr-2" />
-                  Export as BibTeX
+                  {t("pages.references.exportBibTeX")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToRIS}>
                   <FileCode className="w-4 h-4 mr-2" />
-                  Export as RIS
+                  {t("pages.references.exportRIS")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToCSV}>
                   <FileText className="w-4 h-4 mr-2" />
-                  Export as CSV
+                  {t("pages.references.exportCSV")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToWord}>
                   <FileOutput className="w-4 h-4 mr-2" />
-                  Export as Word
+                  {t("pages.references.exportWord")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToHTML}>
                   <Globe className="w-4 h-4 mr-2" />
-                  Export as HTML
+                  {t("pages.references.exportHTML")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={printReferences}>
                   <Printer className="w-4 h-4 mr-2" />
-                  Print References
+                  {t("pages.references.printRefs")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -867,20 +887,20 @@ export default function References() {
               ) : (
                 <Save className="w-4 h-4 mr-2" />
               )}
-              Save to Projects
+              {t("pages.references.saveToProjects")}
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="button-add-reference">
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Reference
+                  {t("pages.references.addReference")}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Reference</DialogTitle>
+                <DialogTitle>{t("pages.references.addDialogTitle")}</DialogTitle>
                 <DialogDescription>
-                  Import from URL, DOI, BibTeX or enter details manually
+                  {t("pages.references.addDialogDesc")}
                 </DialogDescription>
               </DialogHeader>
 
@@ -900,18 +920,18 @@ export default function References() {
                   </TabsTrigger>
                   <TabsTrigger value="manual" className="text-xs sm:text-sm">
                     <Edit2 className="w-4 h-4 mr-1 hidden sm:inline" />
-                    Manual
+                    {t("pages.references.tabManual")}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="url" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Paste a URL to auto-fetch metadata</Label>
+                    <Label>{t("pages.references.urlLabel")}</Label>
                     <div className="flex gap-2">
                       <Input
                         value={urlInput}
                         onChange={(e) => setUrlInput(e.target.value)}
-                        placeholder="https://example.com/article..."
+                        placeholder={t("pages.references.urlPlaceholder")}
                         onKeyDown={(e) => e.key === "Enter" && fetchFromUrl()}
                       />
                       <Button onClick={fetchFromUrl} disabled={isUrlFetching}>
@@ -920,23 +940,23 @@ export default function References() {
                         ) : (
                           <Sparkles className="w-4 h-4" />
                         )}
-                        <span className="ml-2 hidden sm:inline">Fetch</span>
+                        <span className="ml-2 hidden sm:inline">{t("pages.references.fetch")}</span>
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Works with news articles, blog posts, research papers, and most websites
+                      {t("pages.references.urlHint")}
                     </p>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="doi" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Enter a DOI to fetch from CrossRef</Label>
+                    <Label>{t("pages.references.doiLabel")}</Label>
                     <div className="flex gap-2">
                       <Input
                         value={doiInput}
                         onChange={(e) => setDoiInput(e.target.value)}
-                        placeholder="10.1000/xyz123 or https://doi.org/..."
+                        placeholder={t("pages.references.doiPlaceholder")}
                         onKeyDown={(e) => e.key === "Enter" && fetchFromDoi()}
                       />
                       <Button onClick={fetchFromDoi} disabled={isDoiFetching}>
@@ -945,18 +965,18 @@ export default function References() {
                         ) : (
                           <Sparkles className="w-4 h-4" />
                         )}
-                        <span className="ml-2 hidden sm:inline">Fetch</span>
+                        <span className="ml-2 hidden sm:inline">{t("pages.references.fetch")}</span>
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Best for academic papers. Fetches title, authors, year, journal, and more
+                      {t("pages.references.doiHint")}
                     </p>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="bibtex" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label>Upload a BibTeX file (.bib)</Label>
+                    <Label>{t("pages.references.bibtexLabel")}</Label>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -969,9 +989,9 @@ export default function References() {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm font-medium">Click to upload BibTeX file</p>
+                      <p className="text-sm font-medium">{t("pages.references.bibtexUploadText")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Single entry fills the form, multiple entries import directly
+                        {t("pages.references.bibtexUploadHint")}
                       </p>
                     </div>
                   </div>
@@ -980,43 +1000,43 @@ export default function References() {
                 <TabsContent value="manual" className="space-y-4 mt-4">
                   <div className="grid gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="title">Title *</Label>
+                      <Label htmlFor="title">{t("pages.references.titleLabel")} *</Label>
                       <Input
                         id="title"
                         value={newReference.title}
                         onChange={(e) => setNewReference({ ...newReference, title: e.target.value })}
-                        placeholder="Enter the title of the work"
+                        placeholder={t("pages.references.titlePlaceholder")}
                         data-testid="input-reference-title"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="authors">Authors</Label>
+                        <Label htmlFor="authors">{t("pages.references.authorsLabel")}</Label>
                         <Input
                           id="authors"
                           value={newReference.authors}
                           onChange={(e) => setNewReference({ ...newReference, authors: e.target.value })}
-                          placeholder="e.g., Smith, J., Doe, A."
+                          placeholder={t("pages.references.authorsPlaceholder")}
                           data-testid="input-reference-authors"
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="year">Year</Label>
+                        <Label htmlFor="year">{t("pages.references.yearLabel")}</Label>
                         <Input
                           id="year"
                           value={newReference.year}
                           onChange={(e) => setNewReference({ ...newReference, year: e.target.value })}
-                          placeholder="e.g., 2024"
+                          placeholder={t("pages.references.yearPlaceholder")}
                           data-testid="input-reference-year"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="type">Type</Label>
+                        <Label htmlFor="type">{t("pages.references.typeLabel")}</Label>
                         <Select value={newReference.type} onValueChange={(v) => setNewReference({ ...newReference, type: v })}>
                           <SelectTrigger data-testid="select-reference-type">
-                            <SelectValue placeholder="Select type" />
+                            <SelectValue placeholder={t("pages.references.selectType")} />
                           </SelectTrigger>
                           <SelectContent>
                             {referenceTypes.map((type) => (
@@ -1028,29 +1048,29 @@ export default function References() {
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="source">Source/Journal</Label>
+                        <Label htmlFor="source">{t("pages.references.sourceLabel")}</Label>
                         <Input
                           id="source"
                           value={newReference.source}
                           onChange={(e) => setNewReference({ ...newReference, source: e.target.value })}
-                          placeholder="e.g., Nature, IEEE"
+                          placeholder={t("pages.references.sourcePlaceholder")}
                           data-testid="input-reference-source"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="url">URL</Label>
+                        <Label htmlFor="url">{t("pages.references.urlFieldLabel")}</Label>
                         <Input
                           id="url"
                           value={newReference.url}
                           onChange={(e) => setNewReference({ ...newReference, url: e.target.value })}
-                          placeholder="https://..."
+                          placeholder={t("pages.references.urlFieldPlaceholder")}
                           data-testid="input-reference-url"
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="doi">DOI</Label>
+                        <Label htmlFor="doi">{t("pages.references.doiFieldLabel")}</Label>
                         <Input
                           id="doi"
                           value={newReference.doi}
@@ -1061,28 +1081,28 @@ export default function References() {
                       </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="notes">Notes</Label>
+                      <Label htmlFor="notes">{t("pages.references.notesLabel")}</Label>
                       <Textarea
                         id="notes"
                         value={newReference.notes}
                         onChange={(e) => setNewReference({ ...newReference, notes: e.target.value })}
-                        placeholder="Add any notes about this reference..."
+                        placeholder={t("pages.references.notesPlaceholder")}
                         rows={3}
                         data-testid="input-reference-notes"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label>Tags</Label>
+                      <Label>{t("pages.references.tagsLabel")}</Label>
                       <div className="flex gap-2">
                         <Input
                           value={tagInput}
                           onChange={(e) => setTagInput(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                          placeholder="Add a tag..."
+                          placeholder={t("pages.references.tagPlaceholder")}
                           data-testid="input-reference-tag"
                         />
                         <Button type="button" variant="outline" onClick={addTag}>
-                          Add
+                          {t("pages.references.addTag")}
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -1099,7 +1119,7 @@ export default function References() {
 
               <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
+                  {t("pages.references.cancel")}
                 </Button>
                 {importTab === "manual" && (
                   <Button
@@ -1107,7 +1127,7 @@ export default function References() {
                     disabled={!newReference.title || createReferenceMutation.isPending}
                     data-testid="button-save-reference"
                   >
-                    Save Reference
+                    {t("pages.references.saveReference")}
                   </Button>
                 )}
               </DialogFooter>
@@ -1120,7 +1140,7 @@ export default function References() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search references..."
+              placeholder={t("pages.references.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -1129,7 +1149,7 @@ export default function References() {
           </div>
           <Select value={selectedStyle} onValueChange={setSelectedStyle}>
             <SelectTrigger className="w-40" data-testid="select-citation-style">
-              <SelectValue placeholder="Citation style" />
+              <SelectValue placeholder={t("pages.references.citationStylePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {CITATION_STYLES.map((style) => (
@@ -1161,17 +1181,17 @@ export default function References() {
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">
-              {searchQuery ? "No references found" : "No references yet"}
+              {searchQuery ? t("pages.references.noReferencesFound") : t("pages.references.noReferences")}
             </h3>
             <p className="text-muted-foreground mb-6">
               {searchQuery
-                ? "Try a different search term"
-                : "Add your first reference to start building your library"}
+                ? t("pages.references.noReferencesFoundDesc")
+                : t("pages.references.noReferencesDesc")}
             </p>
             {!searchQuery && (
               <Button onClick={() => setIsAddDialogOpen(true)} data-testid="button-add-first-reference">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Your First Reference
+                {t("pages.references.addFirstReference")}
               </Button>
             )}
           </CardContent>
@@ -1239,7 +1259,7 @@ export default function References() {
                   data-testid={`button-cite-${ref.id}`}
                 >
                   <Copy className="w-4 h-4 mr-1" />
-                  Copy {selectedStyle.toUpperCase()}
+                  {t("common.copy")} {selectedStyle.toUpperCase()}
                 </Button>
                 <Button
                   size="icon"

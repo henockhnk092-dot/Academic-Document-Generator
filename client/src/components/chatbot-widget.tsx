@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import i18n from "i18next";
+import { useTranslation } from "react-i18next";
 import { useLocation, Link } from "wouter";
-import { MessageCircle, Send, X, Bot, User, Loader2, Minimize2, Copy, Volume2, Square, Check, Trash2 } from "lucide-react";
+import { MessageCircle, Send, X, Bot, User, Loader2, Minimize2, Copy, Volume2, Square, Check, Trash2, Paperclip, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -107,14 +109,15 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  fileName?: string;
 }
 
-const WELCOME_MESSAGE: Message = {
+const createWelcomeMessage = (): Message => ({
   id: "welcome",
   role: "assistant",
-  content: "Hi! I'm your AcademicGen assistant. I can help you navigate the website, explain features, and answer questions about our document generators. What would you like to know?",
+  content: i18n.t("chat.welcome"),
   timestamp: new Date(),
-};
+});
 
 // Load messages from localStorage
 const loadStoredMessages = (): Message[] => {
@@ -131,10 +134,11 @@ const loadStoredMessages = (): Message[] => {
   } catch (e) {
     console.error("Failed to load widget chat messages:", e);
   }
-  return [WELCOME_MESSAGE];
+  return [createWelcomeMessage()];
 };
 
 export function ChatbotWidget() {
+  const { t, i18n } = useTranslation();
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(loadStoredMessages);
@@ -142,8 +146,11 @@ export function ChatbotWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isHidden = location === "/ai-assistant";
 
@@ -160,7 +167,7 @@ export function ChatbotWidget() {
 
   // Clear chat function
   const handleClearChat = () => {
-    setMessages([WELCOME_MESSAGE]);
+    setMessages([createWelcomeMessage()]);
     localStorage.removeItem(WIDGET_CHAT_STORAGE_KEY);
     window.speechSynthesis?.cancel();
     setSpeakingId(null);
@@ -214,25 +221,49 @@ export function ChatbotWidget() {
     setSpeakingId(messageId);
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsProcessingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/files/process", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Failed to process file");
+      const data = await res.json();
+      setAttachedFile({ name: file.name, content: data.text || "" });
+    } catch {
+      setAttachedFile({ name: file.name, content: t("components.chatbotWidget.fileExtractFailed", { name: file.name }) });
+    } finally {
+      setIsProcessingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !attachedFile) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: input.trim() || t("components.chatbotWidget.analyzeFile", { name: attachedFile?.name }),
+      fileName: attachedFile?.name,
       timestamp: new Date(),
     };
 
+    const fileContent = attachedFile?.content;
+    const fileName = attachedFile?.name;
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setAttachedFile(null);
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ message: userMessage.content, fileContent, fileName, language: i18n.language }),
       });
 
       if (!response.ok) {
@@ -244,7 +275,7 @@ export function ChatbotWidget() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response || "I apologize, but I couldn't process your request. Please try again.",
+        content: data.response || t("components.chatbotDialog.fallbackResponse"),
         timestamp: new Date(),
       };
 
@@ -253,7 +284,7 @@ export function ChatbotWidget() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm sorry, I encountered an error. Please make sure the AI service is configured and try again.",
+        content: t("components.chatbotDialog.errorResponse"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -294,7 +325,7 @@ export function ChatbotWidget() {
                 <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                 </div>
-                <span className="font-medium text-xs sm:text-sm truncate">AcademicGen Assistant</span>
+                <span className="font-medium text-xs sm:text-sm truncate">{t("components.chatbotDialog.title")}</span>
               </div>
               <div className="flex items-center gap-1">
                 <TooltipProvider>
@@ -306,14 +337,14 @@ export function ChatbotWidget() {
                         onClick={handleClearChat}
                         disabled={messages.length <= 1}
                         className="h-8 w-8"
-                        aria-label="Clear chat"
+                        aria-label={t("chat.clearChat")}
                         data-testid="button-clear-chatbot"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Clear chat</p>
+                      <p>{t("chat.clearChat")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -322,7 +353,7 @@ export function ChatbotWidget() {
                   variant="ghost"
                   onClick={() => setIsOpen(false)}
                   className="h-8 w-8"
-                  aria-label="Close chat"
+                  aria-label={t("components.chatbotWidget.closeChat")}
                   data-testid="button-minimize-chatbot"
                 >
                   <X className="h-5 w-5 sm:hidden" />
@@ -365,20 +396,26 @@ export function ChatbotWidget() {
                         )}
                         data-testid={`chat-message-${message.role}-${message.id}`}
                       >
+                        {message.fileName && (
+                          <div className="flex items-center gap-1 mb-1 opacity-80">
+                            <FileText className="h-3 w-3 shrink-0" />
+                            <span className="text-xs truncate max-w-[160px]">{message.fileName}</span>
+                          </div>
+                        )}
                         {message.role === "assistant" ? (
                           formatMarkdown(message.content, handleLinkClick)
                         ) : (
                           <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         )}
                       </div>
-                      {message.role === "assistant" && message.id !== "welcome" && (
+                      {message.role === "assistant" && (
                         <div className="flex gap-1 mt-1">
                           <Button
                             size="icon"
                             variant="ghost"
                             className="h-6 w-6"
                             onClick={() => handleCopy(message.content, message.id)}
-                            aria-label="Copy message"
+                            aria-label={t("components.chatbotWidget.copyMessage")}
                           >
                             {copiedId === message.id ? (
                               <Check className="h-3 w-3 text-green-500" />
@@ -391,7 +428,7 @@ export function ChatbotWidget() {
                             variant="ghost"
                             className="h-6 w-6"
                             onClick={() => handleSpeak(message.content, message.id)}
-                            aria-label={speakingId === message.id ? "Stop reading" : "Read aloud"}
+                            aria-label={speakingId === message.id ? t("components.chatbotWidget.stopReading") : t("components.chatbotWidget.readAloud")}
                           >
                             {speakingId === message.id ? (
                               <Square className="h-3 w-3 text-primary" />
@@ -417,11 +454,46 @@ export function ChatbotWidget() {
               </div>
             </ScrollArea>
 
-            <div className="p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-3 border-t">
+            <div className="p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-3 border-t space-y-1.5">
+              {attachedFile && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded text-xs">
+                  <FileText className="h-3 w-3 shrink-0 text-primary" />
+                  <span className="flex-1 truncate">{attachedFile.name}</span>
+                  <button
+                    onClick={() => setAttachedFile(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={t("components.chatbotWidget.removeFile")}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-1.5 sm:gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  aria-label={t("common.attachFile")}
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading || isProcessingFile}
+                  className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
+                  aria-label={t("components.chatbotWidget.attachFile")}
+                  title={t("components.chatbotWidget.attachFile")}
+                >
+                  {isProcessingFile ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  )}
+                </Button>
                 <Input
                   ref={inputRef}
-                  placeholder="Ask me anything..."
+                  placeholder={attachedFile ? t("components.chatbotWidget.fileMessagePlaceholder") : t("chat.inputPlaceholder")}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -432,9 +504,9 @@ export function ChatbotWidget() {
                 <Button
                   size="icon"
                   onClick={handleSend}
-                  disabled={!input.trim() || isLoading}
+                  disabled={(!input.trim() && !attachedFile) || isLoading}
                   className="h-9 w-9 sm:h-10 sm:w-10 shrink-0"
-                  aria-label="Send message"
+                  aria-label={t("components.chatbotWidget.sendMessage")}
                   data-testid="button-send-message"
                 >
                   <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -448,7 +520,7 @@ export function ChatbotWidget() {
             variant="outline"
             className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl shadow-lg opacity-50 bg-background/30 backdrop-blur-sm border-primary/30 text-primary hover:opacity-100 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200"
             onClick={() => setIsOpen(true)}
-            aria-label="Open chat assistant"
+            aria-label={t("components.chatbotWidget.openChat")}
             data-testid="button-open-chatbot"
           >
             <Bot className="h-6 w-6 sm:h-8 sm:w-8" />

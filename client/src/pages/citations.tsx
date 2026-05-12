@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { readCitationsPrefill } from "@/lib/humanize-transfer";
 import {
   BookOpen, Loader2, Upload, ClipboardPaste, Sparkles, X,
-  Trash2, Download, Copy, CheckCheck, FileBarChart, AlertTriangle,
+  Trash2, Undo2, Download, Copy, CheckCheck, FileBarChart, AlertTriangle,
   CheckCircle2, RefreshCw, FileText, ChevronDown, ChevronUp, FileDown,
 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
@@ -47,7 +48,7 @@ interface AnalysisResult {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const STYLES = ["Auto-detect", "IEEE", "APA", "Harvard", "MLA", "Chicago", "Vancouver"];
+const STYLE_VALUES = ["Auto-detect", "IEEE", "APA", "Harvard", "MLA", "Chicago", "Vancouver"];
 const countWords = (t: string) => t.trim() ? t.trim().split(/\s+/).length : 0;
 const MAX_WORDS = 8000;
 
@@ -60,60 +61,61 @@ function downloadText(text: string, name: string) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-function buildReport(result: AnalysisResult, originalText: string): string {
+function buildReport(result: AnalysisResult, originalText: string, t: (key: string, options?: Record<string, unknown>) => string): string {
   const lines = [
-    "CITATION CHECKER REPORT",
+    t("pages.citations.reportTitle"),
     "=======================",
-    `Detected Style    : ${result.detectedStyle}`,
-    `Total Citations   : ${result.totalCitations}`,
-    `Valid Citations   : ${result.validCount}`,
-    `Fake / Incorrect  : ${result.fakeCount}`,
+    `${t("pages.citations.detectedStyle")}    : ${result.detectedStyle}`,
+    `${t("pages.citations.totalCitations")}   : ${result.totalCitations}`,
+    `${t("pages.citations.validCitations")}   : ${result.validCount}`,
+    `${t("pages.citations.fakeIncorrect")}  : ${result.fakeCount}`,
     "",
-    "SUMMARY",
+    t("pages.citations.summary"),
     "-------",
     result.summary,
     "",
-    "PARAGRAPH ANALYSIS",
+    t("pages.citations.paragraphAnalysis"),
     "------------------",
   ];
 
   result.paragraphs.forEach((p, i) => {
-    lines.push(`\nParagraph ${i + 1}:`);
+    lines.push(`\n${t("pages.citations.paragraphN", { n: i + 1 })}:`);
     lines.push(p.paragraphText.substring(0, 200) + (p.paragraphText.length > 200 ? "…" : ""));
     if (p.citations.length === 0) {
-      lines.push("  → No citations found");
+      lines.push(`  → ${t("pages.citations.noCitationsFound")}`);
     } else {
       p.citations.forEach(c => {
-        lines.push(`  [${c.isValid ? "✓ VALID" : "✗ FAKE/INCORRECT"}] ${c.raw}`);
-        if (!c.isValid && c.issue) lines.push(`     Issue: ${c.issue}`);
-        if (!c.isValid && c.correctedText) lines.push(`     Suggested: ${c.correctedText}`);
-        if (c.formattedRef) lines.push(`     Full ref: ${c.formattedRef}`);
+        lines.push(`  [${c.isValid ? `✓ ${t("pages.citations.valid")}` : `✗ ${t("pages.citations.fakeIncorrectShort")}`}] ${c.raw}`);
+        if (!c.isValid && c.issue) lines.push(`     ${t("pages.citations.issue")}: ${c.issue}`);
+        if (!c.isValid && c.correctedText) lines.push(`     ${t("pages.citations.suggested")}: ${c.correctedText}`);
+        if (c.formattedRef) lines.push(`     ${t("pages.citations.fullRef")}: ${c.formattedRef}`);
       });
     }
   });
 
-  lines.push("", "REFERENCE SECTION", "-----------------");
+  lines.push("", t("pages.citations.referenceSection"), "-----------------");
   if (result.referenceSection.length === 0) {
-    lines.push("No references generated.");
+    lines.push(t("pages.citations.noReferencesGenerated"));
   } else {
     result.referenceSection.forEach((ref, i) => lines.push(`[${i + 1}] ${ref}`));
   }
 
-  lines.push("", "--- Original Text ---", originalText);
+  lines.push("", t("pages.humanize.reportOriginalText"), originalText);
   return lines.join("\n");
 }
 
 // ── Citation status badge ─────────────────────────────────────────────────────
 
 function CitationBadge({ isValid }: { isValid: boolean }) {
+  const { t } = useTranslation();
   if (isValid) return (
     <Badge className="gap-1 bg-emerald-500 hover:bg-emerald-500 text-white text-[10px]">
-      <CheckCircle2 className="w-3 h-3" />Valid
+      <CheckCircle2 className="w-3 h-3" />{t("pages.citations.badgeValid")}
     </Badge>
   );
   return (
     <Badge variant="destructive" className="gap-1 text-[10px]">
-      <AlertTriangle className="w-3 h-3" />Fake / Incorrect
+      <AlertTriangle className="w-3 h-3" />{t("pages.citations.badgeFake")}
     </Badge>
   );
 }
@@ -121,6 +123,7 @@ function CitationBadge({ isValid }: { isValid: boolean }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Citations() {
+  const { t } = useTranslation();
   const [inputMode, setInputMode] = useState<"paste" | "upload">("paste");
   const [inputText, setInputText]   = useState("");
   const [citStyle, setCitStyle]     = useState("Auto-detect");
@@ -158,19 +161,19 @@ export default function Citations() {
   // ── File upload ─────────────────────────────────────────────────────────────
   const handleFileUpload = async (file: File) => {
     setIsLoading(true);
-    setStep("Extracting text from file…");
+    setStep(t("pages.humanize.extractingText"));
     try {
       const fd = new FormData();
       fd.append("file", file);
       const r = await fetch("/api/humanize/upload", { method: "POST", body: fd });
-      const data = await r.json().catch(() => ({ error: "Server error" }));
+      const data = await r.json().catch(() => ({ error: t("common.errorTitle") }));
       if (!r.ok) throw new Error(data.error || "Failed to extract text");
       setInputText(data.text || "");
       setFileName(data.fileName || file.name);
       setInputMode("paste");
-      toast({ title: "File loaded", description: `${countWords(data.text)} words from ${file.name}` });
+      toast({ title: t("pages.citations.fileLoadedTitle"), description: t("pages.citations.fileLoadedDesc", { words: countWords(data.text), name: file.name }) });
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      toast({ title: t("pages.citations.uploadFailedTitle"), description: t("pages.citations.uploadFailedDesc"), variant: "destructive" });
     } finally {
       setIsLoading(false);
       setStep("");
@@ -187,7 +190,7 @@ export default function Citations() {
   const handleAnalyze = async () => {
     if (!inputText.trim() || overLimit || isLoading) return;
     setIsLoading(true);
-    setStep("Analyzing citations…");
+    setStep(t("pages.citations.analyzingCitations"));
     setResult(null);
     stop();
     try {
@@ -196,16 +199,16 @@ export default function Citations() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText, style: citStyle }),
       });
-      const data = await r.json().catch(() => ({ error: "Server error" }));
-      if (!r.ok) throw new Error(data.error || "Analysis failed");
+      const data = await r.json().catch(() => ({ error: t("common.errorTitle") }));
+      if (!r.ok) throw new Error(data.error || t("pages.citations.analysisFailed"));
       setResult(data);
       setOriginalText(inputText);
       toast({
-        title: "Analysis complete",
-        description: `${data.totalCitations} citations found — ${data.fakeCount} issues detected`,
+        title: t("pages.citations.analysisCompleteTitle"),
+        description: t("pages.citations.analysisCompleteDesc", { total: data.totalCitations, fake: data.fakeCount }),
       });
     } catch (err: any) {
-      toast({ title: "Analysis failed", description: err.message, variant: "destructive" });
+      toast({ title: t("pages.citations.analysisFailedTitle"), description: t("pages.citations.analysisFailedDesc"), variant: "destructive" });
     } finally {
       setIsLoading(false);
       setStep("");
@@ -227,19 +230,34 @@ export default function Citations() {
     await navigator.clipboard.writeText(result.referenceSection.map((r, i) => `[${i + 1}] ${r}`).join("\n"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: "References copied" });
+    toast({ title: t("pages.citations.refCopiedTitle") });
   };
 
+  const [undoSnapshot, setUndoSnapshot] = useState<{
+    result: AnalysisResult | null; inputText: string; fileName: string; originalText: string; step: string;
+  } | null>(null);
+
   const handleReset = () => {
+    setUndoSnapshot({ result, inputText, fileName, originalText, step });
     stop(); setResult(null); setInputText(""); setFileName(""); setOriginalText(""); setStep("");
+  };
+
+  const handleUndoReset = () => {
+    if (!undoSnapshot) return;
+    setResult(undoSnapshot.result);
+    setInputText(undoSnapshot.inputText);
+    setFileName(undoSnapshot.fileName);
+    setOriginalText(undoSnapshot.originalText);
+    setStep(undoSnapshot.step);
+    setUndoSnapshot(null);
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <GeneratorLayout
-      title="Citation Checker"
-      description="Scan, validate, and correct academic citations — IEEE, APA, Harvard, MLA and more"
+      title={t("pages.citations.title")}
+      description={t("pages.citations.subtitle")}
       icon={<BookOpen className="w-6 h-6 text-white" />}
       gradient="from-cyan-500 to-teal-600"
     >
@@ -249,19 +267,19 @@ export default function Citations() {
           <div className="lg:col-span-5 space-y-5">
             <Card>
               <CardHeader>
-                <CardTitle>Document Input</CardTitle>
-                <CardDescription>Upload or paste a document containing citations</CardDescription>
+                <CardTitle>{t("pages.citations.inputTitle")}</CardTitle>
+                <CardDescription>{t("pages.citations.inputDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Mode toggle */}
-                <div className="inline-flex p-1 rounded-lg bg-muted gap-1">
+                <div className="flex flex-wrap p-1 rounded-lg bg-muted gap-1">
                   {(["upload", "paste"] as const).map(m => (
                     <button key={m} onClick={() => setInputMode(m)}
                       className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         inputMode === m ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {m === "upload" ? <><Upload size={13} />Upload File</> : <><ClipboardPaste size={13} />Paste Text</>}
+                      {m === "upload" ? <><Upload size={13} />{t("pages.citations.uploadFile")}</> : <><ClipboardPaste size={13} />{t("pages.citations.pasteText")}</>}
                     </button>
                   ))}
                 </div>
@@ -275,8 +293,8 @@ export default function Citations() {
                   >
                     <input ref={fileRef} type="file" accept=".pdf,.docx,.txt" onChange={onFilePick} hidden />
                     <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground/60" />
-                    <p className="font-medium text-sm">Drop a document here or click to browse</p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT</p>
+                    <p className="font-medium text-sm">{t("pages.citations.dropZoneText")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("pages.citations.supportedFormats")}</p>
                     {isLoading && (
                       <div className="mt-4 flex items-center justify-center gap-2 text-primary text-sm">
                         <Loader2 size={14} className="animate-spin" />{step}
@@ -295,11 +313,7 @@ export default function Citations() {
                     )}
                     <div className="relative">
                       <Textarea
-                        placeholder="Paste your academic text containing citations here…
-
-Example:
-  The neural network architecture [1] achieves state-of-the-art results (Smith et al., 2023).
-  Previous work by Jones (2021) demonstrated similar findings [2]."
+                        placeholder={t("pages.citations.textPlaceholder")}
                         value={inputText}
                         onChange={e => setInputText(e.target.value)}
                         className="min-h-[260px] resize-none pr-8 text-sm leading-relaxed"
@@ -313,20 +327,20 @@ Example:
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                       <span className={overLimit ? "text-destructive font-medium" : ""}>
-                        {wordCount.toLocaleString()} / {MAX_WORDS.toLocaleString()} words
+                        {wordCount.toLocaleString()} / {MAX_WORDS.toLocaleString()} {t("common.words")}
                       </span>
-                      {overLimit && <span className="text-destructive">Exceeds limit</span>}
+                      {overLimit && <span className="text-destructive">{t("pages.citations.exceedsLimit")}</span>}
                     </div>
                   </div>
                 )}
 
                 {/* Citation style */}
                 <div className="space-y-1.5">
-                  <Label>Citation Style</Label>
+                  <Label>{t("common.citationStyle")}</Label>
                   <Select value={citStyle} onValueChange={setCitStyle}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {STYLES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {STYLE_VALUES.map(s => <SelectItem key={s} value={s}>{s === "Auto-detect" ? t("pages.citations.autoDetect") : s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -336,8 +350,8 @@ Example:
                   onClick={handleAnalyze}
                 >
                   {isLoading
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{step || "Analyzing…"}</>
-                    : <><Sparkles className="w-4 h-4 mr-2" />Analyze Citations</>
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{step || t("pages.citations.analyzingEllipsis")}</>
+                    : <><Sparkles className="w-4 h-4 mr-2" />{t("pages.citations.analyzeCitations")}</>
                   }
                 </Button>
               </CardContent>
@@ -349,18 +363,18 @@ Example:
             <Card className="h-full min-h-[420px] flex items-center justify-center">
               <CardContent className="text-center text-muted-foreground py-16 px-8">
                 <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-15" />
-                <p className="font-medium">Citation analysis will appear here</p>
-                <p className="text-sm mt-2">Paste or upload a document with citations</p>
+                <p className="font-medium">{t("pages.citations.emptyState")}</p>
+                <p className="text-sm mt-2">{t("pages.citations.emptyStateHint")}</p>
                 <div className="mt-6 text-xs text-left max-w-sm mx-auto space-y-1.5 bg-muted/30 p-4 rounded-lg">
-                  <p className="font-medium text-center mb-2">What this tool does:</p>
+                  <p className="font-medium text-center mb-2">{t("pages.citations.whatThisDoes")}</p>
                   <ul className="space-y-1">
-                    <li>• Detects all citations in your text</li>
-                    <li>• Supports IEEE, APA, Harvard, MLA, Chicago</li>
-                    <li>• Flags fake or incorrect references</li>
-                    <li>• Suggests corrections for bad citations</li>
-                    <li>• Generates a formatted References section</li>
-                    <li>• Text-to-speech with Azure Neural voices</li>
-                    <li>• Download full report as .txt</li>
+                    <li>• {t("pages.citations.feature1")}</li>
+                    <li>• {t("pages.citations.feature2")}</li>
+                    <li>• {t("pages.citations.feature3")}</li>
+                    <li>• {t("pages.citations.feature4")}</li>
+                    <li>• {t("pages.citations.feature5")}</li>
+                    <li>• {t("pages.citations.feature6")}</li>
+                    <li>• {t("pages.citations.feature7")}</li>
                   </ul>
                 </div>
               </CardContent>
@@ -378,7 +392,7 @@ Example:
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-primary" />
-                  Citation Summary
+                  {t("pages.citations.citationSummary")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -386,21 +400,21 @@ Example:
                 <div className="grid grid-cols-3 gap-2">
                   <div className="border rounded-lg p-3 text-center">
                     <div className="text-2xl font-bold">{result.totalCitations}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Total</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("common.total")}</div>
                   </div>
                   <div className="border rounded-lg p-3 text-center bg-emerald-500/5 border-emerald-500/20">
                     <div className="text-2xl font-bold text-emerald-600">{result.validCount}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Valid</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("pages.citations.tableValid")}</div>
                   </div>
                   <div className="border rounded-lg p-3 text-center bg-destructive/5 border-destructive/20">
                     <div className="text-2xl font-bold text-destructive">{result.fakeCount}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Issues</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{t("pages.citations.tableIssues")}</div>
                   </div>
                 </div>
 
                 {/* Detected style */}
                 <div className="border rounded-lg p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Detected Style</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("pages.citations.detectedStyle")}</div>
                   <div className="text-lg font-semibold mt-0.5">{result.detectedStyle}</div>
                 </div>
 
@@ -412,18 +426,23 @@ Example:
                   <Button
                     className="w-full" size="sm"
                     onClick={() => downloadText(
-                      buildReport(result, originalText),
+                      buildReport(result, originalText, t),
                       "citation-report.txt"
                     )}
                   >
-                    <Download className="w-4 h-4 mr-2" />Download Full Report
+                    <Download className="w-4 h-4 mr-2" />{t("pages.citations.downloadReport")}
                   </Button>
                   <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleAnalyze} disabled={isLoading}>
-                    <RefreshCw className="w-3.5 h-3.5" />Re-analyze
+                    <RefreshCw className="w-3.5 h-3.5" />{t("pages.citations.reanalyze")}
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleReset}>
-                    <X className="w-3.5 h-3.5" />New Document
+                    <Trash2 className="w-3.5 h-3.5" />{t("common.clear")}
                   </Button>
+                  {undoSnapshot && (
+                    <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" onClick={handleUndoReset}>
+                      <Undo2 className="w-3.5 h-3.5" />{t("common.undo")}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -436,21 +455,21 @@ Example:
                 <Tabs defaultValue="paragraphs">
                   <TabsList className="mb-4">
                     <TabsTrigger value="paragraphs" className="gap-1.5">
-                      <FileText className="w-3.5 h-3.5" />Paragraph Analysis
+                      <FileText className="w-3.5 h-3.5" />{t("pages.citations.tabParagraphs")}
                     </TabsTrigger>
                     <TabsTrigger value="references" className="gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5" />References
+                      <BookOpen className="w-3.5 h-3.5" />{t("pages.citations.tabReferences")}
                     </TabsTrigger>
                     <TabsTrigger value="report" className="gap-1.5">
-                      <FileBarChart className="w-3.5 h-3.5" />Full Report
+                      <FileBarChart className="w-3.5 h-3.5" />{t("pages.citations.tabReport")}
                     </TabsTrigger>
                   </TabsList>
 
                   {/* ── Paragraph Analysis tab ── */}
                   <TabsContent value="paragraphs" className="space-y-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                      <span>{result.paragraphs.length} paragraphs analyzed</span>
-                      <span>{result.paragraphs.filter(p => p.hasFakeCitations).length} paragraphs with issues</span>
+                      <span>{t("pages.citations.paragraphsAnalyzed", { count: result.paragraphs.length })}</span>
+                      <span>{t("pages.citations.paragraphsWithIssues", { count: result.paragraphs.filter(p => p.hasFakeCitations).length })}</span>
                     </div>
 
                     <div className="space-y-3 max-h-[65vh] overflow-y-auto custom-scrollbar pr-1">
@@ -469,7 +488,7 @@ Example:
                                   <CitationBadge key={ci} isValid={c.isValid} />
                                 ))}
                                 {para.citations.length === 0 && (
-                                  <Badge variant="outline" className="text-[10px]">No citations</Badge>
+                                  <Badge variant="outline" className="text-[10px]">{t("pages.citations.noCitations")}</Badge>
                                 )}
                               </div>
                               <p className="text-sm text-foreground/80 line-clamp-2">{para.paragraphText}</p>
@@ -491,20 +510,20 @@ Example:
                                     <CitationBadge isValid={cit.isValid} />
                                     <Badge variant="outline" className="text-[10px]">{cit.style}</Badge>
                                   </div>
-                                  <p className="font-mono text-xs text-muted-foreground mb-1">Found: "{cit.raw}"</p>
+                                  <p className="font-mono text-xs text-muted-foreground mb-1">{t("pages.citations.labelFound")} "{cit.raw}"</p>
                                   {!cit.isValid && cit.issue && (
                                     <p className="text-destructive text-xs mt-1">
-                                      <span className="font-semibold">Issue:</span> {cit.issue}
+                                      <span className="font-semibold">{t("pages.citations.labelIssue")}</span> {cit.issue}
                                     </p>
                                   )}
                                   {!cit.isValid && cit.correctedText && (
                                     <p className="text-emerald-600 text-xs mt-1">
-                                      <span className="font-semibold">Suggested:</span> {cit.correctedText}
+                                      <span className="font-semibold">{t("pages.citations.labelSuggested")}</span> {cit.correctedText}
                                     </p>
                                   )}
                                   {cit.formattedRef && (
                                     <p className="text-xs mt-2 pt-2 border-t text-muted-foreground">
-                                      <span className="font-semibold">Full reference:</span> {cit.formattedRef}
+                                      <span className="font-semibold">{t("pages.citations.labelFullRef")}</span> {cit.formattedRef}
                                     </p>
                                   )}
                                 </div>
@@ -539,18 +558,18 @@ Example:
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-primary" />
-                        Generated References
+                        {t("pages.citations.generatedReferences")}
                       </h3>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={copyRefs} className="gap-1.5">
                           {copied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                          {copied ? "Copied!" : "Copy All"}
+                          {copied ? t("pages.citations.copied") : t("pages.citations.copyAll")}
                         </Button>
                         <Button size="sm" onClick={() => downloadText(
                           result.referenceSection.map((r, i) => `[${i + 1}] ${r}`).join("\n"),
                           "references.txt"
                         )} className="gap-1.5">
-                          <FileDown className="w-3.5 h-3.5" />Download
+                          <FileDown className="w-3.5 h-3.5" />{t("common.download")}
                         </Button>
                       </div>
                     </div>
@@ -558,7 +577,7 @@ Example:
                     <div className="border rounded-lg min-h-[300px] max-h-[55vh] overflow-y-auto p-5 bg-card custom-scrollbar space-y-3">
                       {result.referenceSection.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-8">
-                          No references were generated. The document may not contain formal citations.
+                          {t("pages.citations.noGeneratedReferences")}
                         </p>
                       ) : (
                         result.referenceSection.map((ref, i) => (
@@ -576,10 +595,10 @@ Example:
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold flex items-center gap-2">
                         <FileBarChart className="w-4 h-4 text-primary" />
-                        Full Analysis Report
+                        {t("pages.citations.tabReport")}
                       </h3>
-                      <Button size="sm" onClick={() => downloadText(buildReport(result, originalText), "citation-report.txt")} className="gap-1.5">
-                        <Download className="w-3.5 h-3.5" />Download
+                      <Button size="sm" onClick={() => downloadText(buildReport(result, originalText, t), "citation-report.txt")} className="gap-1.5">
+                        <Download className="w-3.5 h-3.5" />{t("common.download")}
                       </Button>
                     </div>
 
@@ -589,10 +608,10 @@ Example:
                         <thead className="bg-muted/50">
                           <tr>
                             <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">¶</th>
-                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Citations</th>
-                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Valid</th>
-                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Issues</th>
-                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Status</th>
+                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">{t("pages.citations.tableCitations")}</th>
+                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">{t("pages.citations.tableValid")}</th>
+                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">{t("pages.citations.tableIssues")}</th>
+                            <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">{t("pages.citations.tableStatus")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -604,10 +623,10 @@ Example:
                               <td className="px-4 py-2 text-destructive">{p.citations.filter(c => !c.isValid).length}</td>
                               <td className="px-4 py-2">
                                 {p.citations.length === 0
-                                  ? <Badge variant="outline" className="text-[10px]">No citations</Badge>
+                                  ? <Badge variant="outline" className="text-[10px]">{t("pages.citations.noCitations")}</Badge>
                                   : p.hasFakeCitations
-                                  ? <Badge variant="destructive" className="text-[10px]">Issues found</Badge>
-                                  : <Badge className="text-[10px] bg-emerald-500 hover:bg-emerald-500 text-white">All valid</Badge>
+                                  ? <Badge variant="destructive" className="text-[10px]">{t("pages.citations.issuesFound")}</Badge>
+                                  : <Badge className="text-[10px] bg-emerald-500 hover:bg-emerald-500 text-white">{t("pages.citations.allValid")}</Badge>
                                 }
                               </td>
                             </tr>
@@ -620,13 +639,13 @@ Example:
                     {result.fakeCount > 0 && (
                       <div className="space-y-2">
                         <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4" />{result.fakeCount} citation issue{result.fakeCount !== 1 ? "s" : ""} found
+                          <AlertTriangle className="w-4 h-4" />{t("pages.citations.citationIssuesFound", { count: result.fakeCount })}
                         </p>
                         {result.paragraphs.flatMap(p => p.citations.filter(c => !c.isValid)).map((c, i) => (
                           <div key={i} className="border border-destructive/20 bg-destructive/5 rounded-lg p-3 text-xs space-y-1">
                             <p className="font-mono text-muted-foreground">"{c.raw}"</p>
-                            {c.issue && <p><span className="font-semibold text-destructive">Issue:</span> {c.issue}</p>}
-                            {c.correctedText && <p><span className="font-semibold text-emerald-600">Fix:</span> {c.correctedText}</p>}
+                            {c.issue && <p><span className="font-semibold text-destructive">{t("pages.citations.labelIssue")}</span> {c.issue}</p>}
+                            {c.correctedText && <p><span className="font-semibold text-emerald-600">{t("pages.citations.labelSuggested")}</span> {c.correctedText}</p>}
                           </div>
                         ))}
                       </div>

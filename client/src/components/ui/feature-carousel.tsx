@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface HeroProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   title: React.ReactNode;
@@ -12,6 +13,7 @@ interface HeroProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> 
 
 export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
   ({ title, subtitle, images, buttons, className, ...props }, ref) => {
+    const { t } = useTranslation();
     const [currentIndex, setCurrentIndex] = React.useState(Math.floor(images.length / 2));
 
     const handleNext = React.useCallback(() => {
@@ -101,7 +103,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
                 size="icon"
                 className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-background/60 backdrop-blur-sm flex-shrink-0"
                 onClick={handlePrev}
-                aria-label="Previous"
+                aria-label={t("common.previous")}
               >
                 <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
@@ -110,7 +112,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
                 size="icon"
                 className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-background/60 backdrop-blur-sm flex-shrink-0"
                 onClick={handleNext}
-                aria-label="Next"
+                aria-label={t("common.next")}
               >
                 <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>

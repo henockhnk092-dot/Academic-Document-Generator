@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, Presentation, FileSpreadsheet, GraduationCap, Search, Star, TrendingUp, Layout, BookOpen, Image as ImageIcon } from "lucide-react";
@@ -218,8 +219,49 @@ const defaultTemplates: TemplateData[] = [
 ];
 
 export default function Templates() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+
+  const categoryLabels: Record<string, string> = {
+    report: t("pages.templates.catReport"),
+    presentation: t("pages.templates.catPresentation"),
+    paper: t("pages.templates.catPaper"),
+    thesis: t("pages.templates.catThesis"),
+    essay: t("pages.templates.catEssay"),
+    image: t("pages.templates.catImage"),
+  };
+
+  const templateNames: Record<number, string> = {
+    1: t("pages.templates.tpl1Name"), 2: t("pages.templates.tpl2Name"),
+    3: t("pages.templates.tpl3Name"), 4: t("pages.templates.tpl4Name"),
+    5: t("pages.templates.tpl5Name"), 6: t("pages.templates.tpl6Name"),
+    7: t("pages.templates.tpl7Name"), 8: t("pages.templates.tpl8Name"),
+    9: t("pages.templates.tpl9Name"), 10: t("pages.templates.tpl10Name"),
+    11: t("pages.templates.tpl11Name"), 12: t("pages.templates.tpl12Name"),
+    13: t("pages.templates.tpl13Name"),
+  };
+
+  const templateDescs: Record<number, string> = {
+    1: t("pages.templates.tpl1Desc"), 2: t("pages.templates.tpl2Desc"),
+    3: t("pages.templates.tpl3Desc"), 4: t("pages.templates.tpl4Desc"),
+    5: t("pages.templates.tpl5Desc"), 6: t("pages.templates.tpl6Desc"),
+    7: t("pages.templates.tpl7Desc"), 8: t("pages.templates.tpl8Desc"),
+    9: t("pages.templates.tpl9Desc"), 10: t("pages.templates.tpl10Desc"),
+    11: t("pages.templates.tpl11Desc"), 12: t("pages.templates.tpl12Desc"),
+    13: t("pages.templates.tpl13Desc"),
+  };
+
+  const templatePrompts: Record<number, string> = {
+    1: t("pages.templates.tpl1Prompt"), 2: t("pages.templates.tpl2Prompt"),
+    3: t("pages.templates.tpl3Prompt"), 4: t("pages.templates.tpl4Prompt"),
+    5: t("pages.templates.tpl5Prompt"), 6: t("pages.templates.tpl6Prompt"),
+    7: t("pages.templates.tpl7Prompt"), 8: t("pages.templates.tpl8Prompt"),
+    9: t("pages.templates.tpl9Prompt"), 10: t("pages.templates.tpl10Prompt"),
+    11: t("pages.templates.tpl11Prompt"), 12: t("pages.templates.tpl12Prompt"),
+    13: t("pages.templates.tpl13Prompt"),
+  };
+
   const { toast } = useToast();
 
   const { data: templatesResponse, isLoading } = useQuery<{ templates: TemplateData[] }>({
@@ -230,6 +272,15 @@ export default function Templates() {
     ? templatesResponse.templates 
     : defaultTemplates;
 
+  const localizedTemplates = templates.map((template) => template.isDefault
+    ? {
+        ...template,
+        name: templateNames[template.id] ?? template.name,
+        description: templateDescs[template.id] ?? template.description,
+        prompt: templatePrompts[template.id] ?? template.prompt,
+      }
+    : template);
+
   const useTemplateMutation = useMutation({
     mutationFn: async (templateId: number) => {
       return await apiRequest("POST", `/api/templates/${templateId}/use`);
@@ -237,13 +288,20 @@ export default function Templates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/templates"] });
       toast({
-        title: "Template Selected",
-        description: "Redirecting to generator...",
+        title: t("pages.templates.selectedTitle"),
+        description: t("pages.templates.selectedDesc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("pages.templates.selectedFailedTitle"),
+        description: t("pages.templates.selectedFailedDesc"),
+        variant: "destructive",
       });
     },
   });
 
-  const filteredTemplates = templates.filter((template: TemplateData) => {
+  const filteredTemplates = localizedTemplates.filter((template: TemplateData) => {
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === "all" || template.category === activeCategory;
@@ -256,9 +314,9 @@ export default function Templates() {
     <div className="container mx-auto px-4 py-8 max-w-7xl" data-testid="page-templates">
       <div className="mb-8 space-y-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Templates Library</h1>
+          <h1 className="text-3xl font-bold mb-2">{t("pages.templates.title")}</h1>
           <p className="text-muted-foreground">
-            Choose from professionally designed templates for your academic documents
+            {t("pages.templates.subtitle")}
           </p>
         </div>
 
@@ -266,7 +324,7 @@ export default function Templates() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search templates..."
+              placeholder={t("pages.templates.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -279,13 +337,13 @@ export default function Templates() {
       <Tabs value={activeCategory} onValueChange={setActiveCategory} className="space-y-6">
         <TabsList className="flex-wrap h-auto gap-2">
           {categories.map((category) => (
-            <TabsTrigger 
-              key={category} 
+            <TabsTrigger
+              key={category}
               value={category}
               className="capitalize"
               data-testid={`tab-${category}`}
             >
-              {category === "all" ? "All Templates" : category}
+              {category === "all" ? t("pages.templates.allTemplates") : (categoryLabels[category] ?? category)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -307,9 +365,9 @@ export default function Templates() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <Layout className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No templates found</h3>
+                <h3 className="text-xl font-semibold mb-2">{t("pages.templates.noTemplatesFound")}</h3>
                 <p className="text-muted-foreground">
-                  Try a different search term or category
+                  {t("pages.templates.noTemplatesDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -332,11 +390,11 @@ export default function Templates() {
                         {template.isDefault && (
                           <Badge variant="secondary" className="text-xs">
                             <Star className="w-3 h-3 mr-1" />
-                            Featured
+                            {t("pages.templates.featured")}
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-lg mt-3">
+                      <CardTitle className="text-lg mt-3 break-words">
                         {template.name}
                       </CardTitle>
                       <CardDescription className="line-clamp-2">
@@ -346,11 +404,11 @@ export default function Templates() {
                     <CardContent>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={categoryColors[template.category] || "bg-gray-100 text-gray-800"}>
-                          {template.category}
+                          {categoryLabels[template.category] ?? template.category}
                         </Badge>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <TrendingUp className="w-3 h-3 mr-1" />
-                          {template.usageCount?.toLocaleString() || 0} uses
+                          {template.usageCount?.toLocaleString() || 0} {t("pages.templates.uses")}
                         </div>
                       </div>
                     </CardContent>
@@ -364,7 +422,7 @@ export default function Templates() {
                           onClick={() => useTemplateMutation.mutate(template.id)}
                           data-testid={`button-use-template-${template.id}`}
                         >
-                          Use Template
+                          {t("pages.templates.useTemplate")}
                         </Button>
                       </Link>
                     </CardFooter>

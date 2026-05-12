@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown, RefreshCw, Trash2, Undo2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
 export default function GenerateImages() {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = usePersistedState<string>("generator_prompt_images", "");
   const [size, setSize] = useState("1024x1024");
   const [style, setStyle] = useState("vivid");
@@ -25,6 +27,7 @@ export default function GenerateImages() {
   const [generatedImage, setGeneratedImage] = usePersistedState<string | null>("generator_content_images", null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [undoImage, setUndoImage] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const imageRef = useRef<HTMLImageElement>(null);
@@ -40,8 +43,8 @@ export default function GenerateImages() {
       setPrompt(templatePrompt);
       if (templateName) {
         toast({
-          title: "Template loaded",
-          description: `Using template: ${templateName}`,
+          title: t("common.templateLoaded"),
+          description: t("common.templateLoadedDesc", { name: templateName }),
         });
       }
     }
@@ -119,8 +122,8 @@ export default function GenerateImages() {
   const handleGenerate = async (checkUsage: () => Promise<boolean>) => {
     if (!prompt.trim()) {
       toast({
-        title: "Prompt required",
-        description: "Please enter a description for your image",
+        title: t("pages.images.promptRequired"),
+        description: t("pages.images.promptRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -138,14 +141,14 @@ export default function GenerateImages() {
       setImageUrl(imageUrl);
       setGeneratedImage(imageUrl);
       toast({
-        title: "Image generated successfully",
-        description: "Your image is ready to download"
+        title: t("pages.images.generated"),
+        description: t("pages.images.generatedDesc"),
       });
     } catch (error: any) {
       console.error("Image generation error:", error);
       toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate image. Please try again.",
+        title: t("pages.images.generationFailed"),
+        description: error.message || t("pages.images.promptRequiredDesc"),
         variant: "destructive"
       });
     } finally {
@@ -164,9 +167,9 @@ export default function GenerateImages() {
       const url = await generateImageAPI();
       setImageUrl(url);
       setGeneratedImage(url);
-      toast({ title: "Variation generated", description: "A new variation of your image is ready" });
+      toast({ title: t("pages.images.variationGenerated"), description: t("pages.images.variationGeneratedDesc") });
     } catch (error: any) {
-      toast({ title: "Generation failed", description: error.message || "Failed to generate variation.", variant: "destructive" });
+      toast({ title: t("pages.images.generationFailed"), description: error.message || t("pages.images.downloadFailedDesc"), variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -202,15 +205,15 @@ export default function GenerateImages() {
         URL.revokeObjectURL(url);
 
         toast({
-          title: "Download started",
-          description: `Image downloaded as ${format.toUpperCase()}`
+          title: t("pages.images.downloadStarted"),
+          description: t("pages.images.downloadStartedDesc", { format: format.toUpperCase() }),
         });
       }, mimeType, format === 'jpeg' ? 0.95 : undefined);
     } catch (error) {
       console.error("Download error:", error);
       toast({
-        title: "Download failed",
-        description: "Failed to download image. Please try again.",
+        title: t("pages.images.downloadFailed"),
+        description: t("pages.images.downloadFailedDesc"),
         variant: "destructive"
       });
     }
@@ -218,31 +221,41 @@ export default function GenerateImages() {
 
   const handleRandomPrompt = () => {
     const randomPrompts = [
-      "A serene mountain landscape at sunset with golden clouds",
-      "A futuristic cityscape with flying cars and neon lights",
-      "An enchanted forest with glowing mushrooms and fairy lights",
-      "A cozy coffee shop on a rainy day with warm lighting",
-      "A majestic dragon soaring through stormy clouds",
-      "An underwater coral reef teeming with colorful fish",
-      "A vintage library with towering bookshelves and a fireplace",
-      "A cyberpunk street market with holographic displays",
-      "A peaceful zen garden with a koi pond and cherry blossoms",
-      "A steampunk airship floating above Victorian-era buildings"
+      t("pages.images.randomPrompt1"),
+      t("pages.images.randomPrompt2"),
+      t("pages.images.randomPrompt3"),
+      t("pages.images.randomPrompt4"),
+      t("pages.images.randomPrompt5"),
+      t("pages.images.randomPrompt6"),
+      t("pages.images.randomPrompt7"),
+      t("pages.images.randomPrompt8"),
+      t("pages.images.randomPrompt9"),
+      t("pages.images.randomPrompt10")
     ];
 
     const randomPrompt = randomPrompts[Math.floor(Math.random() * randomPrompts.length)];
     setPrompt(randomPrompt);
     toast({
-      title: "Random prompt generated",
-      description: randomPrompt
+      title: t("pages.images.randomPrompt"),
+      description: randomPrompt,
     });
+  };
+
+  const handleClear = () => {
+    setUndoImage(generatedImage);
+    setGeneratedImage(null);
+  };
+
+  const handleUndo = () => {
+    setGeneratedImage(undoImage);
+    setUndoImage(null);
   };
 
   const handleSave = async () => {
     if (!generatedImage) {
       toast({
-        title: "No image to save",
-        description: "Please generate an image first",
+        title: t("common.noContentToSave"),
+        description: t("common.pleaseGenerateFirst"),
         variant: "destructive"
       });
       return;
@@ -250,8 +263,8 @@ export default function GenerateImages() {
 
     if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to save images",
+        title: t("common.authRequired"),
+        description: t("pages.images.authRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -262,7 +275,7 @@ export default function GenerateImages() {
       // Save image as a document to appear in My Projects
       await saveDocument({
         type: "image",
-        title: prompt.substring(0, 100) || "Untitled Image",
+        title: prompt.substring(0, 100) || t("pages.images.untitledImage"),
         topic: prompt,
         content: {
           imageUrl: generatedImage,
@@ -280,14 +293,14 @@ export default function GenerateImages() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: "Image saved",
-        description: "Your image has been saved successfully"
+        title: t("pages.images.imageSaved"),
+        description: t("pages.images.imageSavedDesc"),
       });
     } catch (error: any) {
       console.error("Save error:", error);
       toast({
-        title: "Save failed",
-        description: error.message || "Failed to save image. Please try again.",
+        title: t("common.saveFailed"),
+        description: error.message || t("common.failedSaveDocument"),
         variant: "destructive"
       });
     } finally {
@@ -303,7 +316,7 @@ export default function GenerateImages() {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${prompt || 'AI Generated Image'}</title>
+  <title>${prompt || t("pages.images.aiGeneratedImage")}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
     img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; }
@@ -311,7 +324,7 @@ export default function GenerateImages() {
   </style>
 </head>
 <body>
-  <h1>AI Generated Image</h1>
+  <h1>${t("pages.images.aiGeneratedImage")}</h1>
   <img src="${generatedImage}" alt="${prompt}" />
   <p class="prompt">${prompt}</p>
 </body>
@@ -328,8 +341,8 @@ export default function GenerateImages() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: "HTML file downloaded successfully",
+      title: t("common.exportSuccess"),
+      description: t("pages.images.exportSuccessHTMLDesc"),
     });
   };
 
@@ -338,24 +351,24 @@ export default function GenerateImages() {
 
     try {
       const htmlContent = `
-        <h1>AI Generated Image</h1>
+        <h1>${t("pages.images.aiGeneratedImage")}</h1>
         <div style="text-align: center;">
           <img src="${generatedImage}" alt="${prompt}" />
           <p style="font-style: italic; margin-top: 10px;">${prompt}</p>
         </div>
       `;
 
-      await exportHtmlToDocx(htmlContent, { title: prompt || 'AI Generated Image' });
+      await exportHtmlToDocx(htmlContent, { title: prompt || t("pages.images.aiGeneratedImage") });
 
       toast({
-        title: "Export successful",
-        description: "DOCX file downloaded successfully",
+        title: t("common.exportSuccess"),
+        description: t("pages.images.exportSuccessDOCXDesc"),
       });
     } catch (error) {
       console.error("Export error:", error);
       toast({
-        title: "Export failed",
-        description: "Failed to export document",
+        title: t("pages.images.exportFailed"),
+        description: t("pages.images.exportFailedDesc"),
         variant: "destructive",
       });
     }
@@ -368,7 +381,7 @@ export default function GenerateImages() {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${prompt || 'AI Generated Image'}</title>
+  <title>${prompt || t("pages.images.aiGeneratedImage")}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
     img { max-width: 100%; height: auto; }
@@ -377,7 +390,7 @@ export default function GenerateImages() {
   </style>
 </head>
 <body>
-  <h1>AI Generated Image</h1>
+  <h1>${t("pages.images.aiGeneratedImage")}</h1>
   <img src="${generatedImage}" alt="${prompt}" />
   <p class="prompt">${prompt}</p>
 </body>
@@ -397,8 +410,8 @@ export default function GenerateImages() {
     <UsageGate>
       {({ checkUsage, remainingAttempts, openPricing }) => (
         <GeneratorLayout
-          title="AI Image Generator"
-          description="Create stunning images from text descriptions using advanced AI"
+          title={t("pages.images.title")}
+          description={t("pages.images.subtitle")}
           icon={<ImageIcon className="w-6 h-6 text-white" />}
           gradient="from-purple-500 to-pink-500"
         >
@@ -407,22 +420,22 @@ export default function GenerateImages() {
             <div className="lg:col-span-4 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Image Configuration</CardTitle>
-                  <CardDescription>Describe the image you want to create</CardDescription>
+                  <CardTitle>{t("pages.images.configTitle")}</CardTitle>
+                  <CardDescription>{t("pages.images.configDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="prompt">Image Description</Label>
+                    <Label htmlFor="prompt">{t("pages.images.imageDescLabel")}</Label>
                     <Textarea
                       id="prompt"
-                      placeholder="Describe your image in detail..."
+                      placeholder={t("pages.images.promptPlaceholder")}
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       className="min-h-32 mt-2"
                       data-testid="input-image-prompt"
                     />
                     <div className="text-xs text-muted-foreground mt-2">
-                      {prompt.length} characters
+                      {prompt.length} {t("common.characters")}
                     </div>
                   </div>
 
@@ -433,46 +446,46 @@ export default function GenerateImages() {
                     data-testid="button-random-prompt"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Random Prompt
+                    {t("pages.images.randomPromptBtn")}
                   </Button>
 
                   <div className="space-y-4 pt-4 border-t">
                     <div>
-                      <Label htmlFor="size">Image Size</Label>
+                      <Label htmlFor="size">{t("pages.images.imageSizeLabel")}</Label>
                       <Select value={size} onValueChange={setSize}>
                         <SelectTrigger id="size" className="mt-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1024x1024">Square (1024×1024)</SelectItem>
-                          <SelectItem value="1792x1024">Landscape (1792×1024)</SelectItem>
-                          <SelectItem value="1024x1792">Portrait (1024×1792)</SelectItem>
+                          <SelectItem value="1024x1024">{t("pages.images.sizeSquare")}</SelectItem>
+                          <SelectItem value="1792x1024">{t("pages.images.sizeLandscape")}</SelectItem>
+                          <SelectItem value="1024x1792">{t("pages.images.sizePortrait")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label htmlFor="style">Style</Label>
+                      <Label htmlFor="style">{t("pages.images.styleLabel")}</Label>
                       <Select value={style} onValueChange={setStyle}>
                         <SelectTrigger id="style" className="mt-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="vivid">Vivid (Dramatic & Detailed)</SelectItem>
-                          <SelectItem value="natural">Natural (Realistic & Subtle)</SelectItem>
+                          <SelectItem value="vivid">{t("pages.images.styleVivid")}</SelectItem>
+                          <SelectItem value="natural">{t("pages.images.styleNatural")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label htmlFor="quality">Quality</Label>
+                      <Label htmlFor="quality">{t("pages.images.qualityLabel")}</Label>
                       <Select value={quality} onValueChange={setQuality}>
                         <SelectTrigger id="quality" className="mt-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="standard">Standard</SelectItem>
-                          <SelectItem value="hd">HD (Higher Detail)</SelectItem>
+                          <SelectItem value="standard">{t("pages.images.qualityStandard")}</SelectItem>
+                          <SelectItem value="hd">{t("pages.images.qualityHD")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -481,14 +494,14 @@ export default function GenerateImages() {
                   <div className="space-y-2">
                     {remainingAttempts !== Infinity && (
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <span>{remainingAttempts} generation{remainingAttempts !== 1 ? 's' : ''} remaining</span>
+                        <span>{t("common.genRemaining", { count: remainingAttempts })}</span>
                         <button
                           type="button"
                           onClick={openPricing}
                           className="text-primary hover:underline font-medium"
                           data-testid="button-view-pricing"
                         >
-                          View Pricing
+                          {t("common.viewPricing")}
                         </button>
                       </div>
                     )}
@@ -502,12 +515,12 @@ export default function GenerateImages() {
                       {isGenerating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
+                          {t("common.generating")}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Image
+                          {t("pages.images.generateButton")}
                         </>
                       )}
                     </Button>
@@ -522,11 +535,12 @@ export default function GenerateImages() {
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                      <CardTitle>Generated Image</CardTitle>
-                      <CardDescription>Your AI-generated image will appear here</CardDescription>
+                      <CardTitle>{t("pages.images.resultTitle")}</CardTitle>
+                      <CardDescription>{t("pages.images.resultDesc")}</CardDescription>
                     </div>
-                    {generatedImage && (
-                      <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap">
+                      {generatedImage && (
+                        <>
                         <Button
                           variant="outline"
                           size="sm"
@@ -535,7 +549,7 @@ export default function GenerateImages() {
                           data-testid="button-variation"
                         >
                           <RefreshCw className="w-4 h-4 mr-2" />
-                          Variation
+                          {t("common.variation")}
                         </Button>
                         <Button
                           variant="outline"
@@ -545,27 +559,27 @@ export default function GenerateImages() {
                           data-testid="button-save-image"
                         >
                           <Cloud className="w-4 h-4 mr-2" />
-                          {isSaving ? "Saving..." : "Save"}
+                          {isSaving ? t("common.saving") : t("common.save")}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" data-testid="button-download-menu">
                               <Download className="w-4 h-4 mr-2" />
-                              Download
+                              {t("common.download")}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleDownload('png')} data-testid="download-png">
                               <FileImage className="w-4 h-4 mr-2" />
-                              Download as PNG
+                              {t("pages.myProjects.downloadPNG")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDownload('jpeg')} data-testid="download-jpeg">
                               <FileImage className="w-4 h-4 mr-2" />
-                              Download as JPEG
+                              {t("pages.myProjects.downloadJPEG")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDownload('webp')} data-testid="download-webp">
                               <FileImage className="w-4 h-4 mr-2" />
-                              Download as WEBP
+                              {t("pages.myProjects.downloadWEBP")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -573,27 +587,51 @@ export default function GenerateImages() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" data-testid="button-export-menu">
                               <FileDown className="w-4 h-4 mr-2" />
-                              Export
+                              {t("common.export")}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={handleExportHTML} data-testid="export-html">
                               <FileCode className="w-4 h-4 mr-2" />
-                              Export as HTML
+                              {t("common.exportAsHTML")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleExportDOCX} data-testid="export-docx">
                               <FileDown className="w-4 h-4 mr-2" />
-                              Export as Word
+                              {t("common.exportAsWord")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handlePrint} data-testid="export-print">
                               <Printer className="w-4 h-4 mr-2" />
-                              Print
+                              {t("common.print")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </div>
-                    )}
+                        </>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClear}
+                        disabled={!generatedImage}
+                        title={t("pages.images.clearImage")}
+                        aria-label={t("pages.images.clearImage")}
+                      >
+                        <Trash2 className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t("common.clear")}</span>
+                      </Button>
+                      {undoImage && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUndo}
+                          title={t("pages.images.undoClear")}
+                          aria-label={t("pages.images.undoClear")}
+                        >
+                          <Undo2 className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">{t("common.undo")}</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -603,29 +641,29 @@ export default function GenerateImages() {
                         <img
                           ref={imageRef}
                           src={generatedImage}
-                          alt="Generated"
+                          alt={t("pages.images.altGenerated")}
                           className="max-w-full h-auto rounded-lg shadow-lg"
                           crossOrigin="anonymous"
                         />
                         <div className="text-xs text-muted-foreground text-center max-w-md">
-                          <p className="font-medium mb-1">Prompt used:</p>
+                          <p className="font-medium mb-1">{t("pages.images.promptUsed")}:</p>
                           <p className="italic">"{prompt}"</p>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center text-muted-foreground py-16 px-4 h-full flex flex-col items-center justify-center">
+                      <div className="text-center text-muted-foreground py-16 px-4">
                         <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                        <p className="font-medium">Your generated image will appear here</p>
-                        <p className="text-sm mt-2">Enter a description and click "Generate Image" to start</p>
+                        <p className="font-medium">{t("pages.images.emptyState")}</p>
+                        <p className="text-sm mt-2">{t("pages.images.emptyStateHint")}</p>
                         <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
-                          <p className="font-medium text-center mb-3">Image Generator Features:</p>
+                          <p className="font-medium text-center mb-3">{t("pages.images.features")}</p>
                           <ul className="space-y-1">
-                            <li>• AI-powered image generation from text</li>
-                            <li>• Multiple size options (square, landscape, portrait)</li>
-                            <li>• Vivid or natural style selection</li>
-                            <li>• Standard or HD quality output</li>
-                            <li>• Download in PNG, JPEG, or WEBP format</li>
-                            <li>• Random prompt suggestions</li>
+                            <li>• {t("pages.images.feature1")}</li>
+                            <li>• {t("pages.images.feature2")}</li>
+                            <li>• {t("pages.images.feature3")}</li>
+                            <li>• {t("pages.images.feature4")}</li>
+                            <li>• {t("pages.images.feature5")}</li>
+                            <li>• {t("pages.images.feature6")}</li>
                           </ul>
                         </div>
                       </div>

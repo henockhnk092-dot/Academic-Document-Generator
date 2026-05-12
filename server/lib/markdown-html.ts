@@ -12,9 +12,9 @@ export function parseMarkdownToHtml(md: string): string {
       const cells = row.split("|").slice(1, -1).map(c => c.trim());
       return `<tr>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
     })
-    .replace(/(<tr>.*<\/tr>)/gs, (tbl) => `<table>${tbl}</table>`)
+    .replace(/(<tr>[\s\S]*<\/tr>)/g, (tbl) => `<table>${tbl}</table>`)
     .replace(/^- (.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>")
+    .replace(/(<li>[\s\S]*<\/li>)/g, "<ul>$1</ul>")
     .replace(/\n\n+/g, "</p><p>")
     .replace(/^(?!<[hHulptico])/gm, "<p>")
     .replace(/([^>])\n(?=[^<])/g, "$1<br/>");

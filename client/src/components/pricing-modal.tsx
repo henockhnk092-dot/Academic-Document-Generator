@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,7 @@ const TIER_ICONS = {
 const TIER_ORDER = ['day_pass', 'weekly', 'monthly', 'yearly'] as const;
 
 export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: externalLoading }: PricingModalProps) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<StripeProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -136,7 +138,7 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
 
   const getRecurringText = (product: StripeProduct | undefined, fallback: string): string => {
     if (product?.recurring) {
-      return `per ${product.recurring.interval}`;
+      return t("pages.pricing.perInterval", { interval: product.recurring.interval });
     }
     return fallback;
   };
@@ -147,16 +149,16 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-center">Upgrade Your Plan</DialogTitle>
+          <DialogTitle className="text-2xl text-center">{t("pages.pricing.upgradeYourPlan")}</DialogTitle>
           <DialogDescription className="text-center">
-            You've used all your free generations. Choose a plan to continue creating amazing documents.
+            {t("pages.pricing.usedAllGenerations")}
           </DialogDescription>
         </DialogHeader>
 
         {isBMC && (
           <div className="flex items-center justify-center gap-2 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 py-2 px-4 rounded-lg">
             <Coffee className="h-4 w-4" />
-            <span>Secure payments powered by Buy Me a Coffee</span>
+            <span>{t("pages.pricing.securePayments")}</span>
           </div>
         )}
 
@@ -182,10 +184,10 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
                   data-testid={`card-pricing-${tier.replace('_', '-')}`}
                 >
                   {isPopular && (
-                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">Most Popular</Badge>
+                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">{t("pages.pricing.mostPopular")}</Badge>
                   )}
                   {isBestValue && (
-                    <Badge variant="secondary" className="absolute -top-2 left-1/2 -translate-x-1/2">Best Value</Badge>
+                    <Badge variant="secondary" className="absolute -top-2 left-1/2 -translate-x-1/2">{t("pages.pricing.bestValue")}</Badge>
                   )}
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
@@ -199,7 +201,7 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
                       {formatPrice(product, tierInfo.price)}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {tier === 'day_pass' ? 'one-time' : getRecurringText(product, `per ${tier.replace('_', ' ')}`)}
+                      {tier === 'day_pass' ? t("pages.pricing.oneTime") : getRecurringText(product, t("pages.pricing.perInterval", { interval: tier.replace('_', ' ') }))}
                     </p>
                   </CardContent>
                   <CardFooter>
@@ -213,16 +215,16 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
                       {isProcessing ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
+                          {t("pages.pricing.processing")}
                         </>
                       ) : isBMC ? (
                         <>
                           <Coffee className="mr-2 h-4 w-4" />
-                          Get {tierInfo.name.split(' ')[0]}
+                          {t("pages.pricing.getPlan", { name: tierInfo.name.split(' ')[0] })}
                           <ExternalLink className="ml-2 h-3 w-3" />
                         </>
                       ) : (
-                        `Get ${tierInfo.name.split(' ')[0]}`
+                        t("pages.pricing.getPlan", { name: tierInfo.name.split(' ')[0] })
                       )}
                     </Button>
                   </CardFooter>
@@ -233,23 +235,23 @@ export function PricingModal({ open, onOpenChange, onSelectPlan, isLoading: exte
         )}
 
         <div className="mt-6 space-y-2">
-          <h4 className="font-medium text-center">All plans include:</h4>
+          <h4 className="font-medium text-center">{t("pages.pricing.allPlansInclude")}:</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500" />
-              <span>Unlimited generations</span>
+              <span>{t("pages.pricing.unlimitedGenerations")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500" />
-              <span>All document types</span>
+              <span>{t("pages.pricing.allDocumentTypes")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500" />
-              <span>Cloud storage</span>
+              <span>{t("pages.pricing.cloudStorage")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500" />
-              <span>Export to all formats</span>
+              <span>{t("pages.pricing.exportAllFormats")}</span>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ interface LoginPromptDialogProps {
 export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPromptDialogProps) {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,15 +29,16 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
       setIsLoading(true);
       await signInWithGoogle();
       toast({
-        title: "Welcome!",
-        description: "You now have 5 free generations.",
+        title: t("components.loginPromptDialog.welcome"),
+        description: t("components.loginPromptDialog.freeGenerations"),
       });
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
+      if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") return;
       toast({
-        title: "Sign in failed",
-        description: error.message || "Please try again.",
+        title: t("components.authDialog.signInFailed"),
+        description: error.message || t("components.loginPromptDialog.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -49,15 +52,15 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
       setIsLoading(true);
       await signInWithEmail(email, password);
       toast({
-        title: "Welcome back!",
-        description: "You're now signed in.",
+        title: t("components.authDialog.welcomeBack"),
+        description: t("components.loginPromptDialog.nowSignedIn"),
       });
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: "Sign in failed",
-        description: error.message || "Please check your credentials.",
+        title: t("components.authDialog.signInFailed"),
+        description: error.message || t("components.loginPromptDialog.checkCredentials"),
         variant: "destructive",
       });
     } finally {
@@ -71,15 +74,15 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
       setIsLoading(true);
       await signUpWithEmail(email, password);
       toast({
-        title: "Account created!",
-        description: "You now have 5 free generations.",
+        title: t("components.authDialog.accountCreated"),
+        description: t("components.loginPromptDialog.freeGenerations"),
       });
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: "Sign up failed",
-        description: error.message || "Please try again.",
+        title: t("components.authDialog.signUpFailed"),
+        description: error.message || t("components.loginPromptDialog.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -91,9 +94,9 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl text-center">Continue for Free</DialogTitle>
+          <DialogTitle className="text-xl text-center">{t("components.loginPromptDialog.title")}</DialogTitle>
           <DialogDescription className="text-center">
-            You've used your 3 free guest credits. Sign in to get 5 more free generations!
+            {t("components.loginPromptDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +109,7 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
             data-testid="button-google-signin"
           >
             <SiGoogle className="h-4 w-4" />
-            Continue with Google
+            {t("components.authDialog.continueWithGoogle")}
           </Button>
         </div>
 
@@ -115,7 +118,7 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
+            <span className="bg-background px-2 text-muted-foreground">{t("components.loginPromptDialog.or")}</span>
           </div>
         </div>
 
@@ -123,24 +126,24 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin" className="gap-2" data-testid="tab-signin">
               <LogIn className="h-4 w-4" />
-              Sign In
+              {t("components.loginPromptDialog.signInTab")}
             </TabsTrigger>
             <TabsTrigger value="signup" className="gap-2" data-testid="tab-signup">
               <UserPlus className="h-4 w-4" />
-              Sign Up
+              {t("components.loginPromptDialog.signUpTab")}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
             <form onSubmit={handleEmailSignIn} className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
+                <Label htmlFor="signin-email">{t("components.authDialog.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t("components.loginPromptDialog.emailPlaceholder")}
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -150,13 +153,13 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signin-password">Password</Label>
+                <Label htmlFor="signin-password">{t("components.authDialog.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="signin-password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder={t("components.loginPromptDialog.passwordPlaceholder")}
                     className="pl-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -166,7 +169,7 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signin-submit">
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? t("components.loginPromptDialog.signingIn") : t("components.authDialog.signInBtn")}
               </Button>
             </form>
           </TabsContent>
@@ -174,13 +177,13 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
           <TabsContent value="signup">
             <form onSubmit={handleEmailSignUp} className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email">{t("components.authDialog.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t("components.loginPromptDialog.emailPlaceholder")}
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -190,13 +193,13 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password">{t("components.authDialog.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="Create a password"
+                    placeholder={t("components.loginPromptDialog.passwordCreatePlaceholder")}
                     className="pl-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -207,14 +210,14 @@ export function LoginPromptDialog({ open, onOpenChange, onSuccess }: LoginPrompt
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signup-submit">
-                {isLoading ? "Creating account..." : "Create Account"}
+                {isLoading ? t("components.loginPromptDialog.creatingAccount") : t("components.authDialog.createAccount")}
               </Button>
             </form>
           </TabsContent>
         </Tabs>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          {t("components.loginPromptDialog.termsNotice")}
         </p>
       </DialogContent>
     </Dialog>

@@ -51,8 +51,10 @@ export function getFirebaseStorage() {
 export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error("Firebase not initialized");
-  
   const provider = new GoogleAuthProvider();
+  provider.addScope("email");
+  provider.addScope("profile");
+  provider.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(auth, provider);
   return result.user;
 }
@@ -121,7 +123,7 @@ export async function getProjects(): Promise<AppDocument[]> {
   return querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
-  })) as AppDocument[];
+  })) as unknown as AppDocument[];
 }
 
 export async function deleteProject(projectId: string) {

@@ -25,96 +25,46 @@ const cardVariant = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-// ─── data ─────────────────────────────────────────────────────────────────────
-const tools = [
-  {
-    id: "report", title: "Technical Report",
-    description: "Generate structured, data-driven reports with executive summaries, methodology sections, and precise conclusions.",
-    icon: FileText, exports: "PDF, DOCX", action: "Generate",
-    iconBg: "bg-primary/10", iconColor: "text-primary",
-    href: "/generate/report",
-  },
-  {
-    id: "custom-report", title: "Custom Report",
-    description: "Flexible document generation tailored to your specific academic discipline's rubrics and standards.",
-    icon: FileSignature, exports: "DOCX, TXT", action: "Generate",
-    iconBg: "bg-chart-4/10", iconColor: "text-chart-4",
-    href: "/generate/custom-report",
-  },
-  {
-    id: "template-report", title: "Template Report",
-    description: "Upload your own document template and generate a report that follows your exact structure and guidelines.",
-    icon: LayoutTemplate, exports: "DOCX, TXT", action: "Generate",
-    iconBg: "bg-chart-2/10", iconColor: "text-chart-2",
-    href: "/generate/template-report",
-  },
-  {
-    id: "powerpoint", title: "PowerPoint",
-    description: "Transform long-form research into compelling, structured slide decks with automated speaker notes.",
-    icon: Presentation, exports: "PPTX, PDF", action: "Generate",
-    iconBg: "bg-chart-3/10", iconColor: "text-chart-3",
-    href: "/generate/powerpoint",
-  },
-  {
-    id: "conference", title: "Conference Paper",
-    description: "Format your findings to match stringent double-blind peer review formatting guidelines.",
-    icon: BookOpen, exports: "LaTeX, DOCX", action: "Generate",
-    iconBg: "bg-chart-5/10", iconColor: "text-chart-5",
-    href: "/generate/conference",
-  },
-  {
-    id: "thesis", title: "Thesis Draft",
-    description: "Outline and generate comprehensive chapters, ensuring logical flow and sustained argumentation.",
-    icon: GraduationCap, exports: "DOCX, PDF", action: "Generate",
-    iconBg: "bg-chart-2/10", iconColor: "text-chart-2",
-    href: "/generate/thesis",
-  },
-  {
-    id: "images", title: "AI Image Generator",
-    description: "Create accurate, academic-style diagrams, charts, and conceptual illustrations for your text.",
-    icon: Image, exports: "PNG, SVG", action: "Generate",
-    iconBg: "bg-chart-4/10", iconColor: "text-chart-4",
-    href: "/generate/images",
-  },
-  {
-    id: "references", title: "Reference Library",
-    description: "Curate, summarize, and extract key quotes from thousands of imported PDFs automatically.",
-    icon: Library, exports: "BibTeX, RIS", action: "Organize",
-    iconBg: "bg-primary/10", iconColor: "text-primary",
-    href: "/references",
-  },
-  {
-    id: "humanize", title: "AI Humanizer",
-    description: "Refine AI-generated text to ensure an authentic scholarly tone that bypasses generic detection.",
-    icon: Wand2, exports: "Text Editor", action: "Refine",
-    iconBg: "bg-chart-5/10", iconColor: "text-chart-5",
-    href: "/humanize",
-  },
-  {
-    id: "citations", title: "Citation Checker",
-    description: "Verify every claim against your library to prevent hallucinations and ensure academic integrity.",
-    icon: BookMarked, exports: "Report", action: "Check",
-    iconBg: "bg-chart-2/10", iconColor: "text-chart-2",
-    href: "/citations",
-  },
-];
+// ─── static icon/color config ─────────────────────────────────────────────────
+const TOOL_CONFIG = [
+  { id: "report",          key: "report",         icon: FileText,      iconBg: "bg-primary/10",    iconColor: "text-primary",    href: "/generate/report" },
+  { id: "custom-report",   key: "customReport",   icon: FileSignature, iconBg: "bg-chart-4/10",    iconColor: "text-chart-4",    href: "/generate/custom-report" },
+  { id: "template-report", key: "templateReport", icon: LayoutTemplate,iconBg: "bg-chart-2/10",    iconColor: "text-chart-2",    href: "/generate/template-report" },
+  { id: "powerpoint",      key: "powerpoint",     icon: Presentation,  iconBg: "bg-chart-3/10",    iconColor: "text-chart-3",    href: "/generate/powerpoint" },
+  { id: "conference",      key: "conference",     icon: BookOpen,      iconBg: "bg-chart-5/10",    iconColor: "text-chart-5",    href: "/generate/conference" },
+  { id: "thesis",          key: "thesis",         icon: GraduationCap, iconBg: "bg-chart-2/10",    iconColor: "text-chart-2",    href: "/generate/thesis" },
+  { id: "images",          key: "images",         icon: Image,         iconBg: "bg-chart-4/10",    iconColor: "text-chart-4",    href: "/generate/images" },
+  { id: "references",      key: "references",     icon: Library,       iconBg: "bg-primary/10",    iconColor: "text-primary",    href: "/references" },
+  { id: "humanize",        key: "humanize",       icon: Wand2,         iconBg: "bg-chart-5/10",    iconColor: "text-chart-5",    href: "/humanize" },
+  { id: "citations",       key: "citations",      icon: BookMarked,    iconBg: "bg-chart-2/10",    iconColor: "text-chart-2",    href: "/citations" },
+] as const;
 
-const steps = [
-  { icon: PenLine,      num: "1", title: "Enter Topic",   desc: "Provide your thesis statement, key variables, and select your desired citation style." },
-  { icon: BrainCircuit, num: "2", title: "AI Generates",  desc: "Our specialized models synthesize literature, structure arguments, and draft high-fidelity content." },
-  { icon: Download,     num: "3", title: "Download",      desc: "Export your complete document in pristine formatting, ready for final review and submission." },
-];
-
-const stats = [
-  { value: "10",  label: "AI Tools" },
-  { value: "66+", label: "Topic Templates" },
-  { value: "10+", label: "Export Formats" },
-  { value: "5",   label: "Citation Styles" },
-];
+const STEP_ICONS = [PenLine, BrainCircuit, Download];
 
 // ─── component ────────────────────────────────────────────────────────────────
 export default function Home() {
   const { t } = useTranslation();
+
+  const tools = TOOL_CONFIG.map(c => ({
+    ...c,
+    title:       t(`home.tools.${c.key}.title`),
+    description: t(`home.tools.${c.key}.desc`),
+    exports:     t(`home.tools.${c.key}.exports`),
+    action:      t(`home.tools.${c.key}.action` as any, { defaultValue: t("common.generate") }),
+  }));
+
+  const steps = [
+    { icon: STEP_ICONS[0], num: "1", title: t("home.step1Title"), desc: t("home.step1Desc") },
+    { icon: STEP_ICONS[1], num: "2", title: t("home.step2Title"), desc: t("home.step2Desc") },
+    { icon: STEP_ICONS[2], num: "3", title: t("home.step3Title"), desc: t("home.step3Desc") },
+  ];
+
+  const stats = [
+    { value: "10",  label: t("home.stats.tools") },
+    { value: "66+", label: t("home.stats.templates") },
+    { value: "10+", label: t("home.stats.formats") },
+    { value: "5",   label: t("home.stats.citations") },
+  ];
 
   const statsRef = useRef(null);
   const howRef   = useRef(null);
@@ -139,10 +89,10 @@ export default function Home() {
             {/* badge */}
             <motion.span
               variants={fadeUp}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold uppercase tracking-wide text-center max-w-full"
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              AI-Powered Research
+              {t("home.heroBadge")}
             </motion.span>
 
             {/* title — scales from 2xl on mobile to 6xl on large desktop */}
@@ -150,8 +100,8 @@ export default function Home() {
               variants={fadeUp}
               className="font-playfair text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight tracking-tight"
             >
-              The Future of Academic Writing,{" "}
-              <span className="text-primary">Powered by AI</span>
+              {t("home.heroTitle1")}{" "}
+              <span className="text-primary">{t("home.heroTitle2")}</span>
             </motion.h1>
 
             {/* subtitle */}
@@ -159,8 +109,7 @@ export default function Home() {
               variants={fadeUp}
               className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-lg md:max-w-2xl leading-relaxed"
             >
-              Elevate your scholarly work with high-fidelity document generation. From technical
-              reports to entire theses, build rigorous academic documents in minutes.
+              {t("home.heroSubtitle")}
             </motion.p>
 
             {/* buttons */}
@@ -171,12 +120,12 @@ export default function Home() {
                 data-testid="button-get-started"
                 onClick={() => document.getElementById("tools-grid")?.scrollIntoView({ behavior: "smooth" })}
               >
-                Get Started
+                {t("home.getStarted")}
               </Button>
               <Link href="/projects" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto px-6" data-testid="button-my-projects">
                   <FolderOpen className="w-4 h-4 mr-2" />
-                  View Saved Projects
+                  {t("home.viewSavedProjects")}
                 </Button>
               </Link>
             </motion.div>
@@ -278,7 +227,7 @@ export default function Home() {
           {stats.map((s, i) => (
             <motion.div key={i} variants={fadeUp} className="flex flex-col gap-1">
               <span className="font-playfair text-2xl sm:text-3xl md:text-4xl font-bold text-primary">{s.value}</span>
-              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-muted-foreground">{s.label}</span>
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-muted-foreground leading-tight">{s.label}</span>
             </motion.div>
           ))}
         </div>
@@ -295,11 +244,10 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto">
           <motion.div variants={fadeUp} className="text-center mb-10 sm:mb-12 md:mb-14">
             <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2 sm:mb-3">
-              Seamless Generation Process
+              {t("home.howItWorksTitle")}
             </h2>
             <p className="text-muted-foreground max-w-xs sm:max-w-sm md:max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
-              A streamlined workflow designed to keep you focused on research while the AI handles
-              the structuring and drafting.
+              {t("home.howItWorksSubtitle")}
             </p>
           </motion.div>
 
@@ -341,9 +289,9 @@ export default function Home() {
           className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-10 xl:px-16"
         >
           <motion.div variants={fadeUp} className="mb-8 sm:mb-10">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-1 sm:mb-2">Academic Toolkit</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-1 sm:mb-2">{t("home.toolkitTitle")}</h2>
             <p className="text-muted-foreground text-xs sm:text-sm max-w-xs sm:max-w-xl leading-relaxed">
-              Explore our comprehensive suite of specialized generative tools tailored for scholarly excellence.
+              {t("home.toolkitSubtitle")}
             </p>
           </motion.div>
 
@@ -361,7 +309,7 @@ export default function Home() {
                         <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg ${tool.iconBg} flex items-center justify-center shrink-0`}>
                           <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${tool.iconColor}`} />
                         </div>
-                        <h3 className="font-semibold text-foreground text-sm sm:text-base">{tool.title}</h3>
+                        <h3 className="font-semibold text-foreground text-sm sm:text-base min-w-0 break-words">{tool.title}</h3>
                       </div>
                       <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed flex-grow mb-3 sm:mb-4">
                         {tool.description}

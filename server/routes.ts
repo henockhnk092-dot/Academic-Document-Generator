@@ -967,8 +967,8 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
 
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { sessionId, message, context } = req.body;
-      
+      const { sessionId, message, context, language } = req.body;
+
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
@@ -978,7 +978,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         ? `You are an academic writing assistant. The user is working on: ${context}. Help them improve their writing.`
         : "You are an academic writing assistant. Help the user improve their academic writing.";
 
-      const response = await generateChatResponse(`${systemContext}\n\nUser: ${message}`);
+      const response = await generateChatResponse(`${systemContext}\n\nUser: ${message}`, language);
 
       if (sessionId) {
         try {
@@ -1001,14 +1001,14 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
     try {
       const { userId, documentId, text } = req.body;
 
-      if (!userId || !text) {
-        return res.status(400).json({ error: "User ID and text are required" });
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: "Please enter some text to check." });
       }
 
       const suggestions = await checkGrammar(text);
 
-      // Save suggestions if documentId provided
-      if (documentId && Array.isArray(suggestions)) {
+      // Save suggestions to DB only when user is authenticated
+      if (userId && documentId && Array.isArray(suggestions)) {
         for (const s of suggestions) {
           if (s.original && s.suggested) {
             await storage.createGrammarSuggestion({
@@ -1062,13 +1062,17 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
 
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message } = req.body;
-      
-      if (!message) {
+      const { message, fileContent, fileName, language } = req.body;
+
+      if (!message && !fileContent) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      const response = await generateChatResponse(message);
+      const fullMessage = fileContent
+        ? `${message || "Please analyze this file."}\n\n--- Attached file: ${fileName || "document"} ---\n${fileContent}`
+        : message;
+
+      const response = await generateChatResponse(fullMessage, language);
       res.json({ success: true, response });
     } catch (error: any) {
       console.error("Chat error:", error);
@@ -1312,7 +1316,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
   // Create Yoco checkout session
   app.post("/api/yoco/checkout", async (req, res) => {
     try {
-      const { tier, userId, userEmail, userName } = req.body;
+      const { tier, userId, userEmail } = req.body;
 
       if (!tier || !userId) {
         return res.status(400).json({ error: "Tier and User ID are required" });
@@ -1331,7 +1335,6 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         tier: tier as keyof typeof PRICING_TIERS,
         userId,
         userEmail,
-        userName,
         successUrl: `${baseUrl}/checkout/success?provider=yoco`,
         cancelUrl: `${baseUrl}/pricing`,
         failureUrl: `${baseUrl}/checkout/failed`,

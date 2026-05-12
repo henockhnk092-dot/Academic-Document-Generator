@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -34,90 +35,85 @@ const GenerateCustomReport = lazy(() => import("@/pages/generate-custom-report")
 const GenerateTemplateReport = lazy(() => import("@/pages/generate-template-report"));
 const About = lazy(() => import("@/pages/about"));
 const Contact = lazy(() => import("@/pages/contact"));
+const Legal = lazy(() => import("@/pages/legal"));
 const Settings = lazy(() => import("@/pages/settings"));
 const Pricing = lazy(() => import("@/pages/pricing"));
 const CheckoutSuccess = lazy(() => import("@/pages/checkout-success"));
 const CheckoutCancel = lazy(() => import("@/pages/checkout-cancel"));
 const Humanize = lazy(() => import("@/pages/humanize"));
 const Citations = lazy(() => import("@/pages/citations"));
+const GrammarCheck = lazy(() => import("@/pages/grammar-check"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-const PAGE_META: Record<string, { title: string; description: string }> = {
-  "/": {
-    title: "AcademicGen – AI Academic Document Generator",
-    description: "Free AI platform for generating professional academic documents. Create reports, presentations, papers & thesis instantly with Google Gemini.",
-  },
-  "/generate/report": {
-    title: "Generate Technical Report – AcademicGen",
-    description: "Generate a full technical report with sections, citations, and images in seconds using AI. Export to PDF or DOCX.",
-  },
-  "/generate/powerpoint": {
-    title: "Generate PowerPoint Presentation – AcademicGen",
-    description: "Create professional slide decks with speaker notes and AI images. Export to PPTX instantly.",
-  },
-  "/generate/conference": {
-    title: "Generate IEEE Conference Paper – AcademicGen",
-    description: "AI-generated IEEE-format conference papers with two-column layout, citations, and structured abstracts.",
-  },
-  "/generate/thesis": {
-    title: "Generate Thesis & Dissertation – AcademicGen",
-    description: "Create a complete thesis or dissertation with chapters, bibliography, and table of contents using AI.",
-  },
-  "/generate/images": {
-    title: "Generate AI Images – AcademicGen",
-    description: "Generate academic diagrams, charts, and illustrations with AI for your research documents.",
-  },
-  "/generate/custom-report": {
-    title: "Custom Report Generator – AcademicGen",
-    description: "Generate fully customised academic reports with your own formatting, fonts, and structure.",
-  },
-  "/humanize": {
-    title: "AI Humanizer – AcademicGen",
-    description: "Rewrite AI-generated text to sound natural and bypass AI detection tools while keeping academic quality.",
-  },
-  "/citations": {
-    title: "Citation Checker – AcademicGen",
-    description: "Detect fake or hallucinated citations in AI-generated text. Verify references with real academic databases.",
-  },
-  "/pricing": {
-    title: "Pricing – AcademicGen",
-    description: "Affordable plans for unlimited AI document generation. Day pass, weekly, monthly, and yearly options.",
-  },
-  "/about": {
-    title: "About – AcademicGen",
-    description: "Learn about AcademicGen, the free AI-powered platform for academic document generation.",
-  },
+const PAGE_META_KEYS: Record<string, string> = {
+  "/": "home",
+  "/projects": "projects",
+  "/templates": "templates",
+  "/my-templates": "myTemplates",
+  "/references": "references",
+  "/ai-assistant": "aiAssistant",
+  "/analytics": "analytics",
+  "/generate/report": "generateReport",
+  "/generate/powerpoint": "generatePowerPoint",
+  "/generate/conference": "generateConference",
+  "/generate/thesis": "generateThesis",
+  "/generate/images": "generateImages",
+  "/generate/custom-report": "generateCustomReport",
+  "/generate/template-report": "generateTemplateReport",
+  "/humanize": "humanize",
+  "/citations": "citations",
+  "/grammar-check": "grammarCheck",
+  "/pricing": "pricing",
+  "/about": "about",
+  "/contact": "contact",
+  "/legal": "legal",
+  "/settings": "settings",
+  "/checkout/success": "checkoutSuccess",
+  "/checkout/cancel": "checkoutCancel",
 };
 
-const PAGE_TITLES: Record<string, string> = {
-  "/": "AcademicGen – AI Academic Document Generator",
-  "/projects": "My Projects – AcademicGen",
-  "/templates": "Templates – AcademicGen",
-  "/my-templates": "My Templates – AcademicGen",
-  "/references": "References – AcademicGen",
-  "/ai-assistant": "AI Assistant – AcademicGen",
-  "/analytics": "Analytics – AcademicGen",
-  "/generate/report": "Generate Report – AcademicGen",
-  "/generate/powerpoint": "Generate PowerPoint – AcademicGen",
-  "/generate/conference": "Generate Conference Paper – AcademicGen",
-  "/generate/thesis": "Generate Thesis – AcademicGen",
-  "/generate/images": "Generate Images – AcademicGen",
-  "/generate/custom-report": "Generate Custom Report – AcademicGen",
-  "/generate/template-report": "Template Report Generator – AcademicGen",
-  "/humanize": "AI Humanizer – AcademicGen",
-  "/citations": "Citation Checker – AcademicGen",
-  "/about": "About – AcademicGen",
-  "/contact": "Contact – AcademicGen",
-  "/settings": "Settings – AcademicGen",
-  "/pricing": "Pricing – AcademicGen",
+const PAGE_CONTENT_META: Record<string, { titleKey: string; descriptionKey?: string }> = {
+  "/projects": { titleKey: "pages.myProjects.title", descriptionKey: "pages.myProjects.subtitle" },
+  "/templates": { titleKey: "pages.templates.title", descriptionKey: "pages.templates.subtitle" },
+  "/my-templates": { titleKey: "pages.myTemplates.title", descriptionKey: "pages.myTemplates.subtitle" },
+  "/references": { titleKey: "pages.references.title", descriptionKey: "pages.references.subtitle" },
+  "/ai-assistant": { titleKey: "pages.aiAssistant.title", descriptionKey: "pages.aiAssistant.subtitle" },
+  "/analytics": { titleKey: "pages.analytics.title", descriptionKey: "pages.analytics.subtitle" },
+  "/generate/report": { titleKey: "pages.report.title", descriptionKey: "pages.report.subtitle" },
+  "/generate/powerpoint": { titleKey: "pages.powerpoint.title", descriptionKey: "pages.powerpoint.subtitle" },
+  "/generate/conference": { titleKey: "pages.conference.title", descriptionKey: "pages.conference.subtitle" },
+  "/generate/thesis": { titleKey: "pages.thesis.title", descriptionKey: "pages.thesis.subtitle" },
+  "/generate/images": { titleKey: "pages.images.title", descriptionKey: "pages.images.subtitle" },
+  "/generate/custom-report": { titleKey: "pages.customReport.title", descriptionKey: "pages.customReport.subtitle" },
+  "/generate/template-report": { titleKey: "pages.templateReport.title", descriptionKey: "pages.templateReport.subtitle" },
+  "/humanize": { titleKey: "common.humanize", descriptionKey: "meta.humanize.description" },
+  "/citations": { titleKey: "pages.citations.title", descriptionKey: "pages.citations.subtitle" },
+  "/grammar-check": { titleKey: "pages.grammarCheck.title", descriptionKey: "pages.grammarCheck.subtitle" },
+  "/pricing": { titleKey: "pages.pricing.title", descriptionKey: "pages.pricing.subtitle" },
+  "/about": { titleKey: "pages.about.title", descriptionKey: "pages.about.tagline" },
+  "/contact": { titleKey: "pages.contact.title", descriptionKey: "pages.contact.subtitle" },
+  "/legal": { titleKey: "pages.legal.title", descriptionKey: "pages.legal.subtitle" },
+  "/settings": { titleKey: "pages.settings.title", descriptionKey: "pages.settings.subtitle" },
+  "/checkout/success": { titleKey: "pages.checkoutSuccess.successTitle", descriptionKey: "pages.checkoutSuccess.successDesc" },
+  "/checkout/cancel": { titleKey: "pages.checkoutCancel.title", descriptionKey: "pages.checkoutCancel.description" },
 };
+
+const BASE_URL = "https://academicgen.com";
 
 function TitleUpdater() {
   const [location] = useLocation();
+  const { t, i18n } = useTranslation();
   useEffect(() => {
-    const meta = PAGE_META[location];
-    const title = meta?.title ?? PAGE_TITLES[location] ?? "AcademicGen – AI Academic Document Generator";
-    const description = meta?.description ?? "Free AI platform for generating professional academic documents.";
+    const metaKey = PAGE_META_KEYS[location] ?? "home";
+    const contentMeta = PAGE_CONTENT_META[location];
+    const localizedTitle = contentMeta
+      ? t(contentMeta.titleKey)
+      : `${t("home.heroTitle1")} ${t("home.heroTitle2")}`;
+    const title = localizedTitle.includes("AcademicGen") ? localizedTitle : `${localizedTitle} - AcademicGen`;
+    const description = contentMeta?.descriptionKey
+      ? t(contentMeta.descriptionKey)
+      : t(`meta.${metaKey}.description`, { defaultValue: t("meta.home.description") });
+    const url = BASE_URL + location;
 
     document.title = title;
 
@@ -130,9 +126,22 @@ function TitleUpdater() {
     setMeta("description", description);
     setMeta("og:title", title, "property");
     setMeta("og:description", description, "property");
+    setMeta("og:url", url, "property");
     setMeta("twitter:title", title, "name");
     setMeta("twitter:description", description, "name");
-  }, [location]);
+    setMeta("twitter:url", url, "name");
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = url;
+  }, [location, i18n.language, t]);
+  return null;
+}
+function LangUpdater() {
+  const { i18n } = useTranslation();
+  useEffect(() => {
+    document.documentElement.lang = i18n.language || "en";
+  }, [i18n.language]);
   return null;
 }
 
@@ -166,8 +175,10 @@ function Router() {
         <Route path="/generate/images" component={GenerateImages} />
         <Route path="/humanize" component={Humanize} />
         <Route path="/citations" component={Citations} />
+        <Route path="/grammar-check" component={GrammarCheck} />
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />
+        <Route path="/legal" component={Legal} />
         <Route path="/settings" component={Settings} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
@@ -192,6 +203,7 @@ function App() {
             <SidebarProvider style={sidebarStyle as React.CSSProperties}>
               <ErrorBoundary>
                 <TitleUpdater />
+                <LangUpdater />
                 <div className="flex min-h-screen w-full">
                   {/* translate="no" prevents Google Translate from re-translating the i18n-managed sidebar */}
                   <div translate="no" style={{ display: "contents" }}>

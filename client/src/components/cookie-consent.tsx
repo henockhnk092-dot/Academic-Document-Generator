@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Cookie } from "lucide-react";
 
@@ -19,6 +20,7 @@ function injectGA() {
 }
 
 export function CookieConsent() {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -48,18 +50,17 @@ export function CookieConsent() {
       <div className="container mx-auto max-w-5xl px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <Cookie className="h-5 w-5 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
         <p className="text-sm text-muted-foreground flex-1">
-          We use Google Analytics to understand how people use AcademicGen and improve it.
-          No personal data is sold. See our{" "}
+          {t("components.cookieConsent.messagePart1")}{" "}
           <a href="/about" className="underline underline-offset-2 hover:text-foreground">
-            privacy policy
+            {t("components.cookieConsent.privacyPolicy")}
           </a>.
         </p>
         <div className="flex gap-2 flex-shrink-0">
           <Button size="sm" variant="outline" onClick={decline} className="h-8 text-xs">
-            Decline
+            {t("components.cookieConsent.decline")}
           </Button>
           <Button size="sm" onClick={accept} className="h-8 text-xs">
-            Accept
+            {t("components.cookieConsent.accept")}
           </Button>
         </div>
       </div>

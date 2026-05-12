@@ -97,9 +97,8 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,svg,woff,woff2}"],
         globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MB
-        offlineFallbackPage: "/offline.html",
-        navigationFallback: "/offline.html",
-        navigationFallbackDenylist: [/^\/api\//],
+        navigateFallback: "/offline.html",
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -152,6 +151,7 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  envDir: path.resolve(import.meta.dirname),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

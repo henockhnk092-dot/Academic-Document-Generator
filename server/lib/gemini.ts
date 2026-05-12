@@ -144,7 +144,7 @@ export async function generateContent(
     // letting downstream JSON parsing fail with a cryptic error.
     if (!text || text.trim() === "") {
       const candidate = response.candidates?.[0];
-      const reason = candidate?.finishReason;
+      const reason = String(candidate?.finishReason ?? "");
       if (reason === "SAFETY" || reason === "BLOCKED") {
         throw new Error("The AI declined to generate this content due to safety filters. Please rephrase your topic.");
       }
@@ -1017,7 +1017,11 @@ Return ONLY the JSON array of suggestions. If no issues found, return []`;
   }
 }
 
-export async function generateChatResponse(message: string): Promise<string> {
+export async function generateChatResponse(message: string, language?: string): Promise<string> {
+  const langNote = language && language !== "en"
+    ? `\n\nLANGUAGE REQUIREMENT: You MUST respond EXCLUSIVELY in ${LANG_NAMES[language] ?? language}. Every word of your response must be in ${LANG_NAMES[language] ?? language}. Do NOT use English.`
+    : "";
+
   const systemInstruction = `You are AcademicGen Assistant - a helpful guide for the AcademicGen academic document generation website.
 
 WEBSITE KNOWLEDGE - MEMORIZE THESE PAGES AND PATHS:
@@ -1103,7 +1107,7 @@ Response: "Your saved work is in:
 • Sign in with Google to access cloud saves
 • Export, view, or delete anytime"
 
-REMEMBER: EVERY response MUST contain at least one **[Link Text](/path)** format link!`;
+REMEMBER: EVERY response MUST contain at least one **[Link Text](/path)** format link!${langNote}`;
 
   const response = await generateContent(message, {
     systemInstruction,

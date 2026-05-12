@@ -38,6 +38,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AZURE_VOICES, AZURE_LANGUAGES, getBrowserVoiceLanguage, azureAvailable, getSpeechPrefs, saveSpeechPrefs } from "@/hooks/use-speech";
+import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 interface PaymentProviderInfo {
@@ -122,6 +123,7 @@ export default function Settings() {
   const [adminKeysLoading, setAdminKeysLoading] = useState(false);
   const [adminKeysSaving, setAdminKeysSaving] = useState(false);
 
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user, isAuthenticated, userRole, isAdmin, hasUnlimitedAccess } = useAuth();
   const { getUsageStatus, isLoading: usageLoading } = useUsage();
@@ -157,7 +159,7 @@ export default function Settings() {
       entries.forEach((e: any) => { edits[e.key] = ""; });
       setAdminKeyEdits(edits);
     } catch {
-      toast({ title: "Error", description: "Failed to load server config", variant: "destructive" });
+      toast({ title: t("common.errorTitle"), description: t("pages.settings.failedLoadConfig"), variant: "destructive" });
     } finally {
       setAdminKeysLoading(false);
     }
@@ -169,7 +171,7 @@ export default function Settings() {
       if (v.trim()) updates[k] = v.trim();
     });
     if (Object.keys(updates).length === 0) {
-      toast({ title: "No Changes", description: "Enter new values in the fields you want to update." });
+      toast({ title: t("pages.settings.noChanges"), description: t("pages.settings.noChangesDesc") });
       return;
     }
     setAdminKeysSaving(true);
@@ -181,11 +183,11 @@ export default function Settings() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to save");
-      toast({ title: "Keys Updated", description: `${data.updated} key(s) updated. Changes are active until next server restart.` });
+      toast({ title: t("pages.settings.keysUpdated"), description: t("pages.settings.keysUpdatedDesc", { count: data.updated }) });
       setAdminKeyEdits(prev => Object.fromEntries(Object.keys(prev).map(k => [k, ""])));
       await fetchAdminKeys();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to save keys", variant: "destructive" });
+      toast({ title: t("common.errorTitle"), description: error.message || t("pages.settings.failedSaveKeys"), variant: "destructive" });
     } finally {
       setAdminKeysSaving(false);
     }
@@ -205,8 +207,8 @@ export default function Settings() {
   const handleSave = () => {
     localStorage.setItem("papergen-settings", JSON.stringify(settings));
     toast({
-      title: "Settings Saved",
-      description: "Your preferences have been saved successfully.",
+      title: t("pages.settings.settingsSaved"),
+      description: t("pages.settings.settingsSavedDesc"),
     });
   };
 
@@ -223,8 +225,8 @@ export default function Settings() {
     setSettings(defaultSettings);
     localStorage.removeItem("papergen-settings");
     toast({
-      title: "Settings Reset",
-      description: "All settings have been reset to defaults.",
+      title: t("pages.settings.settingsReset"),
+      description: t("pages.settings.settingsResetDesc"),
     });
   };
 
@@ -235,8 +237,8 @@ export default function Settings() {
     if (paymentProvider?.preferred === 'bmc') {
       window.open("https://buymeacoffee.com/horizonhnk/membership", '_blank');
       toast({
-        title: "Opening Buy Me a Coffee",
-        description: "Manage your membership on Buy Me a Coffee.",
+        title: t("pages.settings.openingBMC"),
+        description: t("pages.settings.openingBMCDesc"),
       });
       return;
     }
@@ -256,8 +258,8 @@ export default function Settings() {
     } catch (error: any) {
       console.error("Portal error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to open subscription portal",
+        title: t("common.errorTitle"),
+        description: error.message || t("pages.settings.errorOpenPortal"),
         variant: "destructive",
       });
     } finally {
@@ -268,8 +270,8 @@ export default function Settings() {
   const handleSelectPlan = async (plan: keyof typeof PRICING_TIERS, priceId?: string, provider?: string) => {
     if (!user?.uid) {
       toast({
-        title: "Error",
-        description: "Please sign in and try again",
+        title: t("common.errorTitle"),
+        description: t("pages.settings.signInToTryAgain"),
         variant: "destructive",
       });
       return;
@@ -286,8 +288,8 @@ export default function Settings() {
           window.open(data.url, '_blank');
           setShowPricingModal(false);
           toast({
-            title: "Opening Buy Me a Coffee",
-            description: "Complete your purchase on Buy Me a Coffee. Make sure to use the same email address you signed up with!",
+            title: t("pages.pricing.openingBMC"),
+            description: t("pages.pricing.openingBMCDesc"),
           });
         } else {
           throw new Error("No checkout URL returned");
@@ -314,8 +316,8 @@ export default function Settings() {
       // Handle Stripe checkout (default)
       if (!priceId) {
         toast({
-          title: "Error",
-          description: "Please sign in and try again",
+          title: t("common.errorTitle"),
+          description: t("pages.settings.signInToTryAgain"),
           variant: "destructive",
         });
         setIsCheckoutLoading(false);
@@ -338,8 +340,8 @@ export default function Settings() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
-        title: "Checkout failed",
-        description: error.message || "Failed to start checkout",
+        title: t("pages.settings.checkoutFailed"),
+        description: error.message || t("pages.settings.checkoutFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -352,7 +354,7 @@ export default function Settings() {
       return (
         <Badge className="gap-1.5 border-red-500/50 bg-red-500/10 text-red-500" variant="outline">
           <Shield className="h-3.5 w-3.5" />
-          Admin
+          {t("pages.settings.roleAdmin")}
         </Badge>
       );
     }
@@ -360,7 +362,7 @@ export default function Settings() {
       return (
         <Badge className="gap-1.5 border-blue-500/50 bg-blue-500/10 text-blue-500" variant="outline">
           <Code className="h-3.5 w-3.5" />
-          Developer
+          {t("pages.settings.roleDeveloper")}
         </Badge>
       );
     }
@@ -375,7 +377,7 @@ export default function Settings() {
     return (
       <Badge variant="secondary" className="gap-1.5">
         <User className="h-3.5 w-3.5" />
-        Free
+        {t("pages.settings.roleFree")}
       </Badge>
     );
   };
@@ -386,10 +388,10 @@ export default function Settings() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <SettingsIcon className="h-8 w-8" />
-            Settings
+            {t("pages.settings.title")}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Configure your API keys, subscription, and preferences for document generation.
+            {t("pages.settings.subtitle")}
           </p>
         </div>
 
@@ -398,17 +400,17 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Subscription
+              {t("pages.settings.subscriptionTitle")}
             </CardTitle>
             <CardDescription>
-              Manage your subscription and billing settings.
+              {t("pages.settings.subscriptionDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!isAuthenticated ? (
               <div className="text-center py-4">
                 <p className="text-muted-foreground mb-4">
-                  Sign in to manage your subscription and unlock unlimited features.
+                  {t("pages.settings.signInToManage")}
                 </p>
               </div>
             ) : usageLoading ? (
@@ -419,27 +421,27 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label>Current Plan</Label>
+                    <Label>{t("pages.settings.currentPlan")}</Label>
                     <div className="flex items-center gap-2">
                       {getSubscriptionBadge()}
                     </div>
                   </div>
                   <div className="text-right">
                     {hasUnlimitedAccess ? (
-                      <p className="text-sm text-muted-foreground">Unlimited access</p>
+                      <p className="text-sm text-muted-foreground">{t("pages.settings.unlimitedAccess")}</p>
                     ) : usageStatus.hasActiveSubscription ? (
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-green-600">Active</p>
+                        <p className="text-sm font-medium text-green-600">{t("pages.settings.active")}</p>
                         {usageStatus.subscriptionExpiry && (
                           <p className="text-xs text-muted-foreground">
-                            Renews: {new Date(usageStatus.subscriptionExpiry).toLocaleDateString()}
+                            {t("pages.settings.renews")} {new Date(usageStatus.subscriptionExpiry).toLocaleDateString()}
                           </p>
                         )}
                       </div>
                     ) : (
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">
-                          {usageStatus.remaining} / {usageStatus.maxAttempts} generations left
+                          {usageStatus.remaining} / {usageStatus.maxAttempts} {t("pages.settings.generationsLeft")}
                         </p>
                       </div>
                     )}
@@ -451,9 +453,9 @@ export default function Settings() {
                 {hasUnlimitedAccess ? (
                   <div className="bg-muted/50 rounded-lg p-4 text-center">
                     <Sparkles className="h-8 w-8 mx-auto text-primary mb-2" />
-                    <p className="font-medium">You have unlimited access!</p>
+                    <p className="font-medium">{t("pages.settings.youHaveUnlimited")}</p>
                     <p className="text-sm text-muted-foreground">
-                      {userRole === "admin" ? "Admin privileges enabled" : "Developer privileges enabled"}
+                      {userRole === "admin" ? t("pages.settings.adminPrivileges") : t("pages.settings.developerPrivileges")}
                     </p>
                   </div>
                 ) : usageStatus.hasActiveSubscription ? (
@@ -471,7 +473,7 @@ export default function Settings() {
                       ) : (
                         <ExternalLink className="mr-2 h-4 w-4" />
                       )}
-                      Manage Subscription
+                      {t("pages.settings.manageSubscription")}
                       {paymentProvider?.preferred === 'bmc' && <ExternalLink className="ml-2 h-3 w-3" />}
                     </Button>
                   </div>
@@ -480,18 +482,18 @@ export default function Settings() {
                     <div className="bg-muted/50 rounded-lg p-4">
                       <h4 className="font-medium mb-2 flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-primary" />
-                        Upgrade to unlock:
+                        {t("pages.settings.upgradeUnlock")}
                       </h4>
                       <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Unlimited document generations</li>
-                        <li>• All document types (Reports, Thesis, Conference Papers)</li>
-                        <li>• AI-powered image generation</li>
-                        <li>• Priority support</li>
+                        <li>• {t("pages.settings.upgradeFeature1")}</li>
+                        <li>• {t("pages.settings.upgradeFeature2")}</li>
+                        <li>• {t("pages.settings.upgradeFeature3")}</li>
+                        <li>• {t("pages.settings.upgradeFeature4")}</li>
                       </ul>
                     </div>
                     <Button onClick={() => setShowPricingModal(true)} className="w-full">
                       <Crown className="mr-2 h-4 w-4" />
-                      View Plans & Upgrade
+                      {t("pages.settings.viewPlansUpgrade")}
                     </Button>
                   </div>
                 )}
@@ -504,21 +506,21 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />
-              API Configuration
+              {t("pages.settings.apiConfigTitle")}
             </CardTitle>
             <CardDescription>
-              Enter your API keys to enable AI-powered content and image generation.
+              {t("pages.settings.apiConfigDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="gemini-key">Gemini API Key</Label>
+              <Label htmlFor="gemini-key">{t("pages.settings.geminiKeyLabel")}</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
                     id="gemini-key"
                     type={showApiKey ? "text" : "password"}
-                    placeholder="Enter your Gemini API key"
+                    placeholder={t("pages.settings.geminiKeyPlaceholder")}
                     value={settings.geminiApiKey}
                     onChange={(e) => setSettings({ ...settings, geminiApiKey: e.target.value })}
                     data-testid="input-gemini-key"
@@ -534,37 +536,37 @@ export default function Settings() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Get your key from{" "}
+                {t("pages.settings.geminiKeyHint")}{" "}
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  Google AI Studio
+                  {t("pages.settings.googleAIStudio")}
                 </a>
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pixabay-key">Pixabay API Key (Optional)</Label>
+              <Label htmlFor="pixabay-key">{t("pages.settings.pixabayKeyLabel")}</Label>
               <Input
                 id="pixabay-key"
                 type={showApiKey ? "text" : "password"}
-                placeholder="Enter your Pixabay API key for images"
+                placeholder={t("pages.settings.pixabayKeyPlaceholder")}
                 value={settings.pixabayApiKey}
                 onChange={(e) => setSettings({ ...settings, pixabayApiKey: e.target.value })}
                 data-testid="input-pixabay-key"
               />
               <p className="text-xs text-muted-foreground">
-                Get your key from{" "}
+                {t("pages.settings.pixabayKeyHint")}{" "}
                 <a
                   href="https://pixabay.com/api/docs/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  Pixabay API
+                  {t("pages.settings.pixabayAPI")}
                 </a>
               </p>
             </div>
@@ -575,16 +577,16 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Default Preferences
+              {t("pages.settings.preferencesTitle")}
             </CardTitle>
             <CardDescription>
-              Set default options for document generation.
+              {t("pages.settings.preferencesDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="default-tone">Default Tone</Label>
+                <Label htmlFor="default-tone">{t("pages.settings.defaultTone")}</Label>
                 <Select
                   value={settings.defaultTone}
                   onValueChange={(value) => setSettings({ ...settings, defaultTone: value })}
@@ -593,17 +595,17 @@ export default function Settings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Academic">Academic</SelectItem>
-                    <SelectItem value="Professional">Professional</SelectItem>
-                    <SelectItem value="Formal">Formal</SelectItem>
-                    <SelectItem value="Technical">Technical</SelectItem>
-                    <SelectItem value="Conversational">Conversational</SelectItem>
+                    <SelectItem value="Academic">{t("common.toneAcademic")}</SelectItem>
+                    <SelectItem value="Professional">{t("common.toneProfessional")}</SelectItem>
+                    <SelectItem value="Formal">{t("common.toneFormal")}</SelectItem>
+                    <SelectItem value="Technical">{t("common.toneTechnical")}</SelectItem>
+                    <SelectItem value="Conversational">{t("common.toneConversational")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="default-reference">Default Reference Style</Label>
+                <Label htmlFor="default-reference">{t("pages.settings.defaultReference")}</Label>
                 <Select
                   value={settings.defaultReferenceStyle}
                   onValueChange={(value) => setSettings({ ...settings, defaultReferenceStyle: value })}
@@ -627,9 +629,9 @@ export default function Settings() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Generate Images</Label>
+                  <Label>{t("pages.settings.generateImages")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically generate images for documents
+                    {t("pages.settings.generateImagesDesc")}
                   </p>
                 </div>
                 <Switch
@@ -641,9 +643,9 @@ export default function Settings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Auto-Save Projects</Label>
+                  <Label>{t("pages.settings.autoSave")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically save projects to your account
+                    {t("pages.settings.autoSaveDesc")}
                   </p>
                 </div>
                 <Switch
@@ -661,21 +663,21 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Volume2 className="h-5 w-5" />
-              Voice & Language Preferences
+              {t("pages.settings.voiceTitle")}
             </CardTitle>
             <CardDescription>
-              Choose your UI language, voice engine, and speaker. Settings are saved automatically and apply everywhere.
+              {t("pages.settings.voiceDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             {/* UI Language */}
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
-                <Globe className="h-4 w-4" /> Website Language
+                <Globe className="h-4 w-4" /> {t("pages.settings.websiteLanguage")}
               </Label>
               <LanguageSwitcher />
               <p className="text-xs text-muted-foreground">
-                Changes the sidebar, navigation, and key UI text. Also auto-selects a matching voice for the reader.
+                {t("pages.settings.websiteLanguageHint")}
               </p>
             </div>
 
@@ -683,7 +685,7 @@ export default function Settings() {
 
             {/* Engine toggle */}
             <div className="space-y-2">
-              <Label>Voice Engine</Label>
+              <Label>{t("pages.settings.voiceEngine")}</Label>
               <div className="flex gap-2 flex-wrap">
                 {azureAvailable && (
                   <button
@@ -692,7 +694,7 @@ export default function Settings() {
                       voiceEngine === "azure" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Zap className="h-3.5 w-3.5" /> Azure Neural HD
+                    <Zap className="h-3.5 w-3.5" /> {t("pages.settings.azureNeuralHD")}
                   </button>
                 )}
                 <button
@@ -701,7 +703,7 @@ export default function Settings() {
                     voiceEngine === "gemini" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> Google Gemini TTS
+                  <Sparkles className="h-3.5 w-3.5" /> {t("pages.settings.googleGeminiTTS")}
                 </button>
                 <button
                   onClick={() => handleVoiceEngine("browser")}
@@ -709,17 +711,17 @@ export default function Settings() {
                     voiceEngine === "browser" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Browser Default
+                  {t("pages.settings.browserDefault")}
                 </button>
               </div>
               {voiceEngine === "azure" && !azureAvailable && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Azure TTS key not configured. Contact admin or set <code>VITE_AZURE_TTS_KEY</code> in environment.
+                  {t("pages.settings.azureKeyMissing")}
                 </p>
               )}
               {voiceEngine === "gemini" && (
                 <p className="text-xs text-muted-foreground">
-                  Uses Google Gemini TTS API — requires Gemini API key. Falls back to browser if unavailable.
+                  {t("pages.settings.geminiTTSNote")}
                 </p>
               )}
             </div>
@@ -730,7 +732,7 @@ export default function Settings() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
-                  <Globe className="h-4 w-4" /> Language
+                  <Globe className="h-4 w-4" /> {t("pages.settings.language")}
                 </Label>
                 <Select
                   value={voiceLang}
@@ -751,38 +753,38 @@ export default function Settings() {
                       );
                     })}
                     {!isAzureEngine && browserVoices.length === 0 && (
-                      <SelectItem value="English" disabled>Loading browser voices…</SelectItem>
+                      <SelectItem value="English" disabled>{t("pages.settings.loadingBrowserVoices")}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {isAzureEngine
-                    ? `${AZURE_LANGUAGES.length} languages supported by Azure`
-                    : `${activeLangList.length} language(s) detected in your browser`}
+                    ? `${AZURE_LANGUAGES.length} ${t("pages.settings.azureLanguagesNote")}`
+                    : `${activeLangList.length} ${t("pages.settings.browserLanguagesNote")}`}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Voice / Speaker</Label>
+                <Label>{t("pages.settings.voiceSpeaker")}</Label>
                 <Select
                   value={selectedVoice}
                   onValueChange={handleVoiceSelect}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select voice" />
+                    <SelectValue placeholder={t("pages.settings.selectVoice")} />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
                     {isAzureEngine ? (
-                      activeLangVoices.map(v => (
+                      azureLangVoices.map(v => (
                         <SelectItem key={v.name} value={v.name}>
                           {v.flag} {v.label}
                         </SelectItem>
                       ))
                     ) : (
-                      activeLangVoices.length === 0 ? (
-                        <SelectItem value="" disabled>No voices for this language</SelectItem>
+                      browserLangVoices.length === 0 ? (
+                        <SelectItem value="" disabled>{t("pages.settings.noVoicesForLang")}</SelectItem>
                       ) : (
-                        activeLangVoices.map(v => (
+                        browserLangVoices.map(v => (
                           <SelectItem key={v.name} value={v.name}>
                             {v.name}
                           </SelectItem>
@@ -792,16 +794,16 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {isAzureEngine ? "Azure Neural HD voices" : "Browser / Google voices available on your device"}
+                  {isAzureEngine ? t("pages.settings.azureVoicesNote") : t("pages.settings.browserVoicesNote")}
                 </p>
               </div>
             </div>
 
             <div className="rounded-lg bg-muted/40 px-4 py-3 text-xs text-muted-foreground space-y-1">
-              <p><strong>Azure Neural HD</strong> — 25+ languages, 80+ voices. Highest quality. Requires Azure key.</p>
-              <p><strong>Google Gemini TTS</strong> — English only (API limit). Requires Gemini API key.</p>
-              <p><strong>Browser Default</strong> — Languages depend on your OS. Chrome includes Google voices for many languages. Completely free.</p>
-              <p className="text-[11px] pt-1 opacity-70">All engines fall back automatically: Azure → Gemini → Browser if a key is missing or fails.</p>
+              <p>{t("pages.settings.voiceInfoAzure")}</p>
+              <p>{t("pages.settings.voiceInfoGemini")}</p>
+              <p>{t("pages.settings.voiceInfoBrowser")}</p>
+              <p className="text-[11px] pt-1 opacity-70">{t("pages.settings.voiceFallback")}</p>
             </div>
           </CardContent>
         </Card>
@@ -809,11 +811,11 @@ export default function Settings() {
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={handleReset} data-testid="button-reset">
             <RotateCcw className="mr-2 h-4 w-4" />
-            Reset to Defaults
+            {t("pages.settings.resetDefaults")}
           </Button>
           <Button onClick={handleSave} data-testid="button-save">
             <Save className="mr-2 h-4 w-4" />
-            Save Settings
+            {t("pages.settings.saveSettings")}
           </Button>
         </div>
 
@@ -822,14 +824,14 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <Server className="h-5 w-5" />
-                Server API Keys
+                {t("pages.settings.adminTitle")}
                 <Badge variant="outline" className="ml-auto border-red-500/50 bg-red-500/10 text-red-500 text-xs">
                   <Shield className="h-3 w-3 mr-1" />
-                  Admin Only
+                  {t("pages.settings.adminOnly")}
                 </Badge>
               </CardTitle>
               <CardDescription>
-                View and update server-side environment variables. Changes take effect immediately but reset on next server restart.
+                {t("pages.settings.adminDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -850,7 +852,7 @@ export default function Settings() {
                           <div className="relative flex-1">
                             <Input
                               type={adminKeyVisible[entry.key] ? "text" : "password"}
-                              placeholder={entry.hasValue ? entry.masked : "Not set — enter new value"}
+                              placeholder={entry.hasValue ? entry.masked : t("pages.settings.notSetEnterValue")}
                               value={adminKeyEdits[entry.key] || ""}
                               onChange={(e) => setAdminKeyEdits(prev => ({ ...prev, [entry.key]: e.target.value }))}
                               className="font-mono text-sm pr-10"
@@ -873,7 +875,7 @@ export default function Settings() {
                   <div className="flex gap-3 justify-end">
                     <Button variant="outline" size="sm" onClick={fetchAdminKeys} disabled={adminKeysLoading}>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh
+                      {t("pages.settings.refresh")}
                     </Button>
                     <Button size="sm" onClick={handleSaveAdminKeys} disabled={adminKeysSaving}>
                       {adminKeysSaving ? (
@@ -881,7 +883,7 @@ export default function Settings() {
                       ) : (
                         <Save className="mr-2 h-4 w-4" />
                       )}
-                      Update Keys
+                      {t("pages.settings.updateKeys")}
                     </Button>
                   </div>
                 </>

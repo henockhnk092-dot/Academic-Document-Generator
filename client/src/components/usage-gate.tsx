@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useUsage } from "@/hooks/use-usage";
 import { LoginPromptDialog } from "@/components/login-prompt-dialog";
 import { PricingModal } from "@/components/pricing-modal";
@@ -26,6 +27,7 @@ interface UsageGateProps {
 
 export function UsageGate({ children }: UsageGateProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [paymentProvider, setPaymentProvider] = useState<PaymentProviderInfo | null>(null);
@@ -63,16 +65,16 @@ export function UsageGate({ children }: UsageGateProps) {
       if (check.reason === "guest_limit") {
         setShowLoginPrompt(true);
         toast({
-          title: "Free limit reached",
-          description: "Sign in to get 5 more free generations!",
+          title: t("components.usageGate.freeLimitReached"),
+          description: t("components.usageGate.signInForMore"),
         });
         return false;
       }
       if (check.reason === "user_limit") {
         setShowPricingModal(true);
         toast({
-          title: "Free limit reached",
-          description: "Subscribe to continue generating documents.",
+          title: t("components.usageGate.freeLimitReached"),
+          description: t("components.usageGate.subscribeToGenerate"),
         });
         return false;
       }
@@ -93,10 +95,10 @@ export function UsageGate({ children }: UsageGateProps) {
     const remaining = getRemainingAttempts();
     if (remaining !== Infinity && remaining >= 0) {
       toast({
-        title: "Generation started",
+        title: t("components.usageGate.generationStarted"),
         description: remaining === 0
-          ? "This is your last free generation!"
-          : `${remaining} free generation${remaining === 1 ? '' : 's'} remaining`,
+          ? t("components.usageGate.lastFreeGen")
+          : t("components.usageGate.freeGensRemaining", { count: remaining }),
       });
     }
 
@@ -108,8 +110,8 @@ export function UsageGate({ children }: UsageGateProps) {
       setShowPricingModal(false);
       setShowLoginPrompt(true);
       toast({
-        title: "Sign in required",
-        description: "Please sign in to subscribe to a plan.",
+        title: t("pages.pricing.signInRequired"),
+        description: t("pages.pricing.signInRequiredDesc"),
       });
       return;
     }
@@ -126,8 +128,8 @@ export function UsageGate({ children }: UsageGateProps) {
           window.open(data.url, '_blank');
           setShowPricingModal(false);
           toast({
-            title: "Opening Buy Me a Coffee",
-            description: "Complete your purchase on Buy Me a Coffee. Make sure to use the same email address you signed up with!",
+            title: t("pages.pricing.openingBMC"),
+            description: t("pages.pricing.openingBMCDesc"),
           });
         } else {
           throw new Error("No checkout URL returned");
@@ -154,8 +156,8 @@ export function UsageGate({ children }: UsageGateProps) {
       // Handle Stripe checkout (default)
       if (!priceId) {
         toast({
-          title: "Payment unavailable",
-          description: "Unable to find the selected plan. Please refresh and try again, or contact support.",
+          title: t("components.usageGate.paymentUnavailable"),
+          description: t("components.usageGate.paymentUnavailableDesc"),
           variant: "destructive",
         });
         console.error("[UsageGate] No priceId found for plan:", plan);
@@ -179,8 +181,8 @@ export function UsageGate({ children }: UsageGateProps) {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
-        title: "Checkout failed",
-        description: error.message || "Failed to start checkout. Please try again.",
+        title: t("pages.pricing.checkoutFailed"),
+        description: error.message || t("pages.pricing.checkoutFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -203,8 +205,8 @@ export function UsageGate({ children }: UsageGateProps) {
         onOpenChange={setShowLoginPrompt}
         onSuccess={() => {
           toast({
-            title: "Welcome!",
-            description: "You now have 5 free generations.",
+            title: t("components.loginPromptDialog.welcome"),
+            description: t("components.loginPromptDialog.freeGenerations"),
           });
         }}
       />

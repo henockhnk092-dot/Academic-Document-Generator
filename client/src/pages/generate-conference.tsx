@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, FileCode, Printer, Cloud, Loader2, FileText, Wand2, BookOpenCheck } from "lucide-react";
+import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, Undo2, FileCode, Printer, Cloud, Loader2, FileText, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -63,7 +63,9 @@ export default function GenerateConference() {
   const previewRef = useRef<HTMLDivElement>(null);
   const generateButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("conference");
+  const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("conference");
+  const [undoContent, setUndoContent] = useState<any>(null);
+  const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
   useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating || isSubmitting);
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
   const { uploadedFiles, isProcessing, extractedText, handleFileUpload, removeFile } = useFileUpload();
@@ -84,8 +86,8 @@ export default function GenerateConference() {
       setTopic(templatePrompt);
       if (templateName) {
         toast({
-          title: "Template loaded",
-          description: `Using template: ${templateName}`,
+          title: t("common.templateLoaded"),
+          description: t("common.templateLoadedDesc", { name: templateName }),
         });
       }
     }
@@ -177,10 +179,10 @@ export default function GenerateConference() {
 
   const handleExportPDF = async () => {
     if (!generatedContent) {
-      toast({ title: "No content to export", description: "Please generate a paper first", variant: "destructive" });
+      toast({ title: t("common.noContentToExport"), description: t("pages.conference.noContentDesc"), variant: "destructive" });
       return;
     }
-    toast({ title: "Generating PDF…", description: "This may take a few seconds." });
+    toast({ title: t("common.generatingPDF"), description: t("common.mayTakeSeconds") });
     try {
       const response = await fetch("/api/export/pdf", {
         method: "POST",
@@ -197,9 +199,9 @@ export default function GenerateConference() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: "PDF Downloaded!", description: "Your conference paper has been exported as PDF." });
+      toast({ title: t("common.pdfDownloaded"), description: t("pages.conference.exportedPDF") });
     } catch {
-      toast({ title: "PDF Export Failed", description: "Please try the Print option instead.", variant: "destructive" });
+      toast({ title: t("common.pdfExportFailed"), description: t("common.printOptionInstead"), variant: "destructive" });
     }
   };
 
@@ -212,7 +214,7 @@ export default function GenerateConference() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IEEE Conference Paper</title>
+  <title>${t("generators.conferencePaper")}</title>
   <style>
     /* Print and display formatting */
     body {
@@ -332,8 +334,8 @@ export default function GenerateConference() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Downloaded",
-      description: "HTML file saved successfully",
+      title: t("pages.conference.downloaded"),
+      description: t("pages.conference.downloadedDesc"),
     });
   };
 
@@ -344,8 +346,8 @@ export default function GenerateConference() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({
-        title: "Error",
-        description: "Please allow pop-ups to print",
+        title: t("common.printFailed"),
+        description: t("common.printFailedDesc"),
         variant: "destructive",
       });
       return;
@@ -356,7 +358,7 @@ export default function GenerateConference() {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>IEEE Conference Paper - Print</title>
+  <title>${t("pages.conference.printTitle")}</title>
   <style>
     body {
       margin: 0;
@@ -471,8 +473,8 @@ export default function GenerateConference() {
   const handleSave = async () => {
     if (!isAuthenticated || !user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to save your conference paper",
+        title: t("common.authRequired"),
+        description: t("pages.conference.authRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -480,8 +482,8 @@ export default function GenerateConference() {
 
     if (!generatedContent) {
       toast({
-        title: "No content to save",
-        description: "Please generate a conference paper first",
+        title: t("common.noContentToSave"),
+        description: t("pages.conference.noContentToSaveDesc"),
         variant: "destructive"
       });
       return;
@@ -516,7 +518,7 @@ export default function GenerateConference() {
       };
 
       // Extract title from generated content first, then fall back to user input
-      const documentTitle = generatedContent.title || topic || "Conference Paper";
+      const documentTitle = generatedContent.title || topic || t("generators.conferencePaper");
 
       // Generate a description from topic or content
       const description = topic ||
@@ -537,14 +539,14 @@ export default function GenerateConference() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: "Document saved",
-        description: "Your conference paper has been saved successfully to Firebase"
+        title: t("common.documentSaved"),
+        description: t("pages.conference.savedSuccess"),
       });
     } catch (error: any) {
       console.error("Save error:", error);
       toast({
-        title: "Save failed",
-        description: error.message || "Failed to save document. Please try again.",
+        title: t("common.saveFailed"),
+        description: error.message || t("common.failedSaveDocument"),
         variant: "destructive"
       });
     } finally {
@@ -554,6 +556,20 @@ export default function GenerateConference() {
 
   const htmlContent = getHtmlContent();
   const hasContent = htmlContent.length > 0;
+
+  const handleClear = () => {
+    setUndoContent(generatedContent);
+    setUndoImageUrls(sectionImageUrls);
+    clearContent();
+    setSectionImageUrls({});
+  };
+
+  const handleUndo = () => {
+    restore(undoContent);
+    setSectionImageUrls(undoImageUrls);
+    setUndoContent(null);
+    setUndoImageUrls({});
+  };
 
   const handleHumanize = () => {
     if (!hasContent || !generatedContent) return;
@@ -612,7 +628,7 @@ export default function GenerateConference() {
                       setTopic(randomResult.topic);
                       toast({
                         title: randomResult.category,
-                        description: `Topic: ${randomResult.topic}`,
+                        description: t("common.topicIs", { topic: randomResult.topic }),
                       });
                     }}
                     disabled={isLoadingTopic}
@@ -673,10 +689,10 @@ export default function GenerateConference() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
-                      <SelectItem value="1-2 pages">1-2 Pages</SelectItem>
-                      <SelectItem value="3-5 pages">3-5 Pages</SelectItem>
-                      <SelectItem value="6-10 pages">6-10 Pages</SelectItem>
-                      <SelectItem value="10+ pages">10+ Pages</SelectItem>
+                      <SelectItem value="1-2 pages">{t("pages.conference.pages1to2")}</SelectItem>
+                      <SelectItem value="3-5 pages">{t("pages.conference.pages3to5")}</SelectItem>
+                      <SelectItem value="6-10 pages">{t("pages.conference.pages6to10")}</SelectItem>
+                      <SelectItem value="10+ pages">{t("pages.conference.pages10plus")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -690,8 +706,8 @@ export default function GenerateConference() {
                     <SelectContent>
                       <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
                       <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
-                      <SelectItem value="essay">Essay</SelectItem>
-                      <SelectItem value="creative">Creative</SelectItem>
+                      <SelectItem value="essay">{t("common.toneEssay")}</SelectItem>
+                      <SelectItem value="creative">{t("common.toneCreative")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -735,7 +751,7 @@ export default function GenerateConference() {
                 <CollapsibleContent className="space-y-4 pt-4">
                   <div className="space-y-4 p-4 border rounded-lg">
                     <div className="flex items-center justify-between">
-                      <Label>Manual Author Details</Label>
+                      <Label>{t("pages.conference.manualAuthors")}</Label>
                       <Switch
                         checked={useManualAuthors}
                         onCheckedChange={setUseManualAuthors}
@@ -748,7 +764,7 @@ export default function GenerateConference() {
                         {authors.map((author, index) => (
                           <div key={index} className="space-y-2 p-3 border rounded-lg bg-muted/20">
                             <div className="flex items-center justify-between">
-                              <Label className="text-sm font-medium">Author {index + 1}</Label>
+                              <Label className="text-sm font-medium">{t("pages.conference.authorN", { n: index + 1 })}</Label>
                               {authors.length > 1 && (
                                 <Button
                                   variant="ghost"
@@ -761,20 +777,20 @@ export default function GenerateConference() {
                               )}
                             </div>
                             <Input
-                              placeholder="Full Name"
+                              placeholder={t("pages.conference.authorFullName")}
                               value={author.name}
                               onChange={(e) => updateAuthor(index, "name", e.target.value)}
                               data-testid={`input-author-name-${index}`}
                             />
                             <Input
-                              placeholder="Affiliation (University/Organization)"
+                              placeholder={t("pages.conference.authorAffiliation")}
                               value={author.affiliation}
                               onChange={(e) => updateAuthor(index, "affiliation", e.target.value)}
                               data-testid={`input-author-affiliation-${index}`}
                             />
                             <Input
                               type="email"
-                              placeholder="Email Address"
+                              placeholder={t("pages.conference.authorEmail")}
                               value={author.email}
                               onChange={(e) => updateAuthor(index, "email", e.target.value)}
                               data-testid={`input-author-email-${index}`}
@@ -789,7 +805,7 @@ export default function GenerateConference() {
                           data-testid="button-add-author"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />
-                          Add Author
+                          {t("pages.conference.addAuthor")}
                         </Button>
                       </div>
                     )}
@@ -797,7 +813,7 @@ export default function GenerateConference() {
 
                   <div className="space-y-4 p-4 border rounded-lg">
                     <div className="flex items-center justify-between">
-                      <Label>Custom Formatting</Label>
+                      <Label>{t("pages.conference.customFormatting")}</Label>
                       <Switch
                         checked={useCustomFormatting}
                         onCheckedChange={setUseCustomFormatting}
@@ -808,7 +824,7 @@ export default function GenerateConference() {
                     {useCustomFormatting && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Font Size</Label>
+                          <Label className="text-xs">{t("pages.conference.fontSize")}</Label>
                           <Select
                             value={customFormat.fontSize}
                             onValueChange={(v) => setCustomFormat({ ...customFormat, fontSize: v })}
@@ -825,7 +841,7 @@ export default function GenerateConference() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Line Spacing</Label>
+                          <Label className="text-xs">{t("pages.conference.lineSpacing")}</Label>
                           <Select
                             value={customFormat.lineSpacing}
                             onValueChange={(v) => setCustomFormat({ ...customFormat, lineSpacing: v })}
@@ -842,7 +858,7 @@ export default function GenerateConference() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Margins (cm)</Label>
+                          <Label className="text-xs">{t("pages.conference.margins")}</Label>
                           <Select
                             value={customFormat.padding}
                             onValueChange={(v) => setCustomFormat({ ...customFormat, padding: v })}
@@ -859,7 +875,7 @@ export default function GenerateConference() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Text Align</Label>
+                          <Label className="text-xs">{t("pages.conference.textAlign")}</Label>
                           <Select
                             value={customFormat.textAlign}
                             onValueChange={(v) => setCustomFormat({ ...customFormat, textAlign: v })}
@@ -868,13 +884,13 @@ export default function GenerateConference() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="justify">Justify</SelectItem>
-                              <SelectItem value="left">Left</SelectItem>
+                              <SelectItem value="justify">{t("pages.conference.alignJustify")}</SelectItem>
+                              <SelectItem value="left">{t("pages.conference.alignLeft")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Font Family</Label>
+                          <Label className="text-xs">{t("pages.conference.fontFamily")}</Label>
                           <Select
                             value={customFormat.fontFamily}
                             onValueChange={(v) => setCustomFormat({ ...customFormat, fontFamily: v })}
@@ -890,7 +906,7 @@ export default function GenerateConference() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Text Color</Label>
+                          <Label className="text-xs">{t("pages.conference.textColor")}</Label>
                           <Input
                             type="color"
                             value={customFormat.textColor}
@@ -908,7 +924,7 @@ export default function GenerateConference() {
               <div className="space-y-2">
                 {remainingAttempts !== Infinity && (
                   <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <span>{remainingAttempts} generation{remainingAttempts !== 1 ? 's' : ''} remaining</span>
+                    <span>{t("common.genRemaining", { count: remainingAttempts })}</span>
                     <button
                       type="button"
                       onClick={openPricing}
@@ -941,7 +957,7 @@ export default function GenerateConference() {
                 </Button>
                 {!isGenerating && !isSubmitting && (
                   <p className="text-xs text-center text-muted-foreground mt-1 no-print">
-                    Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                    {t("common.ctrlEnterHintPre")} <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> {t("common.ctrlEnterHintPost")}
                   </p>
                 )}
               </div>
@@ -998,23 +1014,46 @@ export default function GenerateConference() {
                     size="sm"
                     onClick={handleHumanize}
                     disabled={!hasContent}
-                    title="Send to AI Humanizer"
-                    aria-label="Send to AI Humanizer"
+                    title={t("common.sendToHumanizer")}
+                    aria-label={t("common.sendToHumanizer")}
                   >
                     <Wand2 className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Humanize</span>
+                    <span className="hidden sm:inline">{t("common.humanize")}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleCitationCheck}
                     disabled={!hasContent}
-                    title="Check Citations"
-                    aria-label="Check Citations"
+                    title={t("common.checkCitations")}
+                    aria-label={t("common.checkCitations")}
                   >
                     <BookOpenCheck className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Check Citations</span>
+                    <span className="hidden sm:inline">{t("common.checkCitations")}</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClear}
+                    disabled={!generatedContent}
+                    title={t("common.clearDocument")}
+                    aria-label={t("common.clearDocument")}
+                  >
+                    <Trash2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t("common.clear")}</span>
+                  </Button>
+                  {undoContent && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      title={t("common.undoClear")}
+                      aria-label={t("common.undoClear")}
+                    >
+                      <Undo2 className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{t("common.undo")}</span>
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" disabled={!hasContent} data-testid="button-export-menu">
@@ -1045,9 +1084,9 @@ export default function GenerateConference() {
                 <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating conference paper: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
-                    {progress < 50 ? "Generating IEEE-formatted conference paper..." :
-                     progress < 90 ? "Processing figures and formatting..." :
-                     "Finalizing document..."}
+                    {progress < 50 ? t("pages.conference.progressPhase1") :
+                     progress < 90 ? t("pages.conference.progressPhase2") :
+                     t("pages.conference.progressPhase3")}
                   </div>
                 </div>
               )}

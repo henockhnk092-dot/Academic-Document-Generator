@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,22 +19,24 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       await auth.signInWithGoogle();
       toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in with Google",
+        title: t("components.authDialog.welcomeBack"),
+        description: t("components.authDialog.signedInGoogle"),
       });
       onOpenChange(false);
       setEmail("");
       setPassword("");
     } catch (error: any) {
+      if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") return;
       toast({
-        title: "Sign in failed",
-        description: error.message || "Failed to sign in with Google",
+        title: t("components.authDialog.signInFailed"),
+        description: error.message || t("components.authDialog.failedSignInGoogle"),
         variant: "destructive",
       });
     } finally {
@@ -46,16 +49,16 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await auth.signInWithEmail(email, password);
       toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in",
+        title: t("components.authDialog.welcomeBack"),
+        description: t("components.authDialog.signedIn"),
       });
       onOpenChange(false);
       setEmail("");
       setPassword("");
     } catch (error: any) {
       toast({
-        title: "Sign in failed",
-        description: error.message || "Invalid email or password",
+        title: t("components.authDialog.signInFailed"),
+        description: error.message || t("components.authDialog.invalidCredentials"),
         variant: "destructive",
       });
     } finally {
@@ -68,16 +71,16 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     try {
       await auth.signUpWithEmail(email, password);
       toast({
-        title: "Account created!",
-        description: "Welcome to AcademicGen",
+        title: t("components.authDialog.accountCreated"),
+        description: t("components.authDialog.welcomeToApp"),
       });
       onOpenChange(false);
       setEmail("");
       setPassword("");
     } catch (error: any) {
       toast({
-        title: "Sign up failed",
-        description: error.message || "Failed to create account",
+        title: t("components.authDialog.signUpFailed"),
+        description: error.message || t("components.authDialog.failedCreateAccount"),
         variant: "destructive",
       });
     } finally {
@@ -89,16 +92,16 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Welcome to AcademicGen</DialogTitle>
+          <DialogTitle>{t("components.authDialog.title")}</DialogTitle>
           <DialogDescription>
-            Sign in to save and access your projects from anywhere
+            {t("components.authDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="signin">{t("components.authDialog.signInTab")}</TabsTrigger>
+            <TabsTrigger value="signup">{t("components.authDialog.signUpTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="space-y-4 mt-4">
@@ -127,7 +130,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              {t("components.authDialog.continueWithGoogle")}
             </Button>
 
             <div className="relative">
@@ -135,17 +138,17 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">{t("components.authDialog.orContinueWith")}</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("components.authDialog.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder={t("components.authDialog.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-2"
@@ -153,7 +156,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("components.authDialog.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -169,7 +172,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 disabled={isLoading || !email || !password}
                 data-testid="button-email-signin"
               >
-                Sign In
+                {t("components.authDialog.signInBtn")}
               </Button>
             </div>
           </TabsContent>
@@ -200,7 +203,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              {t("components.authDialog.continueWithGoogle")}
             </Button>
 
             <div className="relative">
@@ -208,17 +211,17 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">{t("components.authDialog.orContinueWith")}</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email">{t("components.authDialog.email")}</Label>
                 <Input
                   id="signup-email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder={t("components.authDialog.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-2"
@@ -226,7 +229,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password">{t("components.authDialog.password")}</Label>
                 <Input
                   id="signup-password"
                   type="password"
@@ -242,16 +245,16 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 disabled={isLoading || !email || !password}
                 data-testid="button-email-signup"
               >
-                Create Account
+                {t("components.authDialog.createAccount")}
               </Button>
             </div>
           </TabsContent>
         </Tabs>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
-          You can also use the app as a guest without signing in.
+          {t("components.authDialog.guestNotice1")}
           <br />
-          Guest users can export documents but cannot save to cloud.
+          {t("components.authDialog.guestNotice2")}
         </p>
       </DialogContent>
     </Dialog>

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Home, FolderOpen, FileText, Presentation, BookOpen, BookMarked,
   GraduationCap, Sparkles, Info, Mail, Settings, LogIn, LogOut, User,
-  Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star, LayoutTemplate,
+  Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star, LayoutTemplate, Scale, Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
@@ -49,6 +49,7 @@ export function AppSidebar() {
     { titleKey: "generators.references",       url: "/references",             icon: Library,       descKey: "Reference library" },
     { titleKey: "generators.aiHumanizer",      url: "/humanize",               icon: Wand2,         descKey: "Bypass AI detection" },
     { titleKey: "generators.citationChecker",  url: "/citations",              icon: BookMarked,    descKey: "Detect fake references" },
+    { titleKey: "generators.grammarCheck",     url: "/grammar-check",          icon: Languages,     descKey: "Grammar & style check" },
   ];
 
   const subscriptionItems = [
@@ -58,6 +59,7 @@ export function AppSidebar() {
   const supportItems = [
     { titleKey: "support.about",    url: "/about",    icon: Info },
     { titleKey: "support.contact",  url: "/contact",  icon: Mail },
+    { titleKey: "support.legal",    url: "/legal",    icon: Scale },
     { titleKey: "support.settings", url: "/settings", icon: Settings },
   ];
 
@@ -70,7 +72,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">AcademicGen</span>
-            <span className="text-xs text-muted-foreground">Academic Documents</span>
+            <span className="text-xs text-muted-foreground">{t("app.tagline")}</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -88,7 +90,7 @@ export function AppSidebar() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span className="flex-1 min-w-0 truncate">{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -110,7 +112,7 @@ export function AppSidebar() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span className="flex-1 min-w-0 truncate">{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -132,7 +134,7 @@ export function AppSidebar() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4 text-primary" />
-                      <span>{t(item.titleKey)}</span>
+                      <span className="flex-1 min-w-0 truncate">{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -154,7 +156,7 @@ export function AppSidebar() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span className="flex-1 min-w-0 truncate">{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -173,13 +175,13 @@ export function AppSidebar() {
             <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="h-8 w-8 rounded-full" />
+                  <img src={user.photoURL} alt={t("common.altProfile")} className="h-8 w-8 rounded-full" />
                 ) : (
                   <User className="h-4 w-4 text-primary" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.displayName || "User"}</p>
+                <p className="text-sm font-medium truncate">{user.displayName || t("auth.user")}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>

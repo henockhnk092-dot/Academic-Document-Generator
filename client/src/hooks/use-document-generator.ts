@@ -1,12 +1,14 @@
 import { useState, useRef } from "react";
 import React from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { apiRequest } from "@/lib/queryClient";
 import type { DocumentType, ToneType } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 import { ToastAction } from "@/components/ui/toast";
+import type { ToastActionElement } from "@/components/ui/toast";
 import i18n from "@/i18n";
 
 export interface Author {
@@ -53,6 +55,7 @@ export function useDocumentGenerator(documentType: DocumentType) {
   const [progress, setProgress] = useState(0);
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
   const { toast } = useToast();
+  const { t } = useTranslation();
   const lastOptionsRef = useRef<GeneratorOptions | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -70,15 +73,15 @@ export function useDocumentGenerator(documentType: DocumentType) {
         countdownTimerRef.current = null;
         setRateLimitCountdown(0);
         toastUpdate({
-          title: "Ready",
-          description: "You can generate again now.",
+          title: t("hooks.documentGenerator.readyTitle"),
+          description: t("hooks.documentGenerator.readyDesc"),
           variant: "default",
           duration: 4000,
         });
       } else {
         toastUpdate({
-          title: "Rate limit reached",
-          description: `Please wait ${remaining} second${remaining !== 1 ? "s" : ""}…`,
+          title: t("hooks.documentGenerator.rateLimitTitle"),
+          description: t("hooks.documentGenerator.rateLimitWait", { count: remaining }),
           variant: "destructive",
           duration: (remaining + 5) * 1000,
         });
@@ -109,7 +112,7 @@ export function useDocumentGenerator(documentType: DocumentType) {
     onSuccess: (data: GeneratorResponse) => {
       setProgress(100);
       setGeneratedContent(data.content);
-      toast({ title: "Success!", description: "Document generated successfully", duration: 4000 });
+      toast({ title: t("hooks.documentGenerator.success"), description: t("hooks.documentGenerator.successDesc"), duration: 4000 });
     },
     onError: (error: any) => {
       setProgress(0);
@@ -118,8 +121,8 @@ export function useDocumentGenerator(documentType: DocumentType) {
 
       if (is429) {
         const { update } = toast({
-          title: "Rate limit reached",
-          description: "Please wait 60 seconds…",
+          title: t("hooks.documentGenerator.rateLimitTitle"),
+          description: t("hooks.documentGenerator.rateLimitWait", { count: 60 }),
           variant: "destructive",
           duration: 70000,
         });
@@ -128,16 +131,16 @@ export function useDocumentGenerator(documentType: DocumentType) {
       }
 
       toast({
-        title: "Generation Failed",
-        description: error.message?.replace(/^\d+:\s*/, "") || "Failed to generate document",
+        title: t("hooks.documentGenerator.generationFailed"),
+        description: error.message?.replace(/^\d+:\s*/, "") || t("hooks.documentGenerator.failedGenerateDoc"),
         variant: "destructive",
         duration: 10000,
         action: canRetry
           ? React.createElement(
               ToastAction,
-              { altText: "Retry", onClick: () => generateMutation.mutate(lastOptionsRef.current!) },
-              "Retry"
-            )
+              { altText: t("hooks.documentGenerator.retry"), onClick: () => generateMutation.mutate(lastOptionsRef.current!) },
+              t("hooks.documentGenerator.retry")
+            ) as unknown as ToastActionElement
           : undefined,
       });
     },
@@ -155,6 +158,11 @@ export function useDocumentGenerator(documentType: DocumentType) {
   const clearContent = () => {
     setGeneratedContent(null);
     setProgress(0);
+  };
+
+  const restore = (content: any) => {
+    setGeneratedContent(content);
+    setProgress(100);
   };
 
   const updateSection = (index: number, newContent: string) => {
@@ -175,6 +183,7 @@ export function useDocumentGenerator(documentType: DocumentType) {
     progress,
     reset,
     clearContent,
+    restore,
     updateSection,
     error: generateMutation.error,
   };

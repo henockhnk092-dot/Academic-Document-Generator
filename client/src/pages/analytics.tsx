@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { BarChart3, FileText, Presentation, FileSpreadsheet, GraduationCap, TrendingUp, Calendar, Clock, Zap, Image as ImageIcon, Download, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,18 +37,20 @@ const bgColorMap: Record<string, string> = {
   image: "bg-pink-500",
 };
 
-const typeLabels: Record<string, string> = {
-  report: "Technical Reports",
-  powerpoint: "Presentations",
-  conference: "Conference Papers",
-  thesis: "Thesis Documents",
-  image: "AI Images",
-};
+const typeLabels: Record<string, string> = {}; // populated inside component via t()
 
 export default function Analytics() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState<string>("all"); // all, month, week
+  const typeLabelsT: Record<string, string> = {
+    report: t("pages.analytics.technicalReports"),
+    powerpoint: t("pages.analytics.presentations"),
+    conference: t("pages.analytics.conferenceTitle"),
+    thesis: t("pages.analytics.thesisDocuments"),
+    image: t("pages.analytics.aiImages"),
+  };
 
   // Fetch documents
   const { data: documents, isLoading: docsLoading } = useQuery({
@@ -183,17 +186,17 @@ export default function Analytics() {
   const handleExportCSV = () => {
     if (!filteredItems || filteredItems.length === 0) {
       toast({
-        title: "No data to export",
-        description: "Generate some documents first",
+        title: t("pages.analytics.noDataTitle"),
+        description: t("pages.analytics.noDataDesc"),
         variant: "destructive",
       });
       return;
     }
 
-    const csvHeaders = ["Type", "Title", "Date", "Language"];
+    const csvHeaders = [t("pages.analytics.csvHeaderType"), t("pages.analytics.csvHeaderTitle"), t("pages.analytics.csvHeaderDate"), t("pages.analytics.csvHeaderLanguage")];
     const csvRows = filteredItems.map((item: any) => [
-      typeLabels[item.type] || item.type,
-      item.title || "Untitled",
+      typeLabelsT[item.type] || item.type,
+      item.title || t("pages.analytics.untitled"),
       getDate(item.createdAt).toLocaleDateString(),
       item.language?.toUpperCase() || "N/A",
     ]);
@@ -214,8 +217,8 @@ export default function Analytics() {
     document.body.removeChild(link);
 
     toast({
-      title: "Export successful",
-      description: "Analytics data exported to CSV",
+      title: t("pages.analytics.exportSuccess"),
+      description: t("pages.analytics.exportDesc"),
     });
   };
 
@@ -224,21 +227,19 @@ export default function Analytics() {
       <div className="mb-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Usage Analytics</h1>
-            <p className="text-muted-foreground">
-              Track your document generation history and usage patterns
-            </p>
+            <h1 className="text-3xl font-bold mb-2">{t("pages.analytics.title")}</h1>
+            <p className="text-muted-foreground">{t("pages.analytics.subtitle")}</p>
           </div>
           <div className="flex items-center gap-2">
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[180px]" data-testid="filter-date-range">
+              <SelectTrigger className="min-w-[140px] w-auto" data-testid="filter-date-range">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="all">{t("pages.analytics.allTime")}</SelectItem>
+                <SelectItem value="month">{t("pages.analytics.thisMonth")}</SelectItem>
+                <SelectItem value="week">{t("pages.analytics.thisWeek")}</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -248,7 +249,7 @@ export default function Analytics() {
               data-testid="button-export-csv"
             >
               <Download className="w-4 h-4 mr-2" />
-              Export CSV
+              {t("pages.analytics.exportCSV")}
             </Button>
           </div>
         </div>
@@ -257,7 +258,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card data-testid="card-total-documents">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.analytics.totalDocuments")}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -267,7 +268,7 @@ export default function Analytics() {
               <>
                 <div className="text-2xl font-bold">{totalDocs}</div>
                 <p className="text-xs text-muted-foreground">
-                  All time generated documents
+                  {t("pages.analytics.allTimeDesc")}
                 </p>
               </>
             )}
@@ -276,7 +277,7 @@ export default function Analytics() {
 
         <Card data-testid="card-this-month">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.analytics.thisMonth")}</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -286,7 +287,7 @@ export default function Analytics() {
               <>
                 <div className="text-2xl font-bold">{thisMonthDocs}</div>
                 <p className="text-xs text-muted-foreground">
-                  Documents this month
+                  {t("pages.analytics.documentsThisMonth")}
                 </p>
               </>
             )}
@@ -295,7 +296,7 @@ export default function Analytics() {
 
         <Card data-testid="card-weekly-average">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Weekly Average</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.analytics.weeklyAverage")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -305,7 +306,7 @@ export default function Analytics() {
               <>
                 <div className="text-2xl font-bold">{averagePerWeek}</div>
                 <p className="text-xs text-muted-foreground">
-                  Documents per week
+                  {t("pages.analytics.documentsPerWeek")}
                 </p>
               </>
             )}
@@ -314,7 +315,7 @@ export default function Analytics() {
 
         <Card data-testid="card-most-used">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Most Used</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("pages.analytics.mostUsed")}</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -323,10 +324,10 @@ export default function Analytics() {
             ) : (
               <>
                 <div className="text-2xl font-bold capitalize">
-                  {docTypes[0]?.[0] || "None"}
+                  {docTypes[0]?.[0] ? typeLabelsT[docTypes[0][0]] || docTypes[0][0] : t("pages.analytics.none")}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Most generated type
+                  {t("pages.analytics.mostGeneratedType")}
                 </p>
               </>
             )}
@@ -339,9 +340,9 @@ export default function Analytics() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Weekly Activity (Last 7 Days)
+            {t("pages.analytics.weeklyActivity")}
           </CardTitle>
-          <CardDescription>Number of documents generated each day</CardDescription>
+          <CardDescription>{t("pages.analytics.weeklyActivityDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -361,7 +362,6 @@ export default function Analytics() {
               }).length
             );
             const maxVal = Math.max(...counts, 1);
-            const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
             return (
               <div className="flex items-end gap-2 h-32">
                 {days.map((day, i) => (
@@ -373,7 +373,7 @@ export default function Analytics() {
                         style={{ height: `${(counts[i] / maxVal) * 100}%`, minHeight: counts[i] > 0 ? "4px" : "0" }}
                       />
                     </div>
-                    <div className="text-xs text-muted-foreground">{dayLabels[day.getDay()]}</div>
+                    <div className="text-xs text-muted-foreground">{day.toLocaleDateString(undefined, { weekday: "short" })}</div>
                   </div>
                 ))}
               </div>
@@ -387,10 +387,10 @@ export default function Analytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              Documents by Type
+              {t("pages.analytics.byType")}
             </CardTitle>
             <CardDescription>
-              Breakdown of generated documents by category
+              {t("pages.analytics.byTypeDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -406,8 +406,8 @@ export default function Analytics() {
             ) : docTypes.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No documents generated yet</p>
-                <p className="text-sm">Start creating documents to see analytics</p>
+                <p>{t("pages.analytics.noDocumentsYet")}</p>
+                <p className="text-sm">{t("pages.analytics.startCreating")}</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -421,7 +421,7 @@ export default function Analytics() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Icon className={`w-4 h-4 ${colorMap[type]}`} />
-                          <span className="text-sm font-medium">{typeLabels[type]}</span>
+                          <span className="text-sm font-medium">{typeLabelsT[type]}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">{count}</span>
                       </div>
@@ -443,10 +443,10 @@ export default function Analytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              Recent Activity
+              {t("pages.analytics.recentActivity")}
             </CardTitle>
             <CardDescription>
-              Your latest document generations
+              {t("pages.analytics.recentActivityDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -465,8 +465,8 @@ export default function Analytics() {
             ) : !filteredItems || filteredItems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No recent activity</p>
-                <p className="text-sm">Generate your first document to get started</p>
+                <p>{t("pages.analytics.noRecentActivity")}</p>
+                <p className="text-sm">{t("pages.analytics.getStarted")}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -480,9 +480,9 @@ export default function Analytics() {
                         <Icon className={`w-5 h-5 ${colorMap[item.type]}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{displayTitle || 'Untitled'}</p>
+                        <p className="text-sm font-medium truncate">{displayTitle || t("pages.analytics.untitled")}</p>
                         <p className="text-xs text-muted-foreground">
-                          {typeLabels[item.type]} • {getDate(item.createdAt).toLocaleDateString()}
+                          {typeLabelsT[item.type]} • {getDate(item.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-xs shrink-0">

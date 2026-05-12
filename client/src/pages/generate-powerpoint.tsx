@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText, Wand2, BookOpenCheck } from "lucide-react";
+import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
@@ -42,6 +42,7 @@ interface PresentationCoachProps {
 }
 
 function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoachProps) {
+  const { t } = useTranslation();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
@@ -88,7 +89,7 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
           setIsPlaying(true);
         } catch (e) {
           console.error("Audio play error:", e);
-          setAudioError("Unable to play audio");
+          setAudioError(t("pages.powerpoint.errUnableToPlay"));
         }
       } else if (showTts && scriptText) {
         setIsLoadingAudio(true);
@@ -131,11 +132,11 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
               setIsPlaying(true);
             }
           } else {
-            setAudioError("TTS not available");
+            setAudioError(t("pages.powerpoint.errTtsUnavailable"));
           }
         } catch (e: any) {
           console.error("Audio generation error:", e);
-          setAudioError(e.message || "Audio generation failed");
+          setAudioError(e.message || t("pages.powerpoint.errAudioFailed"));
         } finally {
           setIsLoadingAudio(false);
         }
@@ -149,7 +150,7 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
 
   const handleAudioError = () => {
     setIsPlaying(false);
-    setAudioError("Audio format not supported");
+    setAudioError(t("pages.powerpoint.errAudioFormat"));
   };
 
   return (
@@ -159,7 +160,7 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
       <div className="bg-primary/10 px-4 py-2 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Mic className="w-4 h-4 text-primary" />
-          <h4 className="text-xs font-bold text-primary uppercase tracking-wide">Speaker Notes:</h4>
+          <h4 className="text-xs font-bold text-primary uppercase tracking-wide">{t("pages.powerpoint.speakerNotesHeading")}:</h4>
         </div>
         <div className="flex items-center gap-2">
           {audioError && (
@@ -182,7 +183,7 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
                 <Play className="w-3 h-3 mr-1" />
               )}
               <span className="text-xs">
-                {isLoadingAudio ? "Loading..." : isPlaying ? "Pause" : "Play Voice"}
+                {isLoadingAudio ? t("common.loading") : isPlaying ? t("components.tts.pause") : t("pages.powerpoint.playVoice")}
               </span>
             </Button>
           )}
@@ -193,19 +194,19 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
         <div className="p-4 md:col-span-2">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground">
             <MessageSquare className="w-3 h-3" />
-            <span className="text-xs font-bold uppercase tracking-wider">What to Say</span>
+            <span className="text-xs font-bold uppercase tracking-wider">{t("pages.powerpoint.whatToSay")}</span>
           </div>
           <p className="text-sm text-foreground leading-relaxed italic whitespace-pre-wrap">
-            {scriptText || "No specific script generated for this slide."}
+            {scriptText || t("pages.powerpoint.noScript")}
           </p>
         </div>
         <div className="p-4 bg-muted/30">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground">
             <Volume2 className="w-3 h-3" />
-            <span className="text-xs font-bold uppercase tracking-wider">Tone & Delivery</span>
+            <span className="text-xs font-bold uppercase tracking-wider">{t("pages.powerpoint.toneDelivery")}</span>
           </div>
           <div className="text-sm text-foreground font-medium">
-            "{tone || "Natural and conversational"}"
+            "{tone || t("pages.powerpoint.defaultTone")}"
           </div>
         </div>
       </div>
@@ -224,6 +225,7 @@ interface SlideProps {
 }
 
 function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoaded }: SlideProps) {
+  const { t } = useTranslation();
   const [loadingImg, setLoadingImg] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -299,7 +301,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
             {loadingImg ? (
               <div className="text-center">
                 <Loader2 className="animate-spin mx-auto text-white mb-2" size={32} />
-                <p className="text-white text-sm">Loading background image...</p>
+                <p className="text-white text-sm">{t("pages.powerpoint.loadingBackgroundImage")}</p>
               </div>
             ) : (
               <Button
@@ -309,7 +311,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
                 className="text-xs"
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
-                Load Background Image
+                {t("pages.powerpoint.loadBackgroundImage")}
               </Button>
             )}
           </div>
@@ -338,7 +340,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
             {slide.layout_guide && (
               <div className="mt-auto pt-6 text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-2">
                 <LayoutTemplate className="w-3 h-3" />
-                Layout: {slide.layout_guide}
+                {t("pages.powerpoint.layoutLabel")} {slide.layout_guide}
               </div>
             )}
           </div>
@@ -347,7 +349,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
             <div className="flex-1 flex flex-col justify-center md:w-1/2">
               <div className="flex-grow bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center border-2 border-dashed border-border relative min-h-[150px] sm:min-h-[200px]">
                 {slide.imgData ? (
-                  <img src={slide.imgData} alt="Slide Visual" className="w-full h-full object-contain" />
+                  <img src={slide.imgData} alt={t("pages.powerpoint.altSlideVisual")} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-center p-6">
                     {loadingImg ? (
@@ -356,7 +358,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
                       <ImageIcon className="mx-auto text-muted-foreground mb-2" size={40} />
                     )}
                     <p className="text-sm text-muted-foreground font-medium">
-                      {loadingImg ? "Loading image..." : "Image placeholder"}
+                      {loadingImg ? t("pages.powerpoint.loadingImage") : t("pages.powerpoint.imagePlaceholder")}
                     </p>
                     {!loadingImg && slide.visual_prompt && (
                       <Button
@@ -367,7 +369,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
                         data-testid={`button-generate-image-${index}`}
                       >
                         <RefreshCw className="w-3 h-3 mr-1" />
-                        Generate Image
+                        {t("pages.powerpoint.generateImage")}
                       </Button>
                     )}
                   </div>
@@ -375,7 +377,7 @@ function Slide({ slide, index, total, showImages, showTts, imageUrl, onImageLoad
               </div>
               {slide.visual_prompt && (
                 <p className="text-xs text-muted-foreground mt-2 text-center italic truncate">
-                  Search: {slide.visual_prompt}
+                  {t("pages.powerpoint.searchLabel")} {slide.visual_prompt}
                 </p>
               )}
             </div>
@@ -400,7 +402,9 @@ export default function GeneratePowerPoint() {
   const [isSaving, setIsSaving] = useState(false);
   const [presentation, setPresentation] = useState<any>(null);
 
-  const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("powerpoint");
+  const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("powerpoint");
+  const [undoContent, setUndoContent] = useState<any>(null);
+  const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
   const generateButtonRef = useRef<HTMLButtonElement>(null);
   useCtrlEnter(() => { generateButtonRef.current?.click(); }, isGenerating);
 
@@ -426,8 +430,8 @@ export default function GeneratePowerPoint() {
       setTopic(templatePrompt);
       if (templateName) {
         toast({
-          title: "Template loaded",
-          description: `Using template: ${templateName}`,
+          title: t("common.templateLoaded"),
+          description: t("common.templateLoadedDesc", { name: templateName }),
         });
       }
     }
@@ -467,16 +471,16 @@ export default function GeneratePowerPoint() {
 
   const handleExportHTML = () => {
     if (!presentation || !presentation.slides) {
-      toast({ title: "No content to export", description: "Please generate a presentation first",  variant: "destructive" });
+      toast({ title: t("common.noContentToExport"), description: t("pages.powerpoint.noContentDesc"),  variant: "destructive" });
       return;
     }
     exportToHTML(presentation, `${topic.substring(0, 30) || "presentation"}.html`);
-    toast({ title: "Export successful", description: "HTML file downloaded successfully" });
+    toast({ title: t("common.exportSuccess"), description: t("pages.powerpoint.exportSuccessHTMLDesc") });
   };
 
   const handleExportPPTX = async () => {
     if (!presentation || !presentation.slides) {
-      toast({ title: "No content to export", description: "Please generate a presentation first", variant: "destructive" });
+      toast({ title: t("common.noContentToExport"), description: t("pages.powerpoint.noContentDesc"), variant: "destructive" });
       return;
     }
     try {
@@ -485,22 +489,22 @@ export default function GeneratePowerPoint() {
         presentation,
         `${topic.substring(0, 30) || "presentation"}.pptx`,
         (message: string) => {
-          toast({ title: "Exporting...", description: message });
+          toast({ title: t("pages.powerpoint.exporting"), description: message });
         }
       );
-      toast({ title: "Export successful", description: "PowerPoint file downloaded successfully" });
+      toast({ title: t("common.exportSuccess"), description: t("pages.powerpoint.exportSuccessPPTXDesc") });
     } catch (error) {
       console.error("PowerPoint export error:", error);
-      toast({ title: "Export failed", description: "Failed to export PowerPoint file", variant: "destructive" });
+      toast({ title: t("pages.powerpoint.exportFailed"), description: t("pages.powerpoint.exportFailedDesc"), variant: "destructive" });
     }
   };
 
   const handleExportPDF = async () => {
     if (!presentation || !presentation.slides) {
-      toast({ title: "No content to export", description: "Please generate a presentation first", variant: "destructive" });
+      toast({ title: t("common.noContentToExport"), description: t("pages.powerpoint.noContentDesc"), variant: "destructive" });
       return;
     }
-    toast({ title: "Generating PDF…", description: "This may take a few seconds." });
+    toast({ title: t("common.generatingPDF"), description: t("common.mayTakeSeconds") });
     try {
       const slideImageUrls: Record<number, string> = {};
       presentation.slides.forEach((slide: any, i: number) => {
@@ -522,15 +526,15 @@ export default function GeneratePowerPoint() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: "PDF Downloaded!", description: "Your presentation has been exported as PDF." });
+      toast({ title: t("common.pdfDownloaded"), description: t("pages.powerpoint.exportedPDF") });
     } catch {
-      toast({ title: "PDF Export Failed", description: "Please try the Print option instead.", variant: "destructive" });
+      toast({ title: t("common.pdfExportFailed"), description: t("common.printOptionInstead"), variant: "destructive" });
     }
   };
 
   const handlePrint = () => {
     if (!presentation || !presentation.slides) {
-      toast({ title: "No content to print", description: "Please generate a presentation first", variant: "destructive" });
+      toast({ title: t("common.noContentToPrint"), description: t("pages.powerpoint.noContentDesc"), variant: "destructive" });
       return;
     }
 
@@ -540,7 +544,7 @@ export default function GeneratePowerPoint() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${presentation.title || 'Presentation'}</title>
+  <title>${presentation.title || t("generators.powerpoint")}</title>
   <style>
     body { font-family: 'Arial', sans-serif; margin: 40px; line-height: 1.6; color: #1a1a1a; }
     .slide { page-break-after: always; margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; }
@@ -562,13 +566,13 @@ export default function GeneratePowerPoint() {
   </style>
 </head>
 <body>
-  <h1 style="text-align: center; margin-bottom: 40px; color: #1e3a8a;">${presentation.title || 'Presentation'}</h1>`;
+  <h1 style="text-align: center; margin-bottom: 40px; color: #1e3a8a;">${presentation.title || t("generators.powerpoint")}</h1>`;
 
     presentation.slides.forEach((slide: any, index: number) => {
       html += `
   <div class="slide">
     <div class="slide-header">
-      <div class="slide-number">Slide ${index + 1} of ${presentation.slides.length}</div>
+      <div class="slide-number">${t("pages.powerpoint.slideNumberOfTotal", { current: index + 1, total: presentation.slides.length })}</div>
       <div class="slide-title">${slide.title || ''}</div>
     </div>
     <div class="slide-content">`;
@@ -585,7 +589,7 @@ export default function GeneratePowerPoint() {
 
       // Add image if available
       if (slide.imgData) {
-        html += `<img src="${slide.imgData}" alt="Slide visual" />`;
+        html += `<img src="${slide.imgData}" alt="${t("pages.powerpoint.altSlideVisual")}" />`;
       }
 
       html += `</div>`;
@@ -595,7 +599,7 @@ export default function GeneratePowerPoint() {
       if (speakerNotes) {
         html += `
     <div class="speaker-notes">
-      <div class="speaker-notes-title">Speaker Notes:</div>
+      <div class="speaker-notes-title">${t("pages.powerpoint.speakerNotes")}:</div>
       <div>${speakerNotes}</div>
     </div>`;
       }
@@ -617,17 +621,17 @@ export default function GeneratePowerPoint() {
         printWindow.print();
       };
 
-      toast({ title: "Print Ready", description: "Print dialog opened" });
+      toast({ title: t("common.printReady"), description: t("common.printReadyDesc") });
     } else {
-      toast({ title: "Print Failed", description: "Please allow popups to print", variant: "destructive" });
+      toast({ title: t("common.printFailed"), description: t("common.printFailedDesc"), variant: "destructive" });
     }
   };
 
   const handleSave = async () => {
     if (!isAuthenticated || !user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to save your presentation",
+        title: t("common.authRequired"),
+        description: t("pages.powerpoint.authRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -635,8 +639,8 @@ export default function GeneratePowerPoint() {
 
     if (!presentation || !presentation.slides) {
       toast({
-        title: "No content to save",
-        description: "Please generate a presentation first",
+        title: t("common.noContentToSave"),
+        description: t("pages.powerpoint.noContentDesc"),
         variant: "destructive"
       });
       return;
@@ -653,7 +657,7 @@ export default function GeneratePowerPoint() {
           : null;
 
       // Extract title from presentation first, then fall back to user input
-      const documentTitle = presentation.title || topic || "Presentation";
+      const documentTitle = presentation.title || topic || t("generators.powerpoint");
 
       const description = topic ||
         contentText ||
@@ -678,19 +682,34 @@ export default function GeneratePowerPoint() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: "Saved successfully",
-        description: "Your presentation has been saved to the cloud"
+        title: t("pages.powerpoint.saved"),
+        description: t("pages.powerpoint.savedSuccess")
       });
     } catch (error) {
       console.error("Save error:", error);
       toast({
-        title: "Save failed",
-        description: "Failed to save presentation. Please try again.",
+        title: t("common.saveFailed"),
+        description: t("pages.powerpoint.saveFailedDesc"),
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClear = () => {
+    setUndoContent(generatedContent);
+    setUndoImageUrls(slideImageUrls);
+    clearContent();
+    setPresentation(null);
+    setSlideImageUrls({});
+  };
+
+  const handleUndo = () => {
+    restore(undoContent);
+    setSlideImageUrls(undoImageUrls);
+    setUndoContent(null);
+    setUndoImageUrls({});
   };
 
   const handleHumanize = () => {
@@ -752,7 +771,7 @@ export default function GeneratePowerPoint() {
                           setTopic(randomResult.topic);
                           toast({
                             title: randomResult.category,
-                            description: `Topic: ${randomResult.topic}`,
+                            description: t("common.topicIs", { topic: randomResult.topic }),
                           });
                         }}
                         disabled={isLoadingTopic}
@@ -813,10 +832,10 @@ export default function GeneratePowerPoint() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
-                          <SelectItem value="5-10">5-10 Slides</SelectItem>
-                          <SelectItem value="11-15">11-15 Slides</SelectItem>
-                          <SelectItem value="16-20">16-20 Slides</SelectItem>
-                          <SelectItem value="20+">20+ Slides</SelectItem>
+                        <SelectItem value="5-10">{t("pages.powerpoint.slides5to10")}</SelectItem>
+                        <SelectItem value="11-15">{t("pages.powerpoint.slides11to15")}</SelectItem>
+                        <SelectItem value="16-20">{t("pages.powerpoint.slides16to20")}</SelectItem>
+                        <SelectItem value="20+">{t("pages.powerpoint.slides20plus")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -830,7 +849,7 @@ export default function GeneratePowerPoint() {
                         <SelectContent>
                           <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
                           <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
-                          <SelectItem value="creative">Creative</SelectItem>
+                          <SelectItem value="creative">{t("common.toneCreative")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -878,7 +897,7 @@ export default function GeneratePowerPoint() {
                   <div className="space-y-2">
                     {remainingAttempts !== Infinity && (
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <span>{remainingAttempts} generation{remainingAttempts !== 1 ? 's' : ''} remaining</span>
+                        <span>{t("common.genRemaining", { count: remainingAttempts })}</span>
                         <button
                           type="button"
                           onClick={openPricing}
@@ -908,7 +927,7 @@ export default function GeneratePowerPoint() {
                     </Button>
                     {!isGenerating && (
                       <p className="text-xs text-center text-muted-foreground mt-1 no-print">
-                        Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                        {t("common.ctrlEnterHintPre")} <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> {t("common.ctrlEnterHintPost")}
                       </p>
                     )}
                   </div>
@@ -923,7 +942,7 @@ export default function GeneratePowerPoint() {
                     <div>
                       <CardTitle>{t("pages.powerpoint.previewTitle")}</CardTitle>
                       <CardDescription>
-                        {presentation ? `${totalSlides} slides generated` : t("pages.powerpoint.previewSubtitle")}
+                        {presentation ? t("pages.powerpoint.slidesGenerated", { count: totalSlides }) : t("pages.powerpoint.previewSubtitle")}
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 flex-wrap">
@@ -961,7 +980,7 @@ export default function GeneratePowerPoint() {
                             className="text-xs font-bold"
                             data-testid="button-view-slideshow"
                           >
-                            Slideshow
+                            {t("pages.powerpoint.slideshow")}
                           </Button>
                           <Button
                             variant={viewMode === 'scroll' ? 'secondary' : 'ghost'}
@@ -970,7 +989,7 @@ export default function GeneratePowerPoint() {
                             className="text-xs font-bold"
                             data-testid="button-view-scroll"
                           >
-                            Scroll
+                            {t("pages.powerpoint.scroll")}
                           </Button>
                         </div>
                       )}
@@ -993,23 +1012,46 @@ export default function GeneratePowerPoint() {
                         size="sm"
                         onClick={handleHumanize}
                         disabled={!presentation}
-                        title="Send to AI Humanizer"
-                        aria-label="Send to AI Humanizer"
+                        title={t("common.sendToHumanizer")}
+                        aria-label={t("common.sendToHumanizer")}
                       >
                         <Wand2 className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Humanize</span>
+                        <span className="hidden sm:inline">{t("common.humanize")}</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleCitationCheck}
                         disabled={!presentation}
-                        title="Check Citations"
-                        aria-label="Check Citations"
+                        title={t("common.checkCitations")}
+                        aria-label={t("common.checkCitations")}
                       >
                         <BookOpenCheck className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Check Citations</span>
+                        <span className="hidden sm:inline">{t("common.checkCitations")}</span>
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClear}
+                        disabled={!presentation}
+                        title={t("common.clearPresentation")}
+                        aria-label={t("common.clearPresentation")}
+                      >
+                        <Trash2 className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t("common.clear")}</span>
+                      </Button>
+                      {undoContent && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUndo}
+                          title={t("common.undoClear")}
+                          aria-label={t("common.undoClear")}
+                        >
+                          <Undo2 className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">{t("common.undo")}</span>
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm" data-testid="button-export-menu">
@@ -1041,10 +1083,10 @@ export default function GeneratePowerPoint() {
                 </CardHeader>
                 <CardContent>
                   {isGenerating && (
-                    <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating presentation: ${progress}% complete`}>
+                    <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={t("pages.powerpoint.generatingProgress", { progress })}>
                       <Progress value={progress} className="w-full" />
                       <div className="text-sm text-muted-foreground text-center">
-                        Creating slides with AI...
+                        {t("pages.powerpoint.creatingSlides")}
                       </div>
                     </div>
                   )}
@@ -1069,7 +1111,7 @@ export default function GeneratePowerPoint() {
                             {(presentation.slides[currentSlide].speaker_script || presentation.slides[currentSlide].speakerNotes) && (
                               <PresentationCoach
                                 script={presentation.slides[currentSlide].speaker_script || presentation.slides[currentSlide].speakerNotes}
-                                tone={presentation.slides[currentSlide].speaker_tone || "Professional"}
+                                tone={presentation.slides[currentSlide].speaker_tone || t("common.toneProfessional")}
                                 showTts={ttsCoaching}
                                 slideId={currentSlide}
                               />
@@ -1098,7 +1140,7 @@ export default function GeneratePowerPoint() {
                               <div className="sticky top-4 space-y-2 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 custom-scrollbar">
                                 <div className="flex items-center gap-2 mb-3">
                                   <ChevronDown className="w-4 h-4 text-primary animate-bounce" />
-                                  <h3 className="text-sm font-bold text-foreground">Jump to Slide</h3>
+                                  <h3 className="text-sm font-bold text-foreground">{t("pages.powerpoint.jumpToSlide")}</h3>
                                 </div>
                                 {presentation.slides.map((slide: any, idx: number) => (
                                   <button
@@ -1138,7 +1180,7 @@ export default function GeneratePowerPoint() {
                                   {(slide.speaker_script || slide.speakerNotes) && (
                                     <PresentationCoach
                                       script={slide.speaker_script || slide.speakerNotes}
-                                      tone={slide.speaker_tone || "Professional"}
+                                      tone={slide.speaker_tone || t("common.toneProfessional")}
                                       showTts={ttsCoaching}
                                       slideId={idx}
                                     />
@@ -1162,7 +1204,7 @@ export default function GeneratePowerPoint() {
                             <li>• {t("pages.powerpoint.feature3")}</li>
                             <li>• {t("pages.powerpoint.feature4")}</li>
                             <li>• {t("pages.powerpoint.feature5")}</li>
-                            <li>• Export to .pptx or HTML format</li>
+                            <li>• {t("pages.powerpoint.feature6")}</li>
                           </ul>
                         </div>
                       </div>

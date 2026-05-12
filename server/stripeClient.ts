@@ -34,7 +34,7 @@ export function getStripeClient(): Stripe {
   if (!stripeInstance) {
     const { secretKey } = getEnvStripeKeys();
     stripeInstance = new Stripe(secretKey, {
-      apiVersion: '2025-03-31.basil',
+      apiVersion: '2025-08-27.basil',
     });
   }
   return stripeInstance;

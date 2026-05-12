@@ -7,4 +7,17 @@ Disallow: /settings
 Disallow: /checkout/
 Disallow: /api/
 
+# Public tool pages — explicitly allowed
+Allow: /generate/
+Allow: /humanize
+Allow: /citations
+Allow: /grammar-check
+Allow: /references
+Allow: /templates
+Allow: /ai-assistant
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /legal
+
 Sitemap: https://academicgen.com/sitemap.xml

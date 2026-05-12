@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Play, Pause, Square, RotateCcw, Volume2, Loader2, ChevronDown, Zap, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,6 +46,7 @@ export function DocumentTTSControls({
   onVoiceChange,
   azureVoices = AZURE_VOICES,
 }: DocumentTTSControlsProps) {
+  const { t } = useTranslation();
   const prefs0 = getSpeechPrefs();
   const [showVoices, setShowVoices] = useState(false);
   const [showLangs, setShowLangs] = useState(false);
@@ -86,7 +88,7 @@ export function DocumentTTSControls({
     displayVoice = av ? av.label.split("—")[0].trim() : (azureLangVoices[0]?.label.split("—")[0].trim() || "Jenny");
   } else {
     const bv = voices.find(v => v.name === voiceName);
-    displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || "Default");
+    displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || t("components.tts.defaultShort"));
   }
 
   if (compact) {
@@ -97,7 +99,7 @@ export function DocumentTTSControls({
         {showEngineToggle && onEngineModeChange && (
           <button
             onClick={() => onEngineModeChange(isAzure ? "browser" : "azure")}
-            title={isAzure ? "Azure HD voice active – click for Standard" : "Switch to Azure Enhanced HD voice"}
+            title={isAzure ? t("components.tts.hdActive") : t("components.tts.switchToHD")}
             className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border transition-colors ${
               isAzure ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
@@ -111,11 +113,11 @@ export function DocumentTTSControls({
             variant="outline"
             onClick={onPlay}
             disabled={disabled}
-            title="Read aloud"
+            title={t("components.tts.readAloud")}
             data-testid="tts-play"
           >
             <Volume2 className="w-4 h-4 mr-1" />
-            Listen
+            {t("components.tts.listen")}
           </Button>
         )}
         {isLoading && (
@@ -123,11 +125,11 @@ export function DocumentTTSControls({
             size="sm"
             variant="outline"
             disabled
-            title="Loading audio..."
+            title={t("components.tts.loadingAudio")}
             data-testid="tts-loading"
           >
             <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            Loading...
+            {t("common.loading")}
           </Button>
         )}
         {isPlaying && (
@@ -137,7 +139,7 @@ export function DocumentTTSControls({
               variant="ghost"
               onClick={onPause}
               disabled={disabled}
-              title="Pause"
+              title={t("components.tts.pause")}
               className="h-8 w-8"
               data-testid="tts-pause"
             >
@@ -148,7 +150,7 @@ export function DocumentTTSControls({
               variant="ghost"
               onClick={onStop}
               disabled={disabled}
-              title="Stop"
+              title={t("components.tts.stop")}
               className="h-8 w-8"
               data-testid="tts-stop"
             >
@@ -163,7 +165,7 @@ export function DocumentTTSControls({
               variant="ghost"
               onClick={onResume}
               disabled={disabled}
-              title="Resume"
+              title={t("components.tts.resume")}
               className="h-8 w-8"
               data-testid="tts-resume"
             >
@@ -174,7 +176,7 @@ export function DocumentTTSControls({
               variant="ghost"
               onClick={onStop}
               disabled={disabled}
-              title="Stop"
+              title={t("components.tts.stop")}
               className="h-8 w-8"
               data-testid="tts-stop"
             >
@@ -192,27 +194,27 @@ export function DocumentTTSControls({
       {/* Engine toggle + voice selector row */}
       {showEngineToggle && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Voice Quality</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("components.tts.voiceQuality")}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onEngineModeChange!("browser")}
               className={`text-[10px] px-2 py-1 rounded transition-colors ${
                 !isAzure ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
-            >Standard — Free</button>
+            >{t("components.tts.standard")}</button>
             <button
               onClick={() => onEngineModeChange!("azure")}
               className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
                 isAzure ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
-            ><Zap size={9} /> Enhanced HD</button>
+            ><Zap size={9} /> {t("components.tts.enhancedHD")}</button>
           </div>
           {activeLangList.length > 1 && (
             <div className="relative">
               <button
                 onClick={() => { setShowLangs(p => !p); setShowVoices(false); }}
                 className="flex items-center gap-1 border px-2 py-1 rounded text-[11px] hover:bg-muted transition-colors"
-                title="Select language"
+                title={t("components.tts.selectLanguage")}
               >
                 <Globe size={10} className="opacity-60" />
                 <span>{isAzure ? `${langFlag} ` : ""}{selectedLang}</span>
@@ -244,14 +246,14 @@ export function DocumentTTSControls({
               </button>
               {showVoices && (
                 <div className="absolute right-0 bottom-full mb-1.5 w-56 max-h-44 overflow-y-auto bg-card border rounded-xl z-50 shadow-xl">
-                  {isAzure ? activeVoices.map(v => (
+                  {isAzure ? azureLangVoices.map(v => (
                     <button key={v.name} onClick={() => { onVoiceChange(v.name); saveSpeechPrefs({ voiceName: v.name }); setShowVoices(false); }}
                       className={`w-full text-left text-xs px-3 py-2 hover:bg-muted transition-colors ${voiceName === v.name ? "text-primary font-medium" : "text-muted-foreground"}`}>
                       {v.flag} {v.label}
                     </button>
-                  )) : activeVoices.length === 0 ? (
-                    <div className="px-3 py-3 text-xs text-muted-foreground text-center">No voices for this language.</div>
-                  ) : activeVoices.map(v => (
+                  )) : browserLangVoices.length === 0 ? (
+                    <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("components.tts.noVoices")}</div>
+                  ) : browserLangVoices.map(v => (
                     <button key={v.name} onClick={() => { onVoiceChange(v.name); saveSpeechPrefs({ voiceName: v.name }); setShowVoices(false); }}
                       className={`w-full text-left text-xs px-3 py-2 hover:bg-muted transition-colors truncate ${voiceName === v.name ? "text-primary font-medium" : "text-muted-foreground"}`}>
                       {v.name}
@@ -272,11 +274,11 @@ export function DocumentTTSControls({
               variant="outline"
               onClick={onPlay}
               disabled={disabled}
-              title="Read document aloud"
+              title={t("components.tts.readDocAloud")}
               data-testid="tts-play"
             >
               <Volume2 className="w-4 h-4 mr-2" />
-              Read Aloud
+              {t("components.tts.readAloud")}
             </Button>
           )}
 
@@ -285,11 +287,11 @@ export function DocumentTTSControls({
               size="sm"
               variant="outline"
               disabled
-              title="Loading audio..."
+              title={t("components.tts.loadingAudio")}
               data-testid="tts-loading"
             >
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Loading...
+              {t("common.loading")}
             </Button>
           )}
 
@@ -300,7 +302,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onPause}
                 disabled={disabled}
-                title="Pause"
+                title={t("components.tts.pause")}
                 data-testid="tts-pause"
               >
                 <Pause className="w-4 h-4" />
@@ -310,7 +312,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onStop}
                 disabled={disabled}
-                title="Stop"
+                title={t("components.tts.stop")}
                 data-testid="tts-stop"
               >
                 <Square className="w-4 h-4" />
@@ -320,7 +322,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onRestart}
                 disabled={disabled}
-                title="Restart"
+                title={t("components.tts.restart")}
                 data-testid="tts-restart"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -335,7 +337,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onResume}
                 disabled={disabled}
-                title="Resume"
+                title={t("components.tts.resume")}
                 data-testid="tts-resume"
               >
                 <Play className="w-4 h-4" />
@@ -345,7 +347,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onStop}
                 disabled={disabled}
-                title="Stop"
+                title={t("components.tts.stop")}
                 data-testid="tts-stop"
               >
                 <Square className="w-4 h-4" />
@@ -355,7 +357,7 @@ export function DocumentTTSControls({
                 variant="outline"
                 onClick={onRestart}
                 disabled={disabled}
-                title="Restart"
+                title={t("components.tts.restart")}
                 data-testid="tts-restart"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -366,7 +368,7 @@ export function DocumentTTSControls({
 
         {(isLoading || isPlaying || isPaused) && (
           <span className="text-xs text-muted-foreground ml-2">
-            {isLoading ? "Loading..." : isPaused ? "Paused" : "Reading..."} {progress}%
+            {isLoading ? t("common.loading") : isPaused ? t("components.tts.paused") : t("components.tts.reading")} {progress}%
           </span>
         )}
       </div>

@@ -52,16 +52,7 @@ const TIER_ICONS = {
 
 const TIER_ORDER = ['day_pass', 'weekly', 'monthly', 'yearly'] as const;
 
-const FEATURES = [
-  "Unlimited document generations",
-  "All document types (Reports, Thesis, Conference Papers)",
-  "AI-powered image generation",
-  "Export to Word, PDF, PowerPoint",
-  "Cloud storage for projects",
-  "Priority support",
-  "Grammar & style checking",
-  "Reference management",
-];
+const FEATURE_KEYS = ["feature1", "feature2", "feature3", "feature4", "feature5", "feature6", "feature7", "feature8"] as const;
 
 export default function Pricing() {
   const { t } = useTranslation();
@@ -132,7 +123,7 @@ export default function Pricing() {
 
   const getRecurringText = (product: StripeProduct | undefined, fallback: string): string => {
     if (product?.recurring) {
-      return `per ${product.recurring.interval}`;
+      return t("pages.pricing.perInterval", { interval: product.recurring.interval });
     }
     return fallback;
   };
@@ -140,8 +131,8 @@ export default function Pricing() {
   const handleSelectPlan = async (plan: keyof typeof PRICING_TIERS) => {
     if (!isAuthenticated || !user) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to subscribe to a plan.",
+        title: t("pages.pricing.signInRequired"),
+        description: t("pages.pricing.signInRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -159,8 +150,8 @@ export default function Pricing() {
           // Open BMC in new tab (BMC doesn't support custom redirects)
           window.open(data.url, '_blank');
           toast({
-            title: "Opening Buy Me a Coffee",
-            description: "Complete your purchase on Buy Me a Coffee. Make sure to use the same email address you signed up with!",
+            title: t("pages.pricing.openingBMC"),
+            description: t("pages.pricing.openingBMCDesc"),
           });
         } else {
           throw new Error("No checkout URL returned");
@@ -190,8 +181,8 @@ export default function Pricing() {
       const product = getProductForTier(plan);
       if (!product?.price_id) {
         toast({
-          title: "Products loading",
-          description: "Please wait for products to load and try again.",
+          title: t("pages.pricing.productsLoading"),
+          description: t("pages.pricing.productsLoadingDesc"),
           variant: "destructive",
         });
         return;
@@ -211,8 +202,8 @@ export default function Pricing() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
-        title: "Checkout failed",
-        description: error.message || "Failed to start checkout. Please try again.",
+        title: t("pages.pricing.checkoutFailed"),
+        description: error.message || t("pages.pricing.checkoutFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -238,8 +229,8 @@ export default function Pricing() {
     } catch (error: any) {
       console.error("Portal error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to open subscription portal",
+        title: t("pages.pricing.portalError"),
+        description: error.message || t("pages.pricing.portalErrorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -252,7 +243,7 @@ export default function Pricing() {
       return (
         <Badge className="gap-1.5 border-red-500/50 bg-red-500/10 text-red-500" variant="outline">
           <Shield className="h-3.5 w-3.5" />
-          Admin
+          {t("pages.settings.roleAdmin")}
         </Badge>
       );
     }
@@ -260,7 +251,7 @@ export default function Pricing() {
       return (
         <Badge className="gap-1.5 border-blue-500/50 bg-blue-500/10 text-blue-500" variant="outline">
           <Code className="h-3.5 w-3.5" />
-          Developer
+          {t("pages.settings.roleDeveloper")}
         </Badge>
       );
     }
@@ -274,7 +265,7 @@ export default function Pricing() {
     }
     return (
       <Badge variant="secondary" className="gap-1.5">
-        Free Plan
+        {t("pages.pricing.freePlan")}
       </Badge>
     );
   };
@@ -323,7 +314,7 @@ export default function Pricing() {
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Current Plan</p>
+                  <p className="text-sm text-muted-foreground">{t("pages.pricing.currentPlan")}</p>
                   <div className="flex items-center gap-2 mt-1">
                     {getCurrentPlanBadge()}
                   </div>
@@ -331,13 +322,13 @@ export default function Pricing() {
               </div>
               <div className="text-right">
                 {hasUnlimitedAccess ? (
-                  <p className="text-sm font-medium text-green-600">Unlimited Access</p>
+                  <p className="text-sm font-medium text-green-600">{t("pages.pricing.unlimitedAccess")}</p>
                 ) : usageStatus.hasActiveSubscription ? (
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-green-600">Active Subscription</p>
+                    <p className="text-sm font-medium text-green-600">{t("pages.pricing.activeSubscription")}</p>
                     {usageStatus.subscriptionExpiry && (
                       <p className="text-xs text-muted-foreground">
-                        Renews: {new Date(usageStatus.subscriptionExpiry).toLocaleDateString()}
+                        {t("pages.pricing.renews")} {new Date(usageStatus.subscriptionExpiry).toLocaleDateString()}
                       </p>
                     )}
                     <Button
@@ -346,13 +337,13 @@ export default function Pricing() {
                       onClick={handleManageSubscription}
                       disabled={isCheckoutLoading}
                     >
-                      Manage Subscription
+                      {t("pages.pricing.manageSubscription")}
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">
-                      {usageStatus.remaining} / {usageStatus.maxAttempts} generations left
+                      {usageStatus.remaining} / {usageStatus.maxAttempts} {t("pages.settings.generationsLeft")}
                     </p>
                   </div>
                 )}
@@ -384,13 +375,13 @@ export default function Pricing() {
                   data-testid={`card-pricing-${tier.replace('_', '-')}`}
                 >
                   {isPopular && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1">
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 whitespace-nowrap">
                       <Sparkles className="h-3 w-3 mr-1" />
                       {t("pages.pricing.mostPopular")}
                     </Badge>
                   )}
                   {isBestValue && (
-                    <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1">
+                    <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 whitespace-nowrap">
                       {t("pages.pricing.bestValue")}
                     </Badge>
                   )}
@@ -409,12 +400,12 @@ export default function Pricing() {
                         {formatPrice(product, tierInfo.price)}
                       </span>
                       <span className="text-muted-foreground ml-1">
-                        {tier === 'day_pass' ? t("pages.pricing.oneTime") : getRecurringText(product, `/${tier.replace('_', ' ')}`)}
+                        {tier === 'day_pass' ? t("pages.pricing.oneTime") : getRecurringText(product, t("pages.pricing.perInterval", { interval: tier.replace('_', ' ') }))}
                       </span>
                     </div>
                     {tier === 'yearly' && (
                       <p className="text-sm text-green-600 mb-4">
-                        Save 25% compared to monthly
+                        {t("pages.pricing.save25")}
                       </p>
                     )}
                     <ul className="space-y-2 text-sm">
@@ -444,10 +435,10 @@ export default function Pricing() {
                       {isProcessing ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
+                          {t("pages.pricing.processing")}
                         </>
                       ) : hasUnlimitedAccess ? (
-                        "Current Plan"
+                        t("pages.pricing.currentPlan")
                       ) : paymentProvider?.preferred === 'bmc' ? (
                         <>
                           <Coffee className="mr-2 h-4 w-4" />
@@ -456,7 +447,7 @@ export default function Pricing() {
                         </>
                       ) : (
                         <>
-                          Get Started
+                          {t("pages.pricing.getStarted")}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </>
                       )}
@@ -481,10 +472,10 @@ export default function Pricing() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {FEATURES.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
+              {FEATURE_KEYS.map((key) => (
+                <div key={key} className="flex items-center gap-2">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm">{feature}</span>
+                  <span className="text-sm">{t(`pages.pricing.${key}`)}</span>
                 </div>
               ))}
             </div>
@@ -493,34 +484,34 @@ export default function Pricing() {
 
         {/* Comparison Table */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-center">Plan Comparison</h2>
+          <h2 className="text-2xl font-bold text-center">{t("pages.pricing.planComparison")}</h2>
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="text-left px-4 py-3 font-semibold w-1/2">Feature</th>
-                  <th className="text-center px-4 py-3 font-semibold">Free</th>
-                  <th className="text-center px-4 py-3 font-semibold">Day Pass</th>
-                  <th className="text-center px-4 py-3 font-semibold text-primary">Monthly ★</th>
-                  <th className="text-center px-4 py-3 font-semibold">Yearly</th>
+                  <th className="text-left px-4 py-3 font-semibold w-1/2">{t("pages.pricing.tableFeature")}</th>
+                  <th className="text-center px-4 py-3 font-semibold">{t("pages.pricing.tableFree")}</th>
+                  <th className="text-center px-4 py-3 font-semibold">{t("pages.pricing.tableDayPass")}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-primary">{t("pages.pricing.tableMonthly")}</th>
+                  <th className="text-center px-4 py-3 font-semibold">{t("pages.pricing.tableYearly")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {[
-                  { label: "Document generations", free: "3 total", paid: "Unlimited" },
-                  { label: "Technical reports", free: true, paid: true },
-                  { label: "Thesis & dissertations", free: false, paid: true },
-                  { label: "Conference (IEEE) papers", free: false, paid: true },
-                  { label: "PowerPoint presentations", free: true, paid: true },
-                  { label: "AI image generation", free: false, paid: true },
-                  { label: "AI Humanizer", free: false, paid: true },
-                  { label: "Citation checker", free: true, paid: true },
-                  { label: "Export to PDF / DOCX / PPTX", free: true, paid: true },
-                  { label: "Cloud project storage", free: false, paid: true },
-                  { label: "Reference manager", free: true, paid: true },
-                  { label: "12-language support", free: true, paid: true },
-                  { label: "Text-to-Speech (Azure HD)", free: false, paid: true },
-                  { label: "Priority support", free: false, paid: true },
+                  { label: t("pages.pricing.tableGenerations"), free: t("pages.pricing.tableFreeGenerations"), paid: t("pages.pricing.tableUnlimited") },
+                  { label: t("pages.pricing.tableReports"), free: true, paid: true },
+                  { label: t("pages.pricing.tableThesis"), free: false, paid: true },
+                  { label: t("pages.pricing.tableConference"), free: false, paid: true },
+                  { label: t("pages.pricing.tablePowerpoint"), free: true, paid: true },
+                  { label: t("pages.pricing.tableAIImages"), free: false, paid: true },
+                  { label: t("pages.pricing.tableAIHumanizer"), free: false, paid: true },
+                  { label: t("pages.pricing.tableCitations"), free: true, paid: true },
+                  { label: t("pages.pricing.tableExport"), free: true, paid: true },
+                  { label: t("pages.pricing.tableCloudStorage"), free: false, paid: true },
+                  { label: t("pages.pricing.tableRefManager"), free: true, paid: true },
+                  { label: t("pages.pricing.tableLanguages"), free: true, paid: true },
+                  { label: t("pages.pricing.tableTTS"), free: false, paid: true },
+                  { label: t("pages.pricing.tablePrioritySupport"), free: false, paid: true },
                 ].map((row, i) => (
                   <tr key={i} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                     <td className="px-4 py-2.5 font-medium">{row.label}</td>
@@ -592,8 +583,8 @@ export default function Pricing() {
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   {paymentProvider?.preferred === 'bmc'
-                    ? "We accept payments through Buy Me a Coffee, which supports credit cards, debit cards, Apple Pay, and Google Pay."
-                    : "We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor."}
+                    ? t("pages.pricing.faq2A")
+                    : t("pages.pricing.faq2ACard")}
                 </p>
               </CardContent>
             </Card>

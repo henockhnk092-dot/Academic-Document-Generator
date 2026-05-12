@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export function useFileUpload() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedText, setExtractedText] = useState("");
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const processFile = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -17,7 +19,7 @@ export function useFileUpload() {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to process file");
+      throw new Error(t("hooks.fileUpload.failedProcessFile"));
     }
 
     const data = await response.json();
@@ -36,13 +38,13 @@ export function useFileUpload() {
       setExtractedText((prev) => prev + "\n\n" + combinedText);
       
       toast({
-        title: "Files Processed",
-        description: `Successfully processed ${fileArray.length} file(s)`,
+        title: t("hooks.fileUpload.filesProcessed"),
+        description: t("hooks.fileUpload.processedDesc", { count: fileArray.length }),
       });
     } catch (error: any) {
       toast({
-        title: "Upload Failed",
-        description: error.message || "Failed to process file",
+        title: t("hooks.fileUpload.uploadFailed"),
+        description: error.message || t("hooks.fileUpload.failedProcessFile"),
         variant: "destructive",
       });
     } finally {

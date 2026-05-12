@@ -1,8 +1,10 @@
 import { useUsage } from "@/hooks/use-usage";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Crown, User, UserCircle, Shield, Code } from "lucide-react";
 
 export function UsageBanner() {
+  const { t } = useTranslation();
   const { getUsageStatus, isLoading } = useUsage();
 
   if (isLoading) {
@@ -16,7 +18,7 @@ export function UsageBanner() {
     return (
       <Badge variant="outline" className="gap-1.5 border-red-500/50 bg-red-500/10" data-testid="badge-admin">
         <Shield className="h-3.5 w-3.5 text-red-500" />
-        <span className="text-red-500">Admin</span>
+        <span className="text-red-500">{t("components.usageBanner.admin")}</span>
       </Badge>
     );
   }
@@ -26,7 +28,7 @@ export function UsageBanner() {
     return (
       <Badge variant="outline" className="gap-1.5 border-blue-500/50 bg-blue-500/10" data-testid="badge-developer">
         <Code className="h-3.5 w-3.5 text-blue-500" />
-        <span className="text-blue-500">Developer</span>
+        <span className="text-blue-500">{t("components.usageBanner.developer")}</span>
       </Badge>
     );
   }
@@ -41,8 +43,8 @@ export function UsageBanner() {
   }
 
   const remainingText = status.remaining === Infinity
-    ? "Unlimited"
-    : `${status.remaining} left`;
+    ? t("components.usageBanner.unlimited")
+    : t("components.usageBanner.remaining", { count: status.remaining });
 
   const Icon = status.type === "guest" ? UserCircle : User;
 

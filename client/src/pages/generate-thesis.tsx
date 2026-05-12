@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck } from "lucide-react";
+import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -39,7 +39,9 @@ export default function GenerateThesis() {
   const [generateImages, setGenerateImages] = useState(true);
   const [sectionImageUrls, setSectionImageUrls] = usePersistedState<Record<number, string>>("thesis_image_urls", {});
   
-  const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("thesis");
+  const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("thesis");
+  const [undoContent, setUndoContent] = useState<any>(null);
+  const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
   const { uploadedFiles, isProcessing, extractedText, handleFileUpload, removeFile } = useFileUpload();
   const { toast } = useToast();
@@ -64,8 +66,8 @@ export default function GenerateThesis() {
       setTopic(templatePrompt);
       if (templateName) {
         toast({
-          title: "Template loaded",
-          description: `Using template: ${templateName}`,
+          title: t("common.templateLoaded"),
+          description: t("common.templateLoadedDesc", { name: templateName }),
         });
       }
     }
@@ -124,8 +126,8 @@ export default function GenerateThesis() {
   const handleExportHTML = () => {
     if (!generatedContent) {
       toast({
-        title: "No content to export",
-        description: "Please generate a thesis first",
+        title: t("common.noContentToExport"),
+        description: t("pages.thesis.noContentDesc"),
         variant: "destructive",
       });
       return;
@@ -137,7 +139,7 @@ export default function GenerateThesis() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${generatedContent.title || 'Thesis/Dissertation'}</title>
+  <title>${generatedContent.title || t("generators.thesis")}</title>
   <style>
     body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
     h1 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -152,12 +154,12 @@ export default function GenerateThesis() {
   </style>
 </head>
 <body>
-  <h1>${generatedContent.title || 'Thesis/Dissertation'}</h1>`;
+  <h1>${generatedContent.title || t("generators.thesis")}</h1>`;
 
     if (generatedContent.abstract) {
       html += `
   <div class="abstract">
-    <h2>Abstract</h2>
+    <h2>${t("common.abstractHeading")}</h2>
     <p>${generatedContent.abstract}</p>
   </div>`;
     }
@@ -172,7 +174,7 @@ export default function GenerateThesis() {
       if (sectionImageUrls[index]) {
         html += `
     <figure>
-      <img src="${sectionImageUrls[index]}" alt="${section.image_caption || `Figure ${index + 1}`}" />
+      <img src="${sectionImageUrls[index]}" alt="${section.image_caption || `${t("common.figure", { n: index + 1 })}`}" />
       ${section.image_caption ? `<figcaption>${section.image_caption}</figcaption>` : ''}
     </figure>`;
       }
@@ -197,16 +199,16 @@ export default function GenerateThesis() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: "Thesis exported as HTML",
+      title: t("common.exportSuccess"),
+      description: t("pages.thesis.exportedHTML"),
     });
   };
 
   const handleExportDOCX = async () => {
     if (!generatedContent) {
       toast({
-        title: "No content to export",
-        description: "Please generate a thesis first",
+        title: t("common.noContentToExport"),
+        description: t("pages.thesis.noContentDesc"),
         variant: "destructive",
       });
       return;
@@ -215,15 +217,15 @@ export default function GenerateThesis() {
     try {
       // Show loading toast
       toast({
-        title: "Preparing Export",
-        description: "Converting images for DOCX format...",
+        title: t("pages.report.preparingExport"),
+        description: t("pages.report.preparingExportDesc"),
       });
 
       // Build HTML content for DOCX conversion with images as base64
-      let html = `<h1>${generatedContent.title || 'Thesis/Dissertation'}</h1>`;
+      let html = `<h1>${generatedContent.title || t("generators.thesis")}</h1>`;
 
       if (generatedContent.abstract) {
-        html += `<h2>Abstract</h2><p>${generatedContent.abstract}</p>`;
+        html += `<h2>${t("common.abstractHeading")}</h2><p>${generatedContent.abstract}</p>`;
       }
 
       // Process sections with images
@@ -246,7 +248,7 @@ export default function GenerateThesis() {
             });
 
             html += `<figure>
-              <img src="${base64}" alt="${section.image_caption || `Figure ${i + 1}`}" style="max-width: 600px;" />
+              <img src="${base64}" alt="${section.image_caption || `${t("common.figure", { n: i + 1 })}`}" style="max-width: 600px;" />
               ${section.image_caption ? `<figcaption>${section.image_caption}</figcaption>` : ''}
             </figure>`;
           } catch (imgError) {
@@ -263,26 +265,26 @@ export default function GenerateThesis() {
 
       // Add references if available
       if (generatedContent.references && generatedContent.references.length > 0) {
-        html += `<h2>References</h2>`;
+        html += `<h2>${t("pages.references.title")}</h2>`;
         generatedContent.references.forEach((ref: string) => {
           html += `<p>${ref}</p>`;
         });
       }
 
       await exportHtmlToDocx(html, {
-        title: generatedContent.title || 'Thesis/Dissertation',
+        title: generatedContent.title || t("generators.thesis"),
         twoColumn: false,
       });
 
       toast({
-        title: "Export Successful",
-        description: "DOCX file has been downloaded",
+        title: t("common.exportSuccess"),
+        description: t("pages.report.exportSuccessDOCXDesc"),
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
-        title: "Export Failed",
-        description: "Failed to export to DOCX format",
+        title: t("pages.report.exportFailed"),
+        description: t("pages.report.exportFailedDesc"),
         variant: "destructive",
       });
     }
@@ -290,10 +292,10 @@ export default function GenerateThesis() {
 
   const handleExportPDF = async () => {
     if (!generatedContent) {
-      toast({ title: "No content to export", description: "Please generate a thesis first", variant: "destructive" });
+      toast({ title: t("common.noContentToExport"), description: t("pages.thesis.noContentDesc"), variant: "destructive" });
       return;
     }
-    toast({ title: "Generating PDF…", description: "This may take a few seconds." });
+    toast({ title: t("common.generatingPDF"), description: t("common.mayTakeSeconds") });
     try {
       const response = await fetch("/api/export/pdf", {
         method: "POST",
@@ -310,17 +312,17 @@ export default function GenerateThesis() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: "PDF Downloaded!", description: "Your thesis has been exported as PDF." });
+      toast({ title: t("common.pdfDownloaded"), description: t("pages.thesis.exportedPDF") });
     } catch {
-      toast({ title: "PDF Export Failed", description: "Please try the Print option instead.", variant: "destructive" });
+      toast({ title: t("common.pdfExportFailed"), description: t("common.printOptionInstead"), variant: "destructive" });
     }
   };
 
   const handlePrint = () => {
     if (!generatedContent) {
       toast({
-        title: "No content to print",
-        description: "Please generate a thesis first",
+        title: t("common.noContentToPrint"),
+        description: t("pages.thesis.noContentDesc"),
         variant: "destructive",
       });
       return;
@@ -332,7 +334,7 @@ export default function GenerateThesis() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${generatedContent.title || 'Thesis/Dissertation'}</title>
+  <title>${generatedContent.title || t("generators.thesis")}</title>
   <style>
     body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #1a1a1a; }
     h1 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
@@ -353,12 +355,12 @@ export default function GenerateThesis() {
   </style>
 </head>
 <body>
-  <h1>${generatedContent.title || 'Thesis/Dissertation'}</h1>`;
+  <h1>${generatedContent.title || t("generators.thesis")}</h1>`;
 
     if (generatedContent.abstract) {
       html += `
   <div class="abstract">
-    <h2>Abstract</h2>
+    <h2>${t("common.abstractHeading")}</h2>
     <p>${generatedContent.abstract}</p>
   </div>`;
     }
@@ -373,7 +375,7 @@ export default function GenerateThesis() {
       if (sectionImageUrls[index]) {
         html += `
     <figure>
-      <img src="${sectionImageUrls[index]}" alt="${section.image_caption || `Figure ${index + 1}`}" />
+      <img src="${sectionImageUrls[index]}" alt="${section.image_caption || `${t("common.figure", { n: index + 1 })}`}" />
       ${section.image_caption ? `<figcaption>${section.image_caption}</figcaption>` : ''}
     </figure>`;
       }
@@ -386,7 +388,7 @@ export default function GenerateThesis() {
     if (generatedContent.references && generatedContent.references.length > 0) {
       html += `
   <div>
-    <h2>References</h2>`;
+    <h2>${t("pages.references.title")}</h2>`;
       generatedContent.references.forEach((ref: string) => {
         html += `
     <p>${ref}</p>`;
@@ -409,13 +411,13 @@ export default function GenerateThesis() {
       };
 
       toast({
-        title: "Print Ready",
-        description: "Print dialog opened",
+        title: t("common.printReady"),
+        description: t("common.printReadyDesc"),
       });
     } else {
       toast({
-        title: "Print Failed",
-        description: "Please allow popups to print",
+        title: t("common.printFailed"),
+        description: t("common.printFailedDesc"),
         variant: "destructive",
       });
     }
@@ -424,8 +426,8 @@ export default function GenerateThesis() {
   const handleSave = async () => {
     if (!generatedContent) {
       toast({
-        title: "No content to save",
-        description: "Please generate a thesis first",
+        title: t("common.noContentToSave"),
+        description: t("pages.thesis.noContentDesc"),
         variant: "destructive",
       });
       return;
@@ -433,8 +435,8 @@ export default function GenerateThesis() {
 
     if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to save documents",
+        title: t("common.authRequired"),
+        description: t("common.signInToSave"),
         variant: "destructive",
       });
       return;
@@ -478,19 +480,33 @@ export default function GenerateThesis() {
       queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
 
       toast({
-        title: t("common.save"),
-        description: "Your thesis has been saved successfully",
+        title: t("common.documentSaved"),
+        description: t("pages.thesis.savedSuccess"),
       });
     } catch (error: any) {
       console.error("Save error:", error);
       toast({
-        title: "Save failed",
-        description: error.message || "Failed to save document. Please try again.",
+        title: t("common.saveFailed"),
+        description: error.message || t("common.failedSaveDocument"),
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClear = () => {
+    setUndoContent(generatedContent);
+    setUndoImageUrls(sectionImageUrls);
+    clearContent();
+    setSectionImageUrls({});
+  };
+
+  const handleUndo = () => {
+    restore(undoContent);
+    setSectionImageUrls(undoImageUrls);
+    setUndoContent(null);
+    setUndoImageUrls({});
   };
 
   const handleHumanize = () => {
@@ -518,8 +534,8 @@ export default function GenerateThesis() {
             <div className="lg:col-span-4 space-y-6">
               <Card>
             <CardHeader>
-              <CardTitle>Input Configuration</CardTitle>
-              <CardDescription>Define your thesis topic and settings</CardDescription>
+              <CardTitle>{t("pages.thesis.inputConfigTitle")}</CardTitle>
+              <CardDescription>{t("pages.thesis.inputConfigDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs defaultValue="text" className="w-full">
@@ -550,7 +566,7 @@ export default function GenerateThesis() {
                       setTopic(randomResult.topic);
                       toast({
                         title: randomResult.category,
-                        description: `Topic: ${randomResult.topic}`,
+                        description: t("common.topicIs", { topic: randomResult.topic }),
                       });
                     }}
                     disabled={isLoadingTopic}
@@ -611,10 +627,10 @@ export default function GenerateThesis() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t("common.autoAIDetermined")}</SelectItem>
-                      <SelectItem value="2-5">2-5 Pages</SelectItem>
-                      <SelectItem value="6-10">6-10 Pages</SelectItem>
-                      <SelectItem value="11-20">11-20 Pages</SelectItem>
-                      <SelectItem value="20+">20+ Pages</SelectItem>
+                      <SelectItem value="2-5">{t("common.page2_5")}</SelectItem>
+                      <SelectItem value="6-10">{t("common.page6_10")}</SelectItem>
+                      <SelectItem value="11-20">{t("common.page11_20")}</SelectItem>
+                      <SelectItem value="20+">{t("common.page20plus")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -648,7 +664,7 @@ export default function GenerateThesis() {
               <div className="space-y-2">
                 {remainingAttempts !== Infinity && (
                   <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <span>{remainingAttempts} generation{remainingAttempts !== 1 ? 's' : ''} remaining</span>
+                    <span>{t("common.genRemaining", { count: remainingAttempts })}</span>
                     <button
                       type="button"
                       onClick={openPricing}
@@ -678,7 +694,7 @@ export default function GenerateThesis() {
                 </Button>
                 {!isGenerating && !isSubmitting && (
                   <p className="text-xs text-center text-muted-foreground mt-1 no-print">
-                    Press <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> to generate
+                    {t("common.ctrlEnterHintPre")} <kbd className="px-1 py-0.5 rounded border text-xs font-mono bg-muted">Ctrl+↵</kbd> {t("common.ctrlEnterHintPost")}
                   </p>
                 )}
               </div>
@@ -755,23 +771,46 @@ export default function GenerateThesis() {
                     size="sm"
                     onClick={handleHumanize}
                     disabled={!generatedContent}
-                    title="Send to AI Humanizer"
-                    aria-label="Send to AI Humanizer"
+                    title={t("common.sendToHumanizer")}
+                    aria-label={t("common.sendToHumanizer")}
                   >
                     <Wand2 className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Humanize</span>
+                    <span className="hidden sm:inline">{t("common.humanize")}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleCitationCheck}
                     disabled={!generatedContent}
-                    title="Check Citations"
-                    aria-label="Check Citations"
+                    title={t("common.checkCitations")}
+                    aria-label={t("common.checkCitations")}
                   >
                     <BookOpenCheck className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Check Citations</span>
+                    <span className="hidden sm:inline">{t("common.checkCitations")}</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClear}
+                    disabled={!generatedContent}
+                    title={t("common.clearDocument")}
+                    aria-label={t("common.clearDocument")}
+                  >
+                    <Trash2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t("common.clear")}</span>
+                  </Button>
+                  {undoContent && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUndo}
+                      title={t("common.undoClear")}
+                      aria-label={t("common.undoClear")}
+                    >
+                      <Undo2 className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{t("common.undo")}</span>
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" data-testid="button-export-menu">
@@ -806,7 +845,7 @@ export default function GenerateThesis() {
                 <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating thesis: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
                   <div className="text-sm text-muted-foreground text-center">
-                    Generating content with AI...
+                    {t("pages.report.generatingContent")}
                   </div>
                 </div>
               )}
@@ -817,7 +856,7 @@ export default function GenerateThesis() {
                     <h1 className="text-2xl font-bold text-center mb-6 pb-4 border-b">{generatedContent.title}</h1>
                     {generatedContent.abstract && (
                       <div className="mb-8 p-4 bg-muted/30 rounded-lg">
-                        <h2 className="text-xl font-bold mb-3">Abstract</h2>
+                        <h2 className="text-xl font-bold mb-3">{t("common.abstractHeading")}</h2>
                         <div
                           className="leading-relaxed italic"
                           dangerouslySetInnerHTML={{
@@ -849,7 +888,7 @@ export default function GenerateThesis() {
                               <div className="bg-white p-2 border border-gray-300 shadow-sm max-w-[80%]">
                                 <img
                                   src={sectionImageUrls[index]}
-                                  alt={section.image_caption || `Figure ${index + 1}`}
+                                  alt={section.image_caption || `${t("common.figure", { n: index + 1 })}`}
                                   className="w-full h-auto"
                                   style={{ maxHeight: '400px', objectFit: 'contain' }}
                                   onError={(e) => {
@@ -873,7 +912,7 @@ export default function GenerateThesis() {
                        (s.heading || s.title || '').toLowerCase().includes('reference')
                      ) && (
                       <div className="mt-10 pt-6 border-t">
-                        <h2 className="text-xl font-bold mb-4">References</h2>
+                        <h2 className="text-xl font-bold mb-4">{t("pages.report.referencesHeading")}</h2>
                         <ol className="list-decimal pl-6 space-y-2">
                           {generatedContent.references.map((ref: string, idx: number) => (
                             <li key={idx} className="text-sm leading-relaxed">{ref}</li>
@@ -891,10 +930,9 @@ export default function GenerateThesis() {
                       <p className="font-medium text-center mb-3">{t("pages.thesis.features")}</p>
                       <ul className="space-y-1">
                         <li>• {t("pages.thesis.feature1")}</li>
-                        <li>• Structured sections with clear headings</li>
-                        <li>• Data-driven analysis and findings</li>
-                        <li>• Actionable recommendations</li>
-                        <li>• Comprehensive appendices</li>
+                        <li>• {t("pages.thesis.feature2")}</li>
+                        <li>• {t("pages.thesis.feature3")}</li>
+                        <li>• {t("pages.thesis.feature4")}</li>
                         <li>• {t("pages.thesis.feature5")}</li>
                       </ul>
                     </div>

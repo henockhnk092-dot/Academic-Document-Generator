@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MessageCircle, Send, X, Bot, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,15 +23,14 @@ interface ChatbotDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "Hi! I'm your AcademicGen assistant. I can help you navigate the website, explain features, and answer questions about our document generators. What would you like to know?",
-  timestamp: new Date(),
-};
-
 export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
+  const { t, i18n } = useTranslation();
+  const [messages, setMessages] = useState<Message[]>(() => [{
+    id: "welcome",
+    role: "assistant",
+    content: t("chat.welcome"),
+    timestamp: new Date(),
+  }]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ message: userMessage.content, language: i18n.language }),
       });
 
       if (!response.ok) {
@@ -78,7 +78,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response || "I apologize, but I couldn't process your request. Please try again.",
+        content: data.response || t("components.chatbotDialog.fallbackResponse"),
         timestamp: new Date(),
       };
 
@@ -87,7 +87,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm sorry, I encountered an error. Please make sure the AI service is configured and try again.",
+        content: t("components.chatbotDialog.errorResponse"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -111,7 +111,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
               <Bot className="h-4 w-4 text-primary" />
             </div>
-            <span>AcademicGen Assistant</span>
+            <span>{t("components.chatbotDialog.title")}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -166,7 +166,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
           <div className="flex gap-2">
             <Input
               ref={inputRef}
-              placeholder="Ask me anything about AcademicGen..."
+              placeholder={t("components.chatbotDialog.inputPlaceholder")}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -184,7 +184,7 @@ export function ChatbotDialog({ open, onOpenChange }: ChatbotDialogProps) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Powered by Google Gemini AI
+            {t("pages.about.poweredBy")}
           </p>
         </div>
       </DialogContent>

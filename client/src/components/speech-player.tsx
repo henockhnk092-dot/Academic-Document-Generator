@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Play, Pause, Square, Volume2, ChevronDown, Zap, Globe } from "lucide-react";
 import { azureAvailable, AZURE_VOICES, AZURE_LANGUAGES, getBrowserVoiceLanguage, getSpeechPrefs, saveSpeechPrefs } from "@/hooks/use-speech";
 
@@ -26,6 +27,7 @@ export function SpeechPlayer({
   rate, voiceName, engineMode,
   onPlay, onPause, onStop, onRateChange, onVoiceChange, onEngineModeChange,
 }: SpeechPlayerProps) {
+  const { t } = useTranslation();
   const prefs0 = getSpeechPrefs();
   const [showVoices, setShowVoices] = useState(false);
   const [showLangs, setShowLangs] = useState(false);
@@ -34,7 +36,7 @@ export function SpeechPlayer({
   if (!supported) {
     return (
       <div className="mt-4 rounded-xl px-4 py-3 text-xs text-muted-foreground border bg-muted/20">
-        Text-to-speech is not supported in your browser. Use Chrome or Edge for the best experience.
+        {t("components.tts.notSupported")}
       </div>
     );
   }
@@ -51,13 +53,13 @@ export function SpeechPlayer({
   const browserLanguages = Array.from(new Set(voices.map(getBrowserVoiceLanguage))).sort();
   const activeLangList = isAzure ? AZURE_LANGUAGES : browserLanguages;
 
-  let displayVoice = "Default Voice";
+  let displayVoice = t("components.tts.defaultVoice");
   if (isAzure) {
     const av = AZURE_VOICES.find(v => v.name === voiceName);
     displayVoice = av ? av.label.split("—")[0].trim() : (azureLangVoices[0]?.label.split("—")[0].trim() || "Jenny");
   } else {
     const bv = voices.find(v => v.name === voiceName);
-    displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || "Default");
+    displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || t("components.tts.defaultShort"));
   }
 
   const handleLangSelect = (lang: string) => {
@@ -94,7 +96,7 @@ export function SpeechPlayer({
       {/* Engine toggle — only when Azure key is configured */}
       {azureAvailable && (
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Voice Quality</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("components.tts.voiceQuality")}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => handleEngine("browser")}
@@ -102,7 +104,7 @@ export function SpeechPlayer({
                 !isAzure ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
-              Standard — Free
+              {t("components.tts.standard")}
             </button>
             <button
               onClick={() => handleEngine("azure")}
@@ -110,7 +112,7 @@ export function SpeechPlayer({
                 isAzure ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Zap size={9} /> Enhanced HD
+              <Zap size={9} /> {t("components.tts.enhancedHD")}
             </button>
           </div>
         </div>
@@ -122,7 +124,7 @@ export function SpeechPlayer({
         {/* Play / Pause */}
         <button
           onClick={speaking && !paused ? onPause : onPlay}
-          title={speaking && !paused ? "Pause" : "Play"}
+          title={speaking && !paused ? t("components.tts.pause") : t("components.tts.play")}
           className="w-8 h-8 rounded-lg bg-primary hover:bg-primary/90 flex items-center justify-center text-primary-foreground flex-shrink-0 transition-colors"
         >
           {speaking && !paused ? <Pause size={13} /> : <Play size={13} />}
@@ -132,7 +134,7 @@ export function SpeechPlayer({
         <button
           onClick={onStop}
           disabled={!speaking && !paused}
-          title="Stop"
+          title={t("components.tts.stop")}
           className="w-8 h-8 rounded-lg border hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors flex-shrink-0"
         >
           <Square size={13} />
@@ -169,7 +171,7 @@ export function SpeechPlayer({
             <button
               onClick={() => { setShowLangs(p => !p); setShowVoices(false); }}
               className="flex items-center gap-1 border px-2 py-1.5 rounded-lg text-[11px] hover:bg-muted transition-colors"
-              title="Select language"
+              title={t("components.tts.selectLanguage")}
             >
               <Globe size={11} className="opacity-60" />
               <span>{isAzure ? `${langFlag} ` : ""}{selectedLang}</span>
@@ -204,7 +206,7 @@ export function SpeechPlayer({
           {showVoices && (
             <div className="absolute right-0 bottom-full mb-1.5 w-64 max-h-52 overflow-y-auto bg-card border rounded-xl z-50 shadow-2xl custom-scrollbar">
               {isAzure ? (
-                activeVoices.map(v => (
+                azureLangVoices.map(v => (
                   <button
                     key={v.name}
                     onClick={() => handleVoice(v.name)}
@@ -217,12 +219,12 @@ export function SpeechPlayer({
                 ))
               ) : (
                 <>
-                  {activeVoices.length === 0 && (
+                  {browserLangVoices.length === 0 && (
                     <div className="px-3 py-3 text-xs text-muted-foreground text-center">
-                      {voices.length === 0 ? <>Loading voices…<br />Try again in a moment.</> : "No voices for this language."}
+                      {voices.length === 0 ? <>{t("components.tts.loadingVoices")}<br />{t("components.tts.tryAgainMoment")}</> : t("components.tts.noVoices")}
                     </div>
                   )}
-                  {activeVoices.map(v => (
+                  {browserLangVoices.map(v => (
                     <button
                       key={v.name}
                       onClick={() => handleVoice(v.name)}

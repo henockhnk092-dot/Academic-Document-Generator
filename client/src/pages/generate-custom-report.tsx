@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, Undo2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -29,16 +30,6 @@ import { exportHtmlToDocx } from "@/lib/docx-export";
 import { saveDocument } from "@/lib/firebase";
 import type { ToneType } from "@shared/schema";
 
-const REFERENCE_TYPES = [
-  "Journal Articles",
-  "Conference Papers",
-  "Books",
-  "Technical Reports",
-  "Websites",
-  "Standards Documents",
-  "Patents",
-  "Theses/Dissertations"
-];
 
 const CITATION_STYLES = [
   { value: "ieee", label: "IEEE" },
@@ -48,32 +39,45 @@ const CITATION_STYLES = [
   { value: "mla", label: "MLA" },
 ];
 
-const INSTRUCTION_SUGGESTIONS = [
-  "Include detailed methodology section with step-by-step procedures",
-  "Add case studies and real-world examples to support theoretical concepts",
-  "Incorporate statistical analysis and data visualization for findings",
-  "Include comparison with existing solutions or approaches in the literature",
-  "Add a limitations section discussing potential weaknesses and future improvements",
-  "Include code snippets or pseudocode for technical implementations",
-  "Add timeline and project management considerations",
-  "Include cost-benefit analysis and resource requirements",
-  "Add ethical considerations and potential societal impacts",
-  "Include performance metrics and evaluation criteria",
-  "Add troubleshooting guide and common pitfalls to avoid",
-  "Include validation methods and testing strategies",
-  "Add discussion on scalability and future extensions",
-  "Include stakeholder analysis and requirements gathering",
-  "Add risk assessment and mitigation strategies",
-];
-
 export default function GenerateCustomReport() {
+  const { t } = useTranslation();
+
+  const instructionSuggestions = [
+    t("pages.customReport.instructionSuggestion1"),
+    t("pages.customReport.instructionSuggestion2"),
+    t("pages.customReport.instructionSuggestion3"),
+    t("pages.customReport.instructionSuggestion4"),
+    t("pages.customReport.instructionSuggestion5"),
+    t("pages.customReport.instructionSuggestion6"),
+    t("pages.customReport.instructionSuggestion7"),
+    t("pages.customReport.instructionSuggestion8"),
+    t("pages.customReport.instructionSuggestion9"),
+    t("pages.customReport.instructionSuggestion10"),
+    t("pages.customReport.instructionSuggestion11"),
+    t("pages.customReport.instructionSuggestion12"),
+    t("pages.customReport.instructionSuggestion13"),
+    t("pages.customReport.instructionSuggestion14"),
+    t("pages.customReport.instructionSuggestion15"),
+  ];
+
+  const REFERENCE_TYPES = [
+    { value: "articles", label: t("pages.customReport.refTypeArticle") },
+    { value: "conference", label: t("pages.customReport.refTypeConference") },
+    { value: "books", label: t("pages.customReport.refTypeBooks") },
+    { value: "technical", label: t("pages.customReport.refTypeTechnical") },
+    { value: "websites", label: t("pages.customReport.refTypeWebsites") },
+    { value: "standards", label: t("pages.customReport.refTypeStandards") },
+    { value: "patents", label: t("pages.customReport.refTypePatents") },
+    { value: "theses", label: t("pages.customReport.refTypeTheses") },
+  ];
+
   const [topic, setTopic] = useState("");
   const [targetPages, setTargetPages] = useState(10);
   const [numChapters, setNumChapters] = useState(5);
   const [numTables, setNumTables] = useState(3);
   const [numFigures, setNumFigures] = useState(5);
   const [citationStyle, setCitationStyle] = useState("ieee");
-  const [selectedReferenceTypes, setSelectedReferenceTypes] = useState<string[]>(["Journal Articles", "Conference Papers"]);
+  const [selectedReferenceTypes, setSelectedReferenceTypes] = useState<string[]>(["articles", "conference"]);
   const [minReferences, setMinReferences] = useState(10);
   const [customInstructions, setCustomInstructions] = useState("");
   const [tone, setTone] = useState<ToneType>("academic");
@@ -82,7 +86,9 @@ export default function GenerateCustomReport() {
   const [includeAppendices, setIncludeAppendices] = useState(true);
   const [sectionImageUrls, setSectionImageUrls] = useState<Record<number, string>>({});
 
-  const { generate, isGenerating, generatedContent, progress } = useDocumentGenerator("report");
+  const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("report");
+  const [undoContent, setUndoContent] = useState<any>(null);
+  const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
   const { uploadedFiles, isProcessing, extractedText, handleFileUpload, removeFile } = useFileUpload();
   const { toast } = useToast();
@@ -108,21 +114,21 @@ export default function GenerateCustomReport() {
     if (result?.topic) {
       setTopic(result.topic);
       toast({
-        title: "Topic Suggested",
-        description: `Generated topic from ${result.category}`,
+        title: t("pages.customReport.topicSuggested"),
+        description: t("pages.templateReport.topicSuggestedDesc", { category: result.category }),
       });
     }
   };
 
   const handleSuggestInstructions = () => {
-    const randomIndex = Math.floor(Math.random() * INSTRUCTION_SUGGESTIONS.length);
-    const suggestion = INSTRUCTION_SUGGESTIONS[randomIndex];
+    const randomIndex = Math.floor(Math.random() * instructionSuggestions.length);
+    const suggestion = instructionSuggestions[randomIndex];
     setCustomInstructions(prev =>
       prev ? `${prev}\n\n${suggestion}` : suggestion
     );
     toast({
-      title: "Instruction Suggested",
-      description: "A helpful instruction has been added",
+      title: t("pages.customReport.instructionSuggested"),
+      description: t("pages.customReport.instructionSuggestedDesc"),
     });
   };
 
@@ -174,10 +180,13 @@ export default function GenerateCustomReport() {
       finalPrompt += `- Number of Figures: ${numFigures}\n`;
       finalPrompt += `- Citation Style: ${citationStyle.toUpperCase()}\n`;
       finalPrompt += `- Minimum References: ${minReferences}\n`;
-      finalPrompt += `- Reference Types: ${selectedReferenceTypes.join(', ')}\n`;
-      finalPrompt += `- Include Abstract: ${includeAbstract ? 'Yes' : 'No'}\n`;
-      finalPrompt += `- Include Table of Contents: ${includeToc ? 'Yes' : 'No'}\n`;
-      finalPrompt += `- Include Appendices: ${includeAppendices ? 'Yes' : 'No'}\n\n`;
+      const referenceTypeLabels = selectedReferenceTypes
+        .map((value) => REFERENCE_TYPES.find((type) => type.value === value)?.label ?? value)
+        .join(", ");
+      finalPrompt += `- ${t("pages.customReport.referenceTypes")}: ${referenceTypeLabels}\n`;
+      finalPrompt += `- ${t("pages.customReport.includeAbstract")}: ${includeAbstract ? t("common.yes") : t("common.no")}\n`;
+      finalPrompt += `- ${t("pages.customReport.tableOfContents")}: ${includeToc ? t("common.yes") : t("common.no")}\n`;
+      finalPrompt += `- ${t("pages.customReport.includeAppendices")}: ${includeAppendices ? t("common.yes") : t("common.no")}\n\n`;
 
       finalPrompt += ACADEMIC_GUIDELINES;
 
@@ -223,14 +232,16 @@ export default function GenerateCustomReport() {
   }, [generatedContent, numFigures]);
 
   const handleSave = async () => {
-    if (!generatedContent || !isAuthenticated) {
+    if (!generatedContent || !isAuthenticated || !user?.uid) {
       toast({
-        title: "Cannot save",
-        description: isAuthenticated ? "No content to save" : "Please sign in to save documents",
+        title: t("pages.customReport.cannotSave"),
+        description: isAuthenticated ? t("common.noContentToSave") : t("common.signInToSave"),
         variant: "destructive",
       });
       return;
     }
+
+    const userId = user.uid;
 
     setIsSaving(true);
     try {
@@ -244,14 +255,14 @@ export default function GenerateCustomReport() {
       };
 
       // Extract title from generated content first, then fall back to user input
-      const documentTitle = generatedContent.title || topic || "Custom Report";
+      const documentTitle = generatedContent.title || topic || t("pages.customReport.title");
 
       // Generate description from topic or content
       const description = topic ||
         generatedContent.abstract?.substring(0, 200) ||
         generatedContent.sections?.[0]?.content?.substring(0, 200) ||
         generatedContent.title ||
-        "Custom Report";
+        t("pages.customReport.title");
 
       await saveDocument({
         type: "report",
@@ -275,21 +286,35 @@ export default function GenerateCustomReport() {
         language: "en",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["documents", user.uid] });
+      queryClient.invalidateQueries({ queryKey: ["documents", userId] });
 
       toast({
-        title: "Document Saved",
-        description: "Your custom report has been saved successfully",
+        title: t("pages.customReport.saved"),
+        description: t("pages.customReport.savedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "Failed to save document",
+        title: t("common.saveFailed"),
+        description: error instanceof Error ? error.message : t("common.failedSaveDocument"),
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClear = () => {
+    setUndoContent(generatedContent);
+    setUndoImageUrls(sectionImageUrls);
+    clearContent();
+    setSectionImageUrls({});
+  };
+
+  const handleUndo = () => {
+    restore(undoContent);
+    setSectionImageUrls(undoImageUrls);
+    setUndoContent(null);
+    setUndoImageUrls({});
   };
 
   const handleHumanize = () => {
@@ -307,8 +332,8 @@ export default function GenerateCustomReport() {
   const handleExportHTML = () => {
     if (!generatedContent) {
       toast({
-        title: "No content to export",
-        description: "Please generate a report first",
+        title: t("common.noContentToExport"),
+        description: t("pages.customReport.noContentExportDesc"),
         variant: "destructive",
       });
       return;
@@ -319,7 +344,7 @@ export default function GenerateCustomReport() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${generatedContent.title || 'Custom Report'}</title>
+  <title>${generatedContent.title || t("pages.customReport.title")}</title>
   <style>
     body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #1a1a1a; background: #ffffff; }
     h1 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -340,7 +365,7 @@ export default function GenerateCustomReport() {
   </style>
 </head>
 <body>
-  <h1>${generatedContent.title || 'Custom Report'}</h1>`;
+  <h1>${generatedContent.title || t("pages.customReport.title")}</h1>`;
 
     if (includeAbstract && generatedContent.abstract) {
       html += `
@@ -396,16 +421,16 @@ export default function GenerateCustomReport() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export Successful",
-      description: "HTML file has been downloaded",
+      title: t("common.exportSuccess"),
+      description: t("pages.customReport.exportSuccessHTMLDesc"),
     });
   };
 
   const handleExportDocx = async () => {
     if (!generatedContent) {
       toast({
-        title: "No content to export",
-        description: "Please generate a report first",
+        title: t("common.noContentToExport"),
+        description: t("pages.customReport.noContentExportDesc"),
         variant: "destructive",
       });
       return;
@@ -414,8 +439,8 @@ export default function GenerateCustomReport() {
     try {
       // Show loading toast
       toast({
-        title: "Preparing Export",
-        description: "Converting images for DOCX format...",
+        title: t("pages.report.preparingExport"),
+        description: t("pages.report.preparingExportDesc"),
       });
 
       // Helper function to convert image URL to base64
@@ -436,7 +461,7 @@ export default function GenerateCustomReport() {
       };
 
       // Build HTML content from structured data
-      let htmlContent = `<h1>${generatedContent.title || 'Custom Report'}</h1>`;
+      let htmlContent = `<h1>${generatedContent.title || t("pages.customReport.title")}</h1>`;
 
       // Add abstract if included
       if (includeAbstract && generatedContent.abstract) {
@@ -480,17 +505,17 @@ export default function GenerateCustomReport() {
       }
 
       await exportHtmlToDocx(htmlContent, {
-        title: generatedContent.title || "Custom Report"
+        title: generatedContent.title || t("pages.customReport.title")
       });
 
       toast({
-        title: "Export Successful",
-        description: "DOCX file has been downloaded",
+        title: t("common.exportSuccess"),
+        description: t("pages.customReport.exportSuccessDOCXDesc"),
       });
     } catch (error) {
       toast({
-        title: "Export Failed",
-        description: "Failed to export to DOCX format",
+        title: t("pages.report.exportFailed"),
+        description: t("pages.report.exportFailedDesc"),
         variant: "destructive",
       });
     }
@@ -500,7 +525,7 @@ export default function GenerateCustomReport() {
     if (previewRef.current) {
       const printWindow = window.open('', '', 'height=600,width=800');
       if (printWindow) {
-        printWindow.document.write('<html><head><title>Print Report</title>');
+        printWindow.document.write(`<html><head><title>${t("pages.customReport.printTitle")}</title>`);
         printWindow.document.write('<style>body { font-family: Times New Roman, serif; margin: 40px; line-height: 1.6; }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(previewRef.current.innerHTML);
@@ -515,8 +540,8 @@ export default function GenerateCustomReport() {
 
   return (
     <GeneratorLayout
-      title="Custom Report Generator"
-      description="Create fully customized reports with complete control over structure and content"
+      title={t("pages.customReport.title")}
+      description={t("pages.customReport.subtitle")}
       icon={<FileSignature className="w-8 h-8" />}
       gradient="from-indigo-500 to-purple-500"
     >
@@ -527,17 +552,17 @@ export default function GenerateCustomReport() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Report Configuration
+                {t("pages.customReport.configTitle")}
               </CardTitle>
               <CardDescription>
-                Customize every aspect of your report
+                {t("pages.customReport.configDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Topic */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="topic">Report Topic / Title</Label>
+                  <Label htmlFor="topic">{t("pages.customReport.topicLabel")}</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -549,12 +574,12 @@ export default function GenerateCustomReport() {
                     {isLoadingTopic ? (
                       <>
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        Suggesting...
+                        {t("pages.customReport.suggesting")}
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-3 h-3 mr-1" />
-                        Suggest Topic
+                        {t("pages.customReport.suggestTopic")}
                       </>
                     )}
                   </Button>
@@ -563,7 +588,7 @@ export default function GenerateCustomReport() {
                   id="topic"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Enter your report topic or title..."
+                  placeholder={t("pages.customReport.topicPlaceholder")}
                   className="min-h-[80px]"
                   data-testid="input-topic"
                 />
@@ -571,11 +596,11 @@ export default function GenerateCustomReport() {
 
               {/* Structure Specifications */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-sm">Document Structure</h3>
+                <h3 className="font-semibold text-sm">{t("pages.customReport.docStructure")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="pages">Number of Pages</Label>
+                    <Label htmlFor="pages">{t("pages.customReport.numPages")}</Label>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -605,7 +630,7 @@ export default function GenerateCustomReport() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="chapters">Chapters/Sections</Label>
+                    <Label htmlFor="chapters">{t("pages.customReport.chaptersLabel")}</Label>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -639,7 +664,7 @@ export default function GenerateCustomReport() {
                   <div className="space-y-2">
                     <Label htmlFor="tables" className="flex items-center gap-2">
                       <Table className="w-4 h-4" />
-                      Tables
+                      {t("pages.customReport.tablesLabel")}
                     </Label>
                     <div className="flex items-center gap-2">
                       <Button
@@ -672,7 +697,7 @@ export default function GenerateCustomReport() {
                   <div className="space-y-2">
                     <Label htmlFor="figures" className="flex items-center gap-2">
                       <Image className="w-4 h-4" />
-                      Figures
+                      {t("pages.customReport.figuresLabel")}
                     </Label>
                     <div className="flex items-center gap-2">
                       <Button
@@ -708,11 +733,11 @@ export default function GenerateCustomReport() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <BookOpen className="w-4 h-4" />
-                  References Configuration
+                  {t("pages.customReport.refsConfig")}
                 </h3>
 
                 <div className="space-y-2">
-                  <Label htmlFor="citation-style">Citation Style</Label>
+                  <Label htmlFor="citation-style">{t("common.citationStyle")}</Label>
                   <Select value={citationStyle} onValueChange={setCitationStyle}>
                     <SelectTrigger id="citation-style">
                       <SelectValue />
@@ -728,7 +753,7 @@ export default function GenerateCustomReport() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="min-refs">Minimum References</Label>
+                  <Label htmlFor="min-refs">{t("pages.customReport.minReferences")}</Label>
                   <Input
                     id="min-refs"
                     type="number"
@@ -739,19 +764,19 @@ export default function GenerateCustomReport() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reference Types</Label>
+                  <Label>{t("pages.customReport.referenceTypes")}</Label>
                   <div className="grid grid-cols-1 gap-2">
                     {REFERENCE_TYPES.map((type) => (
-                      <div key={type} className="flex items-center space-x-2">
+                      <div key={type.value} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          id={`ref-${type}`}
-                          checked={selectedReferenceTypes.includes(type)}
-                          onChange={() => toggleReferenceType(type)}
+                          id={`ref-${type.value}`}
+                          checked={selectedReferenceTypes.includes(type.value)}
+                          onChange={() => toggleReferenceType(type.value)}
                           className="rounded border-gray-300"
                         />
-                        <Label htmlFor={`ref-${type}`} className="text-sm font-normal cursor-pointer">
-                          {type}
+                        <Label htmlFor={`ref-${type.value}`} className="text-sm font-normal cursor-pointer">
+                          {type.label}
                         </Label>
                       </div>
                     ))}
@@ -761,10 +786,10 @@ export default function GenerateCustomReport() {
 
               {/* Document Options */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-sm">Document Options</h3>
+                <h3 className="font-semibold text-sm">{t("pages.customReport.docOptions")}</h3>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="abstract">Include Abstract</Label>
+                  <Label htmlFor="abstract">{t("pages.customReport.includeAbstract")}</Label>
                   <Switch
                     id="abstract"
                     checked={includeAbstract}
@@ -773,7 +798,7 @@ export default function GenerateCustomReport() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="toc">Table of Contents</Label>
+                  <Label htmlFor="toc">{t("pages.customReport.tableOfContents")}</Label>
                   <Switch
                     id="toc"
                     checked={includeToc}
@@ -782,7 +807,7 @@ export default function GenerateCustomReport() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="appendices">Include Appendices</Label>
+                  <Label htmlFor="appendices">{t("pages.customReport.includeAppendices")}</Label>
                   <Switch
                     id="appendices"
                     checked={includeAppendices}
@@ -793,16 +818,16 @@ export default function GenerateCustomReport() {
 
               {/* Tone */}
               <div className="space-y-2">
-                <Label htmlFor="tone">Writing Tone</Label>
+                <Label htmlFor="tone">{t("common.writingTone")}</Label>
                 <Select value={tone} onValueChange={(v) => setTone(v as ToneType)}>
                   <SelectTrigger id="tone">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="academic">Academic</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="technical">Technical</SelectItem>
-                    <SelectItem value="persuasive">Persuasive</SelectItem>
+                    <SelectItem value="academic">{t("common.toneAcademic")}</SelectItem>
+                    <SelectItem value="professional">{t("common.toneProfessional")}</SelectItem>
+                    <SelectItem value="technical">{t("common.toneTechnical")}</SelectItem>
+                    <SelectItem value="persuasive">{t("common.tonePersuasive")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -810,7 +835,7 @@ export default function GenerateCustomReport() {
               {/* Custom Instructions */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="instructions">Additional Instructions</Label>
+                  <Label htmlFor="instructions">{t("pages.customReport.additionalInstructions")}</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -819,25 +844,27 @@ export default function GenerateCustomReport() {
                     className="text-xs"
                   >
                     <Sparkles className="w-3 h-3 mr-1" />
-                    Suggest Instructions
+                    {t("pages.customReport.suggestInstructions")}
                   </Button>
                 </div>
                 <Textarea
                   id="instructions"
                   value={customInstructions}
                   onChange={(e) => setCustomInstructions(e.target.value)}
-                  placeholder="Add any specific instructions or requirements..."
+                  placeholder={t("pages.customReport.instructionsPlaceholder")}
                   className="min-h-[100px]"
                 />
               </div>
 
               {/* File Upload */}
               <div className="space-y-2">
-                <Label>Upload Supporting Files</Label>
+                <Label>{t("pages.customReport.uploadSupportingFiles")}</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center">
                   <input
                     type="file"
-                    onChange={handleFileUpload}
+                    onChange={(e) => {
+                      if (e.target.files) void handleFileUpload(e.target.files);
+                    }}
                     className="hidden"
                     id="file-upload"
                     accept=".txt,.pdf,.docx,.doc,.jpg,.jpeg,.png"
@@ -846,7 +873,7 @@ export default function GenerateCustomReport() {
                   <label htmlFor="file-upload" className="cursor-pointer">
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      Upload reference text, images, PDFs, or Word files
+                      {t("pages.customReport.uploadSupportingHint")}
                     </p>
                   </label>
                 </div>
@@ -878,14 +905,14 @@ export default function GenerateCustomReport() {
                   <div className="space-y-2">
                     {remainingAttempts !== Infinity && (
                       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <span>{remainingAttempts} generation{remainingAttempts !== 1 ? 's' : ''} remaining</span>
+                        <span>{t("common.genRemaining", { count: remainingAttempts })}</span>
                         <button
                           type="button"
                           onClick={openPricing}
                           className="text-primary hover:underline font-medium"
                           data-testid="button-view-pricing"
                         >
-                          View Pricing
+                          {t("common.viewPricing")}
                         </button>
                       </div>
                     )}
@@ -899,12 +926,12 @@ export default function GenerateCustomReport() {
                       {isGenerating || isSubmitting ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
+                          {t("common.generating")}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Custom Report
+                          {t("pages.customReport.generateButton")}
                         </>
                       )}
                     </Button>
@@ -916,7 +943,7 @@ export default function GenerateCustomReport() {
               {isGenerating && progress > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Generating report...</span>
+                    <span>{t("pages.customReport.generatingReport")}</span>
                     <span>{progress}%</span>
                   </div>
                   <Progress value={progress} className="w-full" />
@@ -928,7 +955,7 @@ export default function GenerateCustomReport() {
           {/* Academic Guidelines Alert */}
           <Alert>
             <AlertDescription className="text-xs">
-              <strong>Academic Standards Applied:</strong> This generator automatically follows proper figure/table introduction, reference formatting, and academic writing standards.
+              <strong>{t("pages.customReport.academicStandards")}</strong> {t("pages.customReport.academicStandardsDesc")}
             </AlertDescription>
           </Alert>
         </div>
@@ -939,9 +966,9 @@ export default function GenerateCustomReport() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Preview</CardTitle>
+                  <CardTitle>{t("common.preview")}</CardTitle>
                   <CardDescription>
-                    Generated custom report preview
+                    {t("pages.customReport.previewDesc")}
                   </CardDescription>
                 </div>
                 {hasContent && (
@@ -976,50 +1003,73 @@ export default function GenerateCustomReport() {
                       ) : (
                         <Save className="w-4 h-4 mr-1" />
                       )}
-                      Save
+                      {t("common.save")}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleHumanize}
                       disabled={!generatedContent}
-                      title="Send to AI Humanizer"
-                      aria-label="Send to AI Humanizer"
+                      title={t("common.sendToHumanizer")}
+                      aria-label={t("common.sendToHumanizer")}
                     >
                       <Wand2 className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Humanize</span>
+                      <span className="hidden sm:inline">{t("common.humanize")}</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleCitationCheck}
                       disabled={!generatedContent}
-                      title="Check Citations"
-                      aria-label="Check Citations"
+                      title={t("common.checkCitations")}
+                      aria-label={t("common.checkCitations")}
                     >
                       <BookOpenCheck className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Check Citations</span>
+                      <span className="hidden sm:inline">{t("common.checkCitations")}</span>
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleClear}
+                      disabled={!generatedContent}
+                      title={t("common.clearDocument")}
+                      aria-label={t("common.clearDocument")}
+                    >
+                      <Trash2 className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{t("common.clear")}</span>
+                    </Button>
+                    {undoContent && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUndo}
+                        title={t("common.undoClear")}
+                        aria-label={t("common.undoClear")}
+                      >
+                        <Undo2 className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t("common.undo")}</span>
+                      </Button>
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
                           <Download className="w-4 h-4 mr-1" />
-                          Export
+                          {t("common.export")}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={handleExportHTML}>
                           <FileCode className="w-4 h-4 mr-2" />
-                          Export as HTML
+                          {t("common.exportAsHTML")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleExportDocx}>
                           <FileDown className="w-4 h-4 mr-2" />
-                          Export as DOCX
+                          {t("common.exportAsWord")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handlePrint}>
                           <Printer className="w-4 h-4 mr-2" />
-                          Print
+                          {t("common.print")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1034,12 +1084,21 @@ export default function GenerateCustomReport() {
                 data-testid="preview-content"
               >
                 {!hasContent ? (
-                  <div className="flex flex-col items-center justify-center h-[600px] text-center text-muted-foreground">
-                    <FileSignature className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No content yet</p>
-                    <p className="text-sm">
-                      Configure your report settings and click "Generate Custom Report"
-                    </p>
+                  <div className="text-center text-muted-foreground py-16 px-4">
+                    <FileSignature className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                    <p className="font-medium">{t("pages.customReport.emptyState")}</p>
+                    <p className="text-sm mt-2">{t("pages.customReport.emptyStateHint")}</p>
+                    <div className="mt-6 text-xs text-left max-w-md mx-auto space-y-2 bg-muted/30 p-4 rounded-lg">
+                      <p className="font-medium text-center mb-3">{t("pages.customReport.features")}</p>
+                      <ul className="space-y-1">
+                        <li>• {t("pages.customReport.feature1")}</li>
+                        <li>• {t("pages.customReport.feature2")}</li>
+                        <li>• {t("pages.customReport.feature3")}</li>
+                        <li>• {t("pages.customReport.feature4")}</li>
+                        <li>• {t("pages.customReport.feature5")}</li>
+                        <li>• {t("pages.customReport.feature6")}</li>
+                      </ul>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -1047,7 +1106,7 @@ export default function GenerateCustomReport() {
 
                     {includeAbstract && generatedContent.abstract && (
                       <div className="bg-muted p-4 rounded-lg mb-6">
-                        <h2>Abstract</h2>
+                        <h2>{t("common.abstractHeading")}</h2>
                         <div
                           dangerouslySetInnerHTML={{
                             __html: sanitizeHtml(parseMarkdownToHtml(generatedContent.abstract))
@@ -1083,7 +1142,7 @@ export default function GenerateCustomReport() {
 
                     {generatedContent.references && generatedContent.references.length > 0 && (
                       <div className="mt-12 border-t pt-6">
-                        <h2>References</h2>
+                        <h2>{t("pages.report.referencesHeading")}</h2>
                         <div className="space-y-2">
                           {generatedContent.references.map((ref: string, idx: number) => (
                             <div key={idx} className="text-sm pl-5 -indent-5">

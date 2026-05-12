@@ -1,52 +1,54 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Presentation, GraduationCap, Wand2, FolderOpen, Download, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
+import { FileText, FolderOpen, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
 const STORAGE_KEY = "academicgen_onboarded_v1";
 
-const STEPS = [
-  {
-    icon: Sparkles,
-    color: "text-purple-500",
-    title: "Welcome to AcademicGen",
-    description: "Your all-in-one AI platform for generating professional academic documents. Powered by Google Gemini 2.5 Flash.",
-    bullets: [
-      "9 AI-powered document tools",
-      "12 supported languages",
-      "Export to PDF, DOCX, PPTX, HTML",
-      "Free image generation included",
-    ],
-  },
-  {
-    icon: FileText,
-    color: "text-blue-500",
-    title: "Generate in Seconds",
-    description: "Pick a tool from the sidebar, enter your topic (or use a template), and let AI do the writing.",
-    bullets: [
-      "Technical Reports — BET-standard format",
-      "Conference Papers — full IEEE structure",
-      "Thesis / Dissertation — 5 chapters, citations",
-      "PowerPoint — speaker notes included",
-    ],
-  },
-  {
-    icon: FolderOpen,
-    color: "text-green-500",
-    title: "Save, Export & Share",
-    description: "Sign in with Google to save documents to the cloud. Export in any format anytime.",
-    bullets: [
-      "My Projects stores all your documents",
-      "PDF, Word, HTML and Print exports",
-      "My Templates — save your favourite prompts",
-      "TTS voice reader on every document",
-    ],
-  },
-];
-
 export function OnboardingModal() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+
+  const STEPS = [
+    {
+      icon: Sparkles,
+      color: "text-purple-500",
+      title: t("components.onboarding.step1Title"),
+      description: t("components.onboarding.step1Desc"),
+      bullets: [
+        t("components.onboarding.step1b1"),
+        t("components.onboarding.step1b2"),
+        t("components.onboarding.step1b3"),
+        t("components.onboarding.step1b4"),
+      ],
+    },
+    {
+      icon: FileText,
+      color: "text-blue-500",
+      title: t("components.onboarding.step2Title"),
+      description: t("components.onboarding.step2Desc"),
+      bullets: [
+        t("components.onboarding.step2b1"),
+        t("components.onboarding.step2b2"),
+        t("components.onboarding.step2b3"),
+        t("components.onboarding.step2b4"),
+      ],
+    },
+    {
+      icon: FolderOpen,
+      color: "text-green-500",
+      title: t("components.onboarding.step3Title"),
+      description: t("components.onboarding.step3Desc"),
+      bullets: [
+        t("components.onboarding.step3b1"),
+        t("components.onboarding.step3b2"),
+        t("components.onboarding.step3b3"),
+        t("components.onboarding.step3b4"),
+      ],
+    },
+  ];
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) {
@@ -84,7 +86,7 @@ export function OnboardingModal() {
               <Icon className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Step {step + 1} of {STEPS.length}</p>
+              <p className="text-xs text-muted-foreground font-medium">{t("components.onboarding.stepOf", { current: step + 1, total: STEPS.length })}</p>
               <DialogTitle className="text-xl font-bold">{S.title}</DialogTitle>
             </div>
           </div>
@@ -103,7 +105,7 @@ export function OnboardingModal() {
           {/* Navigation */}
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" size="sm" onClick={dismiss} className="text-muted-foreground text-xs">
-              Skip
+              {t("components.onboarding.skip")}
             </Button>
             <div className="flex gap-2">
               {step > 0 && (
@@ -113,11 +115,11 @@ export function OnboardingModal() {
               )}
               {step < STEPS.length - 1 ? (
                 <Button size="sm" onClick={() => setStep(s => s + 1)} className="gap-1">
-                  Next <ChevronRight className="w-4 h-4" />
+                  {t("components.onboarding.next")} <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
                 <Button size="sm" onClick={dismiss} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90">
-                  Get Started!
+                  {t("components.onboarding.getStarted")}
                 </Button>
               )}
             </div>

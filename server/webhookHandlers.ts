@@ -110,7 +110,7 @@ export class WebhookHandlers {
 
     // Determine tier from product metadata or price
     const tier = this.getTierFromSubscription(subscription);
-    const expiryDate = new Date(subscription.current_period_end * 1000);
+    const expiryDate = new Date(((subscription as any).current_period_end ?? 0) * 1000);
     const status = subscription.status === 'active' ? 'active' : 'expired';
 
     await firebaseSubscriptionStorage.updateUserSubscription(userSubscription.userId, {
@@ -146,7 +146,7 @@ export class WebhookHandlers {
    */
   private static async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     const customerId = invoice.customer as string;
-    const subscriptionId = invoice.subscription as string;
+    const subscriptionId = (invoice as any).subscription as string;
 
     log(`Invoice paid for customer ${customerId}`, 'stripe');
 

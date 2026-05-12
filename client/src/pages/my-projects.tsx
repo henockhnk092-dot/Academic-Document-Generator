@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { FileText, Presentation, FileSpreadsheet, GraduationCap, Trash2, FolderOpen, Search, Download, Eye, Plus, Globe, FileCode, FileDown, Printer, Image as ImageIcon, BookOpen, Table, Volume2, Copy, CheckSquare, Square, SortAsc } from "lucide-react";
@@ -19,7 +20,17 @@ import { getFirebaseDb } from "@/lib/firebase";
 import { collection, query, where, getDocs, deleteDoc, doc, orderBy } from "firebase/firestore";
 import { exportHtmlToDocx } from "@/lib/docx-export";
 import { parseMarkdownToHtml, sanitizeHtml } from "@/lib/markdown-parser";
-import type { Document } from "@shared/schema";
+
+type SavedDocument = {
+  id: string;
+  type: string;
+  title: string;
+  topic?: string;
+  content?: any;
+  language?: string;
+  createdAt?: string | number | Date;
+  updatedAt?: string | number | Date;
+};
 
 const iconMap: Record<string, any> = {
   report: FileText,
@@ -37,17 +48,15 @@ const gradientMap: Record<string, string> = {
   references: "from-amber-500 to-yellow-500",
 };
 
-const typeLabels: Record<string, string> = {
-  report: "Technical Report",
-  powerpoint: "Presentation",
-  conference: "Conference Paper",
-  thesis: "Thesis",
-  references: "Reference Library",
-};
+const typeLabels: Record<string, string> = {}; // populated inside component via t()
 
 // Helper function to format dates from various formats
-const formatDate = (dateValue: string | number | undefined): string => {
+const formatDate = (dateValue: string | number | Date | undefined): string => {
   if (!dateValue) return "";
+
+  if (dateValue instanceof Date) {
+    return isNaN(dateValue.getTime()) ? "" : dateValue.toLocaleDateString();
+  }
 
   // If it's a string that looks like a timestamp number, convert it
   const timestamp = typeof dateValue === "string" ? parseInt(dateValue, 10) : dateValue;
@@ -61,6 +70,13 @@ const formatDate = (dateValue: string | number | undefined): string => {
   if (isNaN(date.getTime())) return "";
 
   return date.toLocaleDateString();
+};
+
+const dateTimestamp = (dateValue: string | number | Date | undefined): number => {
+  if (!dateValue) return 0;
+  if (dateValue instanceof Date) return dateValue.getTime();
+  const timestamp = typeof dateValue === "string" ? parseInt(dateValue, 10) : dateValue;
+  return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
 // Helper function to check if content is valid (not a corrupted Event object)
@@ -83,12 +99,23 @@ const isValidContent = (content: any): boolean => {
 };
 
 export default function MyProjects() {
+  const { t } = useTranslation();
+  const typeLabelsT: Record<string, string> = {
+    report: t("pages.myProjects.technicalReport"),
+    powerpoint: t("pages.myProjects.powerpoint"),
+    "custom-report": t("pages.myProjects.customReport"),
+    conference: t("pages.myProjects.conferencePaper"),
+    thesis: t("pages.myProjects.thesis"),
+    references: t("pages.myProjects.referenceLibrary"),
+    image: t("pages.myProjects.aiImages"),
+    images: t("pages.myProjects.aiImages"),
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az" | "za">("newest");
   const [filterType, setFilterType] = useState<string>("all");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<SavedDocument[]>([]);
   const [viewDocumentId, setViewDocumentId] = useState<string | null>(null);
   const { toast} = useToast();
   const { user, isAuthenticated } = useAuth();
@@ -125,7 +152,7 @@ export default function MyProjects() {
           slideText += slide.content.join('. ');
         }
         if (slide.speakerNotes) {
-          slideText += ` Speaker Notes: ${slide.speakerNotes}`;
+          slideText += ` ${t("pages.myProjects.speakerNotes")} ${slide.speakerNotes}`;
         }
         return slideText;
       }).join(' ');
@@ -151,7 +178,7 @@ export default function MyProjects() {
         return `${section.heading || section.title}. ${section.content || ''}`;
       }).join(' ');
       if (doc.content.references && Array.isArray(doc.content.references)) {
-        text += ' References: ' + doc.content.references.join('. ');
+        text += ` ${t("pages.myProjects.references")}: ` + doc.content.references.join('. ');
       }
       return text;
     }
@@ -180,7 +207,7 @@ export default function MyProjects() {
           id: doc.id,
           ...data,
         };
-      });
+      }) as SavedDocument[];
 
       return docs;
     },
@@ -212,14 +239,14 @@ export default function MyProjects() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents", user?.uid] });
       toast({
-        title: "Document Deleted",
-        description: "Document has been deleted successfully",
+        title: t("pages.myProjects.deletedTitle"),
+        description: t("pages.myProjects.deletedDesc"),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Delete Failed",
-        description: error.message || "Failed to delete document",
+        title: t("pages.myProjects.deleteFailedTitle"),
+        description: error.message || t("pages.myProjects.exportFailedDesc"),
         variant: "destructive",
       });
     },
@@ -236,7 +263,7 @@ export default function MyProjects() {
     if (filterType !== "all") {
       docs = docs.filter((d: any) => d.type === filterType);
     }
-    if (sortBy === "oldest") docs = [...docs].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    if (sortBy === "oldest") docs = [...docs].sort((a, b) => dateTimestamp(a.createdAt) - dateTimestamp(b.createdAt));
     else if (sortBy === "az") docs = [...docs].sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
     else if (sortBy === "za") docs = [...docs].sort((a, b) => (b.title ?? "").localeCompare(a.title ?? ""));
     // newest is the default (Firebase orderBy desc already handles it)
@@ -246,7 +273,7 @@ export default function MyProjects() {
   const viewedDocument = documents.find(d => d.id === viewDocumentId);
 
   // Export functions
-  const handleExportHTML = (doc: Document) => {
+  const handleExportHTML = (doc: SavedDocument) => {
 
     let htmlContent = "";
 
@@ -271,7 +298,7 @@ export default function MyProjects() {
           htmlContent += `<h2>Slide ${index + 1}: ${slide.title || ''}</h2>`;
           if (slide.imgData) {
             htmlContent += `<div style="margin: 20px 0; text-align: center;">`;
-            htmlContent += `<img src="${slide.imgData}" alt="${slide.title || 'Slide image'}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;" />`;
+            htmlContent += `<img src="${slide.imgData}" alt="${slide.title || t("pages.myProjects.slideImageAlt")}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;" />`;
             htmlContent += `</div>`;
           }
           if (Array.isArray(slide.content)) {
@@ -281,7 +308,7 @@ export default function MyProjects() {
           }
           if (slide.speakerNotes) {
             htmlContent += `<div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-left: 3px solid #666;">`;
-            htmlContent += `<strong>Speaker Notes:</strong><br>${slide.speakerNotes}`;
+            htmlContent += `<strong>${t("pages.myProjects.speakerNotes")}</strong><br>${slide.speakerNotes}`;
             htmlContent += `</div>`;
           }
           htmlContent += `</div>`;
@@ -318,12 +345,12 @@ export default function MyProjects() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: "HTML file downloaded successfully",
+      title: t("pages.myProjects.exportSuccess"),
+      description: t("pages.myProjects.htmlDownloaded"),
     });
   };
 
-  const handleExportDOCX = async (doc: Document) => {
+  const handleExportDOCX = async (doc: SavedDocument) => {
     try {
       let htmlContent = "";
 
@@ -347,7 +374,7 @@ export default function MyProjects() {
             htmlContent += `<h2>Slide ${index + 1}: ${slide.title || ''}</h2>`;
             if (slide.imgData) {
               htmlContent += `<div style="margin: 20px 0; text-align: center;">`;
-              htmlContent += `<img src="${slide.imgData}" alt="${slide.title || 'Slide image'}" style="max-width: 100%; height: auto;" />`;
+              htmlContent += `<img src="${slide.imgData}" alt="${slide.title || t("pages.myProjects.slideImageAlt")}" style="max-width: 100%; height: auto;" />`;
               htmlContent += `</div>`;
             }
             if (Array.isArray(slide.content)) {
@@ -356,7 +383,7 @@ export default function MyProjects() {
               });
             }
             if (slide.speakerNotes) {
-              htmlContent += `<p><strong>Speaker Notes:</strong> ${slide.speakerNotes}</p>`;
+              htmlContent += `<p><strong>${t("pages.myProjects.speakerNotes")}</strong> ${slide.speakerNotes}</p>`;
             }
             htmlContent += `<hr/>`;
           });
@@ -384,20 +411,20 @@ export default function MyProjects() {
       await exportHtmlToDocx(htmlContent, { title: doc.title });
 
       toast({
-        title: "Export successful",
-        description: "DOCX file downloaded successfully",
+        title: t("pages.myProjects.exportSuccess"),
+        description: t("pages.myProjects.docxDownloaded"),
       });
     } catch (error) {
       console.error("Export error:", error);
       toast({
-        title: "Export failed",
-        description: "Failed to export document",
+        title: t("pages.myProjects.exportFailed"),
+        description: t("pages.myProjects.exportFailedDesc"),
         variant: "destructive",
       });
     }
   };
 
-  const handlePrint = (doc: Document) => {
+  const handlePrint = (doc: SavedDocument) => {
     let htmlContent = "";
 
     if (doc.content) {
@@ -421,7 +448,7 @@ export default function MyProjects() {
           htmlContent += `<h2>Slide ${index + 1}: ${slide.title || ''}</h2>`;
           if (slide.imgData) {
             htmlContent += `<div style="margin: 20px 0; text-align: center;">`;
-            htmlContent += `<img src="${slide.imgData}" alt="${slide.title || 'Slide image'}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;" />`;
+            htmlContent += `<img src="${slide.imgData}" alt="${slide.title || t("pages.myProjects.slideImageAlt")}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;" />`;
             htmlContent += `</div>`;
           }
           if (Array.isArray(slide.content)) {
@@ -431,7 +458,7 @@ export default function MyProjects() {
           }
           if (slide.speakerNotes) {
             htmlContent += `<div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-left: 3px solid #666;">`;
-            htmlContent += `<strong>Speaker Notes:</strong><br>${slide.speakerNotes}`;
+            htmlContent += `<strong>${t("pages.myProjects.speakerNotes")}</strong><br>${slide.speakerNotes}`;
             htmlContent += `</div>`;
           }
           htmlContent += `</div>`;
@@ -481,17 +508,17 @@ export default function MyProjects() {
       printWindow.onload = () => {
         printWindow.print();
       };
-      toast({ title: "Print Ready", description: "Print dialog opened" });
+      toast({ title: t("pages.myProjects.printReady"), description: t("pages.myProjects.printOpened") });
     } else {
-      toast({ title: "Print Failed", description: "Please allow popups to print", variant: "destructive" });
+      toast({ title: t("pages.myProjects.printFailed"), description: t("pages.myProjects.allowPopups"), variant: "destructive" });
     }
   };
 
   // Image download function for AI-generated images
-  const handleDownloadImage = async (doc: Document, format: 'png' | 'jpeg' | 'webp') => {
+  const handleDownloadImage = async (doc: SavedDocument, format: 'png' | 'jpeg' | 'webp') => {
     const imageUrl = (doc.content as any)?.imageUrl;
     if (!imageUrl) {
-      toast({ title: "No image", description: "No image found in this document", variant: "destructive" });
+      toast({ title: t("pages.myProjects.noImage"), description: t("pages.myProjects.noImageDesc"), variant: "destructive" });
       return;
     }
 
@@ -526,7 +553,7 @@ export default function MyProjects() {
       a.click();
       document.body.removeChild(a);
 
-      toast({ title: "Download successful", description: `Image downloaded as ${format.toUpperCase()}` });
+      toast({ title: t("pages.myProjects.downloadSuccess"), description: t("pages.myProjects.imageDownloadedAs", { format: format.toUpperCase() }) });
     } catch (error) {
       console.error("Download error:", error);
       // Fallback: try direct download
@@ -538,18 +565,18 @@ export default function MyProjects() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        toast({ title: "Download started", description: "Image download initiated" });
+        toast({ title: t("pages.myProjects.downloadSuccess"), description: t("pages.myProjects.downloadSuccessDesc") });
       } catch (fallbackError) {
-        toast({ title: "Download failed", description: "Could not download the image", variant: "destructive" });
+        toast({ title: t("pages.myProjects.downloadFailed"), description: t("pages.myProjects.downloadFailedDesc"), variant: "destructive" });
       }
     }
   };
 
   // Reference Library export functions
-  const handleExportBibTeX = (doc: Document) => {
+  const handleExportBibTeX = (doc: SavedDocument) => {
     const refs = (doc.content as any)?.references;
     if (!refs || refs.length === 0) {
-      toast({ title: "No references", description: "No references found in this document", variant: "destructive" });
+      toast({ title: t("pages.myProjects.noReferences"), description: t("pages.myProjects.noReferencesDesc"), variant: "destructive" });
       return;
     }
 
@@ -576,13 +603,13 @@ export default function MyProjects() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({ title: "Export successful", description: `Exported ${refs.length} reference(s) to BibTeX` });
+    toast({ title: t("pages.myProjects.exportSuccess"), description: t("pages.myProjects.exportedBibTeX", { count: refs.length }) });
   };
 
-  const handleExportRIS = (doc: Document) => {
+  const handleExportRIS = (doc: SavedDocument) => {
     const refs = (doc.content as any)?.references;
     if (!refs || refs.length === 0) {
-      toast({ title: "No references", description: "No references found in this document", variant: "destructive" });
+      toast({ title: t("pages.myProjects.noReferences"), description: t("pages.myProjects.noReferencesDesc"), variant: "destructive" });
       return;
     }
 
@@ -618,17 +645,27 @@ export default function MyProjects() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({ title: "Export successful", description: `Exported ${refs.length} reference(s) to RIS` });
+    toast({ title: t("pages.myProjects.exportSuccess"), description: t("pages.myProjects.exportedRIS", { count: refs.length }) });
   };
 
-  const handleExportCSV = (doc: Document) => {
+  const handleExportCSV = (doc: SavedDocument) => {
     const refs = (doc.content as any)?.references;
     if (!refs || refs.length === 0) {
-      toast({ title: "No references", description: "No references found in this document", variant: "destructive" });
+      toast({ title: t("pages.myProjects.noReferences"), description: t("pages.myProjects.noReferencesDesc"), variant: "destructive" });
       return;
     }
 
-    const headers = ["Title", "Authors", "Year", "Type", "Source", "URL", "DOI", "Notes", "Tags"];
+    const headers = [
+      t("pages.references.titleLabel"),
+      t("pages.references.authorsLabel"),
+      t("pages.references.yearLabel"),
+      t("pages.references.typeLabel"),
+      t("pages.references.sourceLabel"),
+      t("pages.references.urlFieldLabel"),
+      t("pages.references.doiFieldLabel"),
+      t("pages.references.notesLabel"),
+      t("pages.references.tagsLabel"),
+    ];
     const rows = refs.map((ref: any) => [
       ref.title || "",
       ref.authors || "",
@@ -656,7 +693,7 @@ export default function MyProjects() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({ title: "Export successful", description: `Exported ${refs.length} reference(s) to CSV` });
+    toast({ title: t("pages.myProjects.exportSuccess"), description: t("pages.myProjects.exportedCSV", { count: refs.length }) });
   };
 
   return (
@@ -664,15 +701,15 @@ export default function MyProjects() {
       <div className="mb-8 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Document History</h1>
+            <h1 className="text-3xl font-bold mb-2">{t("pages.myProjects.title")}</h1>
             <p className="text-muted-foreground">
-              Manage and access all your generated documents
+              {t("pages.myProjects.subtitle")}
             </p>
           </div>
           <Link href="/">
             <Button data-testid="button-create-new">
               <Plus className="w-4 h-4 mr-2" />
-              Create New
+              {t("pages.myProjects.createNew")}
             </Button>
           </Link>
         </div>
@@ -681,7 +718,7 @@ export default function MyProjects() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search documents..."
+              placeholder={t("pages.myProjects.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-56"
@@ -689,22 +726,22 @@ export default function MyProjects() {
             />
           </div>
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="All Types" /></SelectTrigger>
+            <SelectTrigger className="min-w-[10rem] w-auto"><SelectValue placeholder={t("pages.myProjects.allTypes")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="report">Technical Report</SelectItem>
-              <SelectItem value="custom-report">Custom Report</SelectItem>
-              <SelectItem value="powerpoint">PowerPoint</SelectItem>
-              <SelectItem value="conference">Conference Paper</SelectItem>
-              <SelectItem value="thesis">Thesis</SelectItem>
-              <SelectItem value="images">AI Images</SelectItem>
+              <SelectItem value="all">{t("pages.myProjects.allTypes")}</SelectItem>
+              <SelectItem value="report">{t("pages.myProjects.technicalReport")}</SelectItem>
+              <SelectItem value="custom-report">{t("pages.myProjects.customReport")}</SelectItem>
+              <SelectItem value="powerpoint">{t("pages.myProjects.powerpoint")}</SelectItem>
+              <SelectItem value="conference">{t("pages.myProjects.conferencePaper")}</SelectItem>
+              <SelectItem value="thesis">{t("pages.myProjects.thesis")}</SelectItem>
+              <SelectItem value="images">{t("pages.myProjects.aiImages")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="min-w-[9rem] w-auto"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="newest">{t("pages.myProjects.newestFirst")}</SelectItem>
+              <SelectItem value="oldest">{t("pages.myProjects.oldestFirst")}</SelectItem>
               <SelectItem value="az">A → Z</SelectItem>
               <SelectItem value="za">Z → A</SelectItem>
             </SelectContent>
@@ -715,14 +752,14 @@ export default function MyProjects() {
             onClick={() => { setSelectMode(m => !m); setSelectedIds(new Set()); }}
           >
             {selectMode ? <CheckSquare className="w-4 h-4 mr-1.5" /> : <Square className="w-4 h-4 mr-1.5" />}
-            {selectMode ? "Cancel" : "Select"}
+            {selectMode ? t("common.cancel") : t("pages.myProjects.select")}
           </Button>
           {selectMode && selectedIds.size > 0 && (
             <Button
               variant="destructive"
               size="sm"
               onClick={async () => {
-                for (const id of selectedIds) {
+                for (const id of Array.from(selectedIds)) {
                   try {
                     const db = await getFirebaseDb();
                     if (db) await deleteDoc(doc(db, "documents", id));
@@ -731,11 +768,11 @@ export default function MyProjects() {
                 }
                 setSelectedIds(new Set());
                 setSelectMode(false);
-                toast({ title: `Deleted ${selectedIds.size} document${selectedIds.size !== 1 ? "s" : ""}` });
+                toast({ title: t("pages.myProjects.bulkDeletedCount", { count: selectedIds.size }) });
               }}
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
-              Delete ({selectedIds.size})
+              {t("pages.myProjects.deleteWithCount", { count: selectedIds.size })}
             </Button>
           )}
         </div>
@@ -743,7 +780,7 @@ export default function MyProjects() {
 
       <div className="mb-4">
         <Badge variant="secondary" className="text-sm">
-          {filteredDocuments.length}{filteredDocuments.length !== documents.length ? ` / ${documents.length}` : ""} Document{documents.length !== 1 ? 's' : ''}
+          {filteredDocuments.length !== documents.length ? `${filteredDocuments.length} / ` : ""}{t("pages.myProjects.documentCount", { count: documents.length })}
         </Badge>
       </div>
 
@@ -767,17 +804,17 @@ export default function MyProjects() {
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <FolderOpen className="w-16 h-16 text-muted-foreground mb-4" />
                 <h3 className="text-xl font-semibold mb-2">
-                  {searchQuery ? "No documents found" : "No documents yet"}
+                  {searchQuery ? t("pages.myProjects.noDocumentsFound") : t("pages.myProjects.noDocumentsYet")}
                 </h3>
                 <p className="text-muted-foreground mb-6">
                   {searchQuery
-                    ? "Try a different search term"
-                    : "Start by generating your first document"}
+                    ? t("pages.myProjects.tryDifferentSearch")
+                    : t("pages.myProjects.startGenerating")}
                 </p>
                 {!searchQuery && (
                   <Link href="/">
                     <Button data-testid="button-create-first-document">
-                      Create Your First Document
+                      {t("pages.myProjects.createFirst")}
                     </Button>
                   </Link>
                 )}
@@ -785,7 +822,7 @@ export default function MyProjects() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDocuments.map((doc: Document) => {
+              {filteredDocuments.map((doc: SavedDocument) => {
                 const Icon = iconMap[doc.type] || FileText;
                 const gradient = gradientMap[doc.type] || "from-gray-500 to-gray-600";
 
@@ -820,16 +857,16 @@ export default function MyProjects() {
                           </CardTitle>
                           <CardDescription className="text-sm line-clamp-2">
                             {!isValidContent(doc.content) ? (
-                              <span className="text-destructive">Content corrupted - delete and regenerate</span>
+                              <span className="text-destructive">{t("pages.myProjects.contentCorrupted")}</span>
                             ) : (
-                              doc.topic || "No description"
+                              doc.topic || t("pages.myProjects.noDescription")
                             )}
                           </CardDescription>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <Badge variant="secondary" className="text-xs">
-                          {typeLabels[doc.type] || doc.type}
+                          {typeLabelsT[doc.type] || doc.type}
                         </Badge>
                         {doc.language && doc.language !== "en" && (
                           <Badge variant="outline" className="text-xs">
@@ -851,7 +888,7 @@ export default function MyProjects() {
                         data-testid={`button-view-${doc.id}`}
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        View
+                        {t("pages.myProjects.view")}
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -862,7 +899,7 @@ export default function MyProjects() {
                             data-testid={`button-download-${doc.id}`}
                           >
                             <Download className="w-4 h-4 mr-1" />
-                            Export
+                            {t("common.export")}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -870,15 +907,15 @@ export default function MyProjects() {
                             <>
                               <DropdownMenuItem onClick={() => handleDownloadImage(doc, 'png')}>
                                 <ImageIcon className="w-4 h-4 mr-2" />
-                                Download as PNG
+                                {t("pages.myProjects.downloadPNG")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadImage(doc, 'jpeg')}>
                                 <ImageIcon className="w-4 h-4 mr-2" />
-                                Download as JPEG
+                                {t("pages.myProjects.downloadJPEG")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadImage(doc, 'webp')}>
                                 <ImageIcon className="w-4 h-4 mr-2" />
-                                Download as WEBP
+                                {t("pages.myProjects.downloadWEBP")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
@@ -887,30 +924,30 @@ export default function MyProjects() {
                             <>
                               <DropdownMenuItem onClick={() => handleExportBibTeX(doc)}>
                                 <FileCode className="w-4 h-4 mr-2" />
-                                Export as BibTeX
+                                {t("pages.myProjects.exportBibTeX")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleExportRIS(doc)}>
                                 <FileCode className="w-4 h-4 mr-2" />
-                                Export as RIS
+                                {t("pages.myProjects.exportRIS")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleExportCSV(doc)}>
                                 <Table className="w-4 h-4 mr-2" />
-                                Export as CSV
+                                {t("pages.myProjects.exportCSV")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
                           )}
                           <DropdownMenuItem onClick={() => handleExportHTML(doc)}>
                             <FileCode className="w-4 h-4 mr-2" />
-                            Export as HTML
+                            {t("pages.myProjects.exportHTML")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleExportDOCX(doc)}>
                             <FileDown className="w-4 h-4 mr-2" />
-                            Export as Word (.docx)
+                            {t("pages.myProjects.exportWord")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handlePrint(doc)}>
                             <Printer className="w-4 h-4 mr-2" />
-                            Print
+                            {t("common.print")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -942,7 +979,7 @@ export default function MyProjects() {
                   {viewedDocument?.topic && <span className="text-sm">{viewedDocument.topic}</span>}
                   {viewedDocument?.createdAt && formatDate(viewedDocument.createdAt) && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      Created: {formatDate(viewedDocument.createdAt)}
+                      {t("pages.myProjects.created")} {formatDate(viewedDocument.createdAt)}
                     </span>
                   )}
                 </DialogDescription>
@@ -977,8 +1014,8 @@ export default function MyProjects() {
           <div className="prose prose-sm max-w-none dark:prose-invert mt-4">
             {viewedDocument?.content && !isValidContent(viewedDocument.content) ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-lg font-medium mb-2">Document content is corrupted</p>
-                <p className="text-sm">This document was saved with invalid data. Please delete it and regenerate.</p>
+                <p className="text-lg font-medium mb-2">{t("pages.myProjects.docCorruptedTitle")}</p>
+                <p className="text-sm">{t("pages.myProjects.docCorruptedDesc")}</p>
               </div>
             ) : viewedDocument?.content && (
               <>
@@ -1006,14 +1043,14 @@ export default function MyProjects() {
                     {viewedDocument.content.slides.map((slide: any, index: number) => (
                       <div key={index} className="mb-8 p-6 border rounded-lg bg-card">
                         <div className="flex items-center gap-2 mb-4">
-                          <Badge variant="secondary">Slide {index + 1}</Badge>
+                          <Badge variant="secondary">{t("pages.myProjects.slideN", { n: index + 1 })}</Badge>
                           <h2 className="text-xl font-bold flex-1">{slide.title || ''}</h2>
                         </div>
                         {slide.imgData && (
                           <div className="mb-4">
                             <img
                               src={slide.imgData}
-                              alt={slide.title || 'Slide image'}
+                              alt={slide.title || t("pages.myProjects.slideImageAlt")}
                               className="w-full h-auto rounded border"
                             />
                           </div>
@@ -1027,7 +1064,7 @@ export default function MyProjects() {
                         )}
                         {slide.speakerNotes && (
                           <div className="mt-4 p-4 bg-muted/50 rounded border-l-4 border-primary">
-                            <p className="text-sm font-semibold mb-2">Speaker Notes:</p>
+                            <p className="text-sm font-semibold mb-2">{t("pages.myProjects.speakerNotes")}</p>
                             <p className="text-sm">{slide.speakerNotes}</p>
                           </div>
                         )}
@@ -1039,8 +1076,8 @@ export default function MyProjects() {
                     {/* Handle Reference Library */}
                     <div className="mb-4 p-4 bg-muted/50 rounded-lg">
                       <p className="text-sm text-muted-foreground">
-                        Citation Style: <Badge variant="outline">{viewedDocument.content.citationStyle?.toUpperCase() || 'APA'}</Badge>
-                        <span className="ml-4">{viewedDocument.content.references.length} reference(s)</span>
+                        {t("pages.myProjects.citationStyle")} <Badge variant="outline">{viewedDocument.content.citationStyle?.toUpperCase() || 'APA'}</Badge>
+                        <span className="ml-4">{t("pages.myProjects.referenceCount", { count: viewedDocument.content.references.length })}</span>
                       </p>
                     </div>
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewedDocument.content.html) }} />
@@ -1063,7 +1100,7 @@ export default function MyProjects() {
                     {/* Handle sections (reports, thesis, conference papers) */}
                     {viewedDocument.content.abstract && (
                       <div className="bg-muted/50 p-4 rounded-lg mb-6">
-                        <h3 className="text-lg font-semibold mb-2">Abstract</h3>
+                        <h3 className="text-lg font-semibold mb-2">{t("pages.myProjects.abstract")}</h3>
                         <p>{viewedDocument.content.abstract}</p>
                       </div>
                     )}
@@ -1089,7 +1126,7 @@ export default function MyProjects() {
                     ))}
                     {viewedDocument.content.references && viewedDocument.content.references.length > 0 && (
                       <div className="mt-8">
-                        <h3 className="text-lg font-semibold mb-3">References</h3>
+                        <h3 className="text-lg font-semibold mb-3">{t("pages.myProjects.references")}</h3>
                         <ol className="list-decimal pl-6 space-y-1">
                           {viewedDocument.content.references.map((ref: string, index: number) => (
                             <li key={index} className="text-sm">{ref}</li>
