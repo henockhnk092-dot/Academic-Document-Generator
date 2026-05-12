@@ -175,8 +175,7 @@ export function parseMarkdownToHtml(markdown: string): string {
       flushList();
       flushTable();
       processedLines.push(`<blockquote class="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">${processInlineFormatting(trimmedLine.slice(2))}</blockquote>`);
-    } else if ((trimmedLine.startsWith('---') || trimmedLine.startsWith('***')) && trimmedLine.length >= 3 && !inTable) {
-      // Only create horizontal rules if we're not in a table and the line is at least 3 chars
+    } else if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmedLine) && !inTable) {
       flushList();
       flushTable();
       processedLines.push('<hr class="my-6 border-border" />');

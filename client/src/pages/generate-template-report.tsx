@@ -789,7 +789,7 @@ export default function GenerateTemplateReport() {
                           {generatedContent.sections?.map((section: any, index: number) => (
                             <div key={index} className="mb-8">
                               <div className="flex items-center justify-between mb-2 gap-2">
-                                <h2 className="!my-0 flex-1">{section.heading ?? section.title}</h2>
+                                <h2 className="!my-0 flex-1">{(section.heading ?? section.title ?? '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim()}</h2>
                                 <Button
                                   variant="ghost" size="sm"
                                   onClick={() => handleRegenerateSection(index, section.heading ?? section.title)}

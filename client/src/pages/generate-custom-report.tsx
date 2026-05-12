@@ -376,7 +376,7 @@ export default function GenerateCustomReport() {
     }
 
     generatedContent.sections?.forEach((section: any, index: number) => {
-      const sectionHeading = section.heading || section.title;
+      const sectionHeading = (section.heading || section.title || '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
       html += `
   <div>
     <h2>${sectionHeading}</h2>
@@ -476,7 +476,7 @@ export default function GenerateCustomReport() {
       if (generatedContent.sections) {
         for (let index = 0; index < generatedContent.sections.length; index++) {
           const section = generatedContent.sections[index];
-          const sectionHeading = section.heading || section.title;
+          const sectionHeading = (section.heading || section.title || '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
           htmlContent += `<h2>${sectionHeading}</h2>`;
           htmlContent += sanitizeHtml(parseMarkdownToHtml(section.content || ""));
 

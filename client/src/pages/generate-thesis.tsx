@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2 } from "lucide-react";
+import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2, Loader2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -165,7 +165,7 @@ export default function GenerateThesis() {
     }
 
     generatedContent.sections?.forEach((section: any, index: number) => {
-      const sectionHeading = section.heading || section.title;
+      const sectionHeading = (section.heading || section.title || '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
       html += `
   <div>
     <h2>${sectionHeading}</h2>
@@ -231,7 +231,7 @@ export default function GenerateThesis() {
       // Process sections with images
       for (let i = 0; i < (generatedContent.sections?.length || 0); i++) {
         const section = generatedContent.sections[i];
-        const sectionHeading = section.heading || section.title;
+        const sectionHeading = (section.heading || section.title || '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
         html += `<h2>${sectionHeading}</h2>`;
         html += sanitizeHtml(parseMarkdownToHtml(section.content || ""));
 
@@ -366,7 +366,7 @@ export default function GenerateThesis() {
     }
 
     generatedContent.sections?.forEach((section: any, index: number) => {
-      const sectionHeading = section.heading || section.title;
+      const sectionHeading = (section.heading || section.title || '').replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
       html += `
   <div>
     <h2>${sectionHeading}</h2>
@@ -684,7 +684,10 @@ export default function GenerateThesis() {
                   data-testid="button-generate-thesis"
                 >
                   {isGenerating || isSubmitting ? (
-                    <>{t("common.generating")}</>
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t("common.generating")}
+                    </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
@@ -866,7 +869,8 @@ export default function GenerateThesis() {
                       </div>
                     )}
                     {generatedContent.sections?.map((section: any, index: number) => {
-                      const sectionHeading = section.heading || section.title;
+                      const rawHeading = section.heading || section.title || '';
+                      const sectionHeading = rawHeading.replace(/^#{1,6}\s*/, '').replace(/^\*{1,3}(.*?)\*{1,3}$/, '$1').trim();
                       const isReferencesSection = sectionHeading?.toLowerCase().includes('reference');
                       const isAppendix = sectionHeading?.toLowerCase().startsWith('appendix');
 
