@@ -44,7 +44,8 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     }
   };
 
-  const handleEmailSignIn = async () => {
+  const handleEmailSignIn = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setIsLoading(true);
     try {
       await auth.signInWithEmail(email, password);
@@ -66,7 +67,8 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     }
   };
 
-  const handleEmailSignUp = async () => {
+  const handleEmailSignUp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setIsLoading(true);
     try {
       await auth.signUpWithEmail(email, password);
@@ -142,7 +144,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
               <div>
                 <Label htmlFor="email">{t("components.authDialog.email")}</Label>
                 <Input
@@ -167,14 +169,14 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 />
               </div>
               <Button
+                type="submit"
                 className="w-full"
-                onClick={handleEmailSignIn}
                 disabled={isLoading || !email || !password}
                 data-testid="button-email-signin"
               >
                 {t("components.authDialog.signInBtn")}
               </Button>
-            </div>
+            </form>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4 mt-4">
@@ -215,7 +217,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={handleEmailSignUp} className="space-y-4">
               <div>
                 <Label htmlFor="signup-email">{t("components.authDialog.email")}</Label>
                 <Input
@@ -240,14 +242,14 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                 />
               </div>
               <Button
+                type="submit"
                 className="w-full"
-                onClick={handleEmailSignUp}
                 disabled={isLoading || !email || !password}
                 data-testid="button-email-signup"
               >
                 {t("components.authDialog.createAccount")}
               </Button>
-            </div>
+            </form>
           </TabsContent>
         </Tabs>
 
