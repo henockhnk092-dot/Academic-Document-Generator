@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,13 +147,20 @@ export default function Settings() {
     if (isAdmin) fetchAdminKeys();
   }, [isAdmin]);
 
+  const getAdminHeaders = async (): Promise<Record<string, string>> => {
+    const auth = getFirebaseAuth();
+    const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+    if (!idToken) throw new Error("Not authenticated");
+    return { "Authorization": `Bearer ${idToken}` };
+  };
+
   const fetchAdminKeys = async () => {
     setAdminKeysLoading(true);
     try {
-      const response = await fetch("/api/admin/config", {
-        headers: { "X-Admin-Token": "hnk-admin-2026" },
-      });
+      const headers = await getAdminHeaders();
+      const response = await fetch("/api/admin/config", { headers });
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Forbidden");
       const entries = data.entries || [];
       setAdminKeys(entries);
       const edits: Record<string, string> = {};
@@ -176,9 +184,10 @@ export default function Settings() {
     }
     setAdminKeysSaving(true);
     try {
+      const headers = await getAdminHeaders();
       const response = await fetch("/api/admin/config", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Token": "hnk-admin-2026" },
+        headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({ updates }),
       });
       const data = await response.json();

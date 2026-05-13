@@ -1692,9 +1692,6 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
 
   // ── Admin Config Routes ─────────────────────────────────────────────────────
   const ADMIN_EMAILS_SERVER = ["henockhnk092@gmail.com", "admin@test.com"];
-  const ADMIN_TOKEN = process.env.ADMIN_SECRET_TOKEN;
-  const ADMIN_TOKEN_FALLBACK = process.env.NODE_ENV !== "production" ? "hnk-admin-2026" : null;
-  const EFFECTIVE_ADMIN_TOKEN = ADMIN_TOKEN || ADMIN_TOKEN_FALLBACK;
 
   // Keys exposed to admin (display names + env var names)
   const MANAGED_KEYS = [
@@ -1708,10 +1705,21 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
     { key: "FIREBASE_PROJECT_ID",   label: "Firebase Project ID" },
   ];
 
-  function isAdminRequest(req: any): boolean {
-    if (!EFFECTIVE_ADMIN_TOKEN) return false;
-    const token = req.headers["x-admin-token"] as string;
-    return !!(token && token === EFFECTIVE_ADMIN_TOKEN);
+  async function isAdminRequest(req: any): Promise<boolean> {
+    try {
+      const authHeader = req.headers["authorization"] as string;
+      if (!authHeader?.startsWith("Bearer ")) return false;
+      const idToken = authHeader.slice(7);
+      const { getApps, getApp } = await import("firebase-admin/app");
+      const { getAuth } = await import("firebase-admin/auth");
+      const apps = getApps();
+      if (apps.length === 0) return false;
+      const decoded = await getAuth(getApp()).verifyIdToken(idToken);
+      const email = (decoded.email || "").toLowerCase();
+      return ADMIN_EMAILS_SERVER.map(e => e.toLowerCase()).includes(email);
+    } catch {
+      return false;
+    }
   }
 
   function maskValue(val: string | undefined): string {
@@ -1720,8 +1728,8 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
     return val.slice(0, 4) + "••••••••" + val.slice(-4);
   }
 
-  app.get("/api/admin/config", (req, res) => {
-    if (!isAdminRequest(req)) return res.status(403).json({ error: "Forbidden" });
+  app.get("/api/admin/config", async (req, res) => {
+    if (!await isAdminRequest(req)) return res.status(403).json({ error: "Forbidden" });
     const entries = MANAGED_KEYS.map(({ key, label }) => ({
       key,
       label,
@@ -1731,8 +1739,8 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
     res.json({ success: true, entries });
   });
 
-  app.post("/api/admin/config", (req, res) => {
-    if (!isAdminRequest(req)) return res.status(403).json({ error: "Forbidden" });
+  app.post("/api/admin/config", async (req, res) => {
+    if (!await isAdminRequest(req)) return res.status(403).json({ error: "Forbidden" });
     const updates: Record<string, string> = req.body.updates || {};
     const allowed = new Set(MANAGED_KEYS.map(k => k.key));
     const applied: string[] = [];
