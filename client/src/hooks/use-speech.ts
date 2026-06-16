@@ -271,7 +271,7 @@ export function useSpeech() {
 
   const resume = useCallback(() => {
     if (isServerEngine()) {
-      audioRef.current?.play?.();
+      audioRef.current?.play?.().catch(() => {});
     } else {
       window.speechSynthesis?.resume();
     }
@@ -368,8 +368,20 @@ export function useSpeech() {
         azure: () => fetchAzureAudio(text, primaryEngine === "azure" && voiceName ? voiceName : AZURE_VOICES[0].name, rate),
         voicerss: () => fetchVoiceRSSAudio(text, voicerssLang),
         streamelements: () => fetchStreamElementsAudio(text, primaryEngine === "streamelements" && voiceName ? voiceName : "Brian"),
+        gemini: async () => {
+          const res = await fetch("/api/tts/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, tone: "professional" }),
+          });
+          if (!res.ok) throw new Error("Gemini TTS failed");
+          const data = await res.json();
+          if (!data?.audio?.audioBase64) throw new Error("No audio data");
+          const bytes = Uint8Array.from(atob(data.audio.audioBase64), c => c.charCodeAt(0));
+          return new Blob([bytes], { type: data.audio.mimeType || "audio/wav" });
+        },
       };
-      const order = ["azure", "elevenlabs", "voicerss", "streamelements"];
+      const order = ["azure", "elevenlabs", "voicerss", "streamelements", "gemini"];
       const tryOrder = [primaryEngine, ...order.filter((e) => e !== primaryEngine)];
       let lastErr: unknown;
       for (const engineKey of tryOrder) {
@@ -393,21 +405,8 @@ export function useSpeech() {
       // account is out of quota — revert once billing is fixed there.
       const engine = prefs.engineMode ?? "azure";
       setTimeout(() => {
-        if (engine === "elevenlabs" || engine === "azure" || engine === "voicerss" || engine === "streamelements") {
+        if (engine === "elevenlabs" || engine === "azure" || engine === "voicerss" || engine === "streamelements" || engine === "gemini") {
           speakWithServer(sentences, (text) => fetchServerAudioWithFallback(text, engine, voiceName, rate));
-        } else if (engine === "gemini") {
-          speakWithServer(sentences, async (text) => {
-            const res = await fetch("/api/tts/generate", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text, tone: "professional" }),
-            });
-            if (!res.ok) throw new Error("Gemini TTS failed");
-            const data = await res.json();
-            if (!data?.audio?.audioBase64) throw new Error("No audio data");
-            const bytes = Uint8Array.from(atob(data.audio.audioBase64), c => c.charCodeAt(0));
-            return new Blob([bytes], { type: data.audio.mimeType || "audio/wav" });
-          });
         } else {
           speakBrowser(sentences, rate, voiceName);
         }
