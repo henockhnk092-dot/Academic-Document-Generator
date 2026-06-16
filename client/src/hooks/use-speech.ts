@@ -232,7 +232,7 @@ export function useSpeech() {
   useEffect(() => {
     if (!speaking || paused) return;
     const e = getSpeechPrefs().engineMode ?? "browser";
-    if (e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements") return;
+    if (e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements" || e === "gemini") return;
     const id = setInterval(() => {
       if (window.speechSynthesis?.speaking && !window.speechSynthesis?.paused) {
         window.speechSynthesis.pause();
@@ -257,7 +257,7 @@ export function useSpeech() {
 
   const isServerEngine = () => {
     const e = getSpeechPrefs().engineMode ?? "browser";
-    return e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements";
+    return e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements" || e === "gemini";
   };
 
   const pause = useCallback(() => {

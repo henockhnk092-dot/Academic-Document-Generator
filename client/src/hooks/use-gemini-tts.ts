@@ -502,7 +502,7 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
       if (usingBrowserTTSRef.current) {
         speechSynthesis.resume();
       } else if (audioRef.current) {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => {});
       }
       setStatus("playing");
     }
