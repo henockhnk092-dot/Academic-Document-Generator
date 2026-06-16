@@ -165,11 +165,14 @@ export default defineConfig({
           if (id.includes("pptxgenjs")) return "vendor-pptx";
           if (id.includes("docx")) return "vendor-docx";
           if (id.includes("firebase")) return "vendor-firebase";
-          if (id.includes("@radix-ui")) return "vendor-radix";
-          if (id.includes("react") || id.includes("wouter")) return "vendor-react";
-          if (id.includes("i18next")) return "vendor-i18n";
-          if (id.includes("highlight.js")) return "vendor-highlight";
-          return "vendor";
+          // react/react-dom/scheduler, @radix-ui, wouter, i18next, and the generic
+          // "vendor" catch-all were previously split into separate forced chunks,
+          // but cross-deps between them (e.g. radix/react-hook-form -> react) created
+          // a circular chunk (vendor -> vendor-react -> vendor) that crashed the app
+          // in production ("Cannot read properties of undefined (reading 'useState')")
+          // because one chunk executed before the other finished initializing.
+          // Let Rollup auto-chunk everything else to avoid forcing a cycle.
+          return undefined;
         },
       },
     },
