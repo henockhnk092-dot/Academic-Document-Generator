@@ -7,7 +7,7 @@ import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { generateReportContent, generatePresentationContent, generateConferencePaperContent, generateThesisContent, extractTextFromImage, generateChatResponse, generateSpeechAudio, checkGrammar, generateContent, generateSectionContent } from "./lib/gemini";
 import { generateAzureAudio, generateElevenLabsAudio, generateVoiceRSSAudio, generateStreamElementsAudio, ELEVENLABS_VOICES, STREAMELEMENTS_VOICES } from "./lib/tts";
-import { searchImages, getRandomImage } from "./lib/pixabay";
+import { searchImagesWithFallback, getImageWithFallback } from "./lib/images";
 import { extractTextFromFile } from "./lib/file-processor";
 import { getRandomTopic } from "../shared/random-topics";
 import { generatePdf } from "./lib/pdf-export";
@@ -342,7 +342,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
 
     for (const fig of figures) {
       try {
-        const image = await getRandomImage(fig.prompt);
+        const image = await getImageWithFallback(fig.prompt);
         if (image) {
           const figureHtml = `
             <figure style="text-align: center; margin: 1em auto; max-width: 100%; break-inside: avoid;">
@@ -403,7 +403,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const images = await searchImages(query, 10);
+      const images = await searchImagesWithFallback(query, 10);
       res.json({ success: true, images });
     } catch (error: any) {
       console.error("Image search error:", error);
@@ -419,7 +419,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const image = await getRandomImage(query);
+      const image = await getImageWithFallback(query);
       res.json({ success: true, image });
     } catch (error: any) {
       console.error("Random image error:", error);
@@ -435,9 +435,8 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      // For now, use Pixabay as a fallback since Gemini doesn't directly support image generation
-      // In production, you would integrate with DALL-E, Stable Diffusion, or similar service
-      const image = await getRandomImage(prompt);
+      // Uses multi-provider fallback: Pixabay → Pexels → Unsplash → Wikimedia Commons
+      const image = await getImageWithFallback(prompt);
 
       if (image) {
         res.json({
@@ -454,6 +453,15 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
       console.error("Image generation error:", error);
       res.status(500).json({ error: error.message || "Failed to generate image" });
     }
+  });
+
+  app.get("/api/images/providers", (_req, res) => {
+    res.json({
+      pixabay: !!process.env.PIXABAY_API_KEY,
+      pexels: !!process.env.PEXELS_API_KEY,
+      unsplash: !!process.env.UNSPLASH_ACCESS_KEY,
+      wikimedia: true, // always available — no key required
+    });
   });
 
   app.post("/api/tts/generate", async (req, res) => {
@@ -1887,6 +1895,8 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
     { key: "ELEVENLABS_API_KEY",            label: "ElevenLabs API Key",         group: "Voice & Images" },
     { key: "VOICERSS_API_KEY",              label: "VoiceRSS API Key",           group: "Voice & Images" },
     { key: "PIXABAY_API_KEY",               label: "Pixabay API Key",            group: "Voice & Images" },
+    { key: "PEXELS_API_KEY",                label: "Pexels API Key",             group: "Voice & Images" },
+    { key: "UNSPLASH_ACCESS_KEY",           label: "Unsplash Access Key",        group: "Voice & Images" },
     // ── Buy Me a Coffee ──
     { key: "BMC_USERNAME",                  label: "BMC Username",               group: "Buy Me a Coffee" },
     { key: "BMC_WEBHOOK_SECRET",            label: "Webhook Secret",             group: "Buy Me a Coffee" },
