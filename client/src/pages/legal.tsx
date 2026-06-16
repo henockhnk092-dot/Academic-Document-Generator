@@ -223,9 +223,12 @@ export default function Legal() {
                       <li><strong className="text-foreground">Google Gemini</strong> {t("pages.legal.privacy.thirdGemini")}</li>
                       <li><strong className="text-foreground">Pollinations.ai</strong> {t("pages.legal.privacy.thirdPollinations")}</li>
                       <li><strong className="text-foreground">Pixabay</strong> {t("pages.legal.privacy.thirdPixabay")}</li>
+                      <li><strong className="text-foreground">ElevenLabs</strong> {t("pages.legal.privacy.thirdElevenLabs")}</li>
                       <li><strong className="text-foreground">Azure Cognitive Services</strong> {t("pages.legal.privacy.thirdAzure")}</li>
+                      <li><strong className="text-foreground">StreamElements</strong> {t("pages.legal.privacy.thirdStreamElements")}</li>
+                      <li><strong className="text-foreground">VoiceRSS</strong> {t("pages.legal.privacy.thirdVoiceRSS")}</li>
                       <li><strong className="text-foreground">Google Analytics</strong> {t("pages.legal.privacy.thirdAnalytics")}</li>
-                      <li><strong className="text-foreground">Buy Me a Coffee / Stripe</strong> {t("pages.legal.privacy.thirdPayments")}</li>
+                      <li><strong className="text-foreground">Buy Me a Coffee</strong> {t("pages.legal.privacy.thirdPayments")}</li>
                     </ul>
                   </Section>
 

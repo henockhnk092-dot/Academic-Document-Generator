@@ -521,7 +521,7 @@
       "tableCloudStorage": "クラウド プロジェクト ストレージ",
       "tableRefManager": "リファレンスマネージャー",
       "tableLanguages": "12 言語のサポート",
-      "tableTTS": "テキスト読み上げ (Azure HD)",
+      "tableTTS": "テキスト読み上げ（プレミアム音声）",
       "tablePrioritySupport": "優先サポート"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "AcademicGenについて",
-      "tagline": "学術AIツールの統合プラットフォーム — レポート、プレゼンテーション、学会論文、学位論文を生成；バイパス検出スコアリングでAIテキストを人間らしくする；偽の参考文献の引用を検証する；画像を生成する；Azure Neural HD音声ですべてを読み上げる。",
+      "tagline": "学術AIツールの統合プラットフォーム — レポート、プレゼンテーション、学会論文、学位論文を生成；バイパス検出スコアリングでAIテキストを人間らしくする；偽の参考文献の引用を検証する；画像を生成する；ElevenLabs、Azure、StreamElements、VoiceRSSのプレミアムAI音声ですべてを読み上げる。",
       "docGenerators": "ドキュメント生成",
       "platformFeatures": "プラットフォーム機能",
       "techStack": "技術スタック",
@@ -633,7 +633,7 @@
       "cap8": "AI チャットボット アシスタント",
       "cap9": "AI ???????????? と文ごとの検出",
       "cap10": "偽の参照検出機能を備えた引用チェッカー",
-      "cap11": "Azure Neural HD すべてのツールでのテキスト読み上げ",
+      "cap11": "すべてのツールでのプレミアムテキスト読み上げ（ElevenLabs、Azure、StreamElements、VoiceRSS）",
       "techAIItem1": "Google Gemini 2.5 フラッシュ",
       "techAIItem2": "Pollinations.ai (無料 AI 画像)",
       "techAIItem3": "Pixabay API (フォールバック)",
@@ -655,7 +655,7 @@
       "features": "AI ???????? の機能:",
       "feature1": "テキストを自然に人間らしく聞こえるように書き換えます",
       "feature2": "カラーコーディングによる文ごとの AI 検出",
-      "feature3": "Azure Neural HD 音声によるテキスト読み上げ",
+      "feature3": "プレミアムAI音声によるテキスト読み上げ",
       "feature4": "AI スコアを下げるための複数の言い換えラウンド",
       "feature5": "TXT、HTML、または完全なレポートとしてダウンロード",
       "feature6": "アカデミック、カジュアル、プロフェッショナル、クリエイティブ モード",
@@ -675,7 +675,7 @@
       "feature3": "偽物または幻覚を示す参照にフラグを立てます",
       "feature4": "不適切な引用の修正を提案します",
       "feature5": "フォーマットされた参照セクションを生成します",
-      "feature6": "Azure ニューラル音声によるテキスト読み上げ",
+      "feature6": "プレミアムAI音声によるテキスト読み上げ",
       "feature7": "完全な引用レポートを.txt としてダウンロード",
       "textPlaceholder": "引用を含む学術テキストをここに貼り付けてください…\n\n例:\n ニューラル ネットワーク アーキテクチャ [1] は最先端の結果を達成します (Smith et al., 2023)。\n Jones による以前の研究 (2021) でも、同様の発見が実証されました [2]。",
       "uploadFile": "ファイルをアップロード",
@@ -963,7 +963,10 @@
         "thirdGemini": "- AI ドキュメントとテキストの生成",
         "thirdPollinations": "- 無料の AI 画像生成",
         "thirdPixabay": "- ロイヤリティフリー画像のフォールバック",
+        "thirdElevenLabs": "- AI音声合成",
         "thirdAzure": "- ニューラル HD テキスト読み上げ",
+        "thirdStreamElements": "- 無料の音声合成（アカウント不要）",
+        "thirdVoiceRSS": "- 音声合成",
         "thirdAnalytics": "- 匿名の使用状況分析",
         "thirdPayments": "- サブスクリプションの安全な支払い処理",
         "securityIntro": "当社は、次のような業界標準のセキュリティ対策を実装しています。",
@@ -1078,7 +1081,7 @@
           "q4": "どのような引用スタイルがサポートされていますか?",
           "a4": "APA、MLA、Chicago、Harvard、IEEE、および Vancouver。システムは、ドキュメントの種類に適したスタイルを自動検出することもできます。",
           "q5": "AI は私の文書を読み上げることができますか?",
-          "a5": "はい。すべてのジェネレーターとツールには、Azure Neural HD 音声とブラウザーベースのフォールバックを利用した Text-to-Speech リーダーが含まれています。音声、速度、エンジンを選択できます。"
+          "a5": "はい。すべてのジェネレーターとツールには、ElevenLabs、Azure Neural HD、StreamElements、VoiceRSSなど複数の音声エンジンとブラウザーベースのフォールバックを利用したText-to-Speechリーダーが含まれています。設定で好みの音声、速度、エンジンを選択できます。"
         },
         "account": {
           "q1": "私の文書はあなたのサーバーに保存されていますか?",

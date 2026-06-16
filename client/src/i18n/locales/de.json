@@ -521,7 +521,7 @@
       "tableCloudStorage": "Cloud-Projektspeicher",
       "tableRefManager": "Referenzmanager",
       "tableLanguages": "12-Sprachen-Unterstützung",
-      "tableTTS": "Text-to-Speech (Azure HD)",
+      "tableTTS": "Text-to-Speech (Premium-Stimmen)",
       "tablePrioritySupport": "Vorrangiger Support"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "Über AcademicGen",
-      "tagline": "Eine einheitliche Plattform für akademische KI-Tools — erstellen Sie Berichte, Präsentationen, Konferenzbeiträge und Dissertationen; humanisieren Sie KI-Text mit Bypass-Erkennungsbewertung; validieren Sie Zitate auf gefälschte Referenzen; generieren Sie Bilder; und lesen Sie alles mit Azure Neural HD-Stimmen laut vor.",
+      "tagline": "Eine einheitliche Plattform für akademische KI-Tools — erstellen Sie Berichte, Präsentationen, Konferenzbeiträge und Dissertationen; humanisieren Sie KI-Text mit Bypass-Erkennungsbewertung; validieren Sie Zitate auf gefälschte Referenzen; generieren Sie Bilder; und lesen Sie alles mit Premium-KI-Stimmen laut vor (ElevenLabs, Azure, StreamElements & VoiceRSS).",
       "docGenerators": "Dokumentgeneratoren",
       "platformFeatures": "Plattformfunktionen",
       "techStack": "Technologie-Stack",
@@ -633,7 +633,7 @@
       "cap8": "KI-Chatbot-Assistent",
       "cap9": "KI-Text-Humanizer mit satzweiser Erkennung",
       "cap10": "Zitatprüfer mit Erkennung gefälschter Referenzen",
-      "cap11": "Azure Neural HD Text-to-Speech auf allen Tools",
+      "cap11": "Premium-Text-to-Speech auf allen Tools (ElevenLabs, Azure, StreamElements & VoiceRSS)",
       "techAIItem1": "Google Gemini 2.5 Flash",
       "techAIItem2": "Pollinations.ai (Kostenlose KI-Bilder)",
       "techAIItem3": "Pixabay-API (Fallback)",
@@ -655,7 +655,7 @@
       "features": "KI-Humanizer-Funktionen:",
       "feature1": "Schreibt Text so um, dass er natürlich menschlich klingt",
       "feature2": "KI-Erkennung pro Satz mit Farbcodierung",
-      "feature3": "Text-to-Speech mit Azure Neural HD Stimmen",
+      "feature3": "Text-to-Speech mit Premium-KI-Stimmen",
       "feature4": "Mehrere Paraphrasierungsrunden, um den KI-Score zu senken",
       "feature5": "Als TXT, HTML oder vollständigen Bericht herunterladen",
       "feature6": "Akademischer, Gelegenheits-, professioneller, kreativer Modus",
@@ -675,7 +675,7 @@
       "feature3": "Kennzeichnet gefälschte oder halluzinierte Referenzen",
       "feature4": "Schlägt Korrekturen für fehlerhafte Zitate vor",
       "feature5": "Erstellt einen formatierten Referenzabschnitt",
-      "feature6": "Text-to-Speech mit Azure Neuronale Stimmen",
+      "feature6": "Text-to-Speech mit Premium-KI-Stimmen",
       "feature7": "Vollständigen Zitierbericht als.txt herunterladen",
       "textPlaceholder": "Fügen Sie hier Ihren akademischen Text mit Zitaten ein…\n\nBeispiel:\n Die neuronale Netzwerkarchitektur [1] erzielt Ergebnisse auf dem neuesten Stand der Technik (Smith et al., 2023).\n Frühere Arbeiten von Jones (2021) zeigten ähnliche Ergebnisse [2].",
       "uploadFile": "Datei hochladen",
@@ -963,7 +963,10 @@
         "thirdGemini": "– KI-Dokumenten- und Textgenerierung",
         "thirdPollinations": "– kostenlose KI-Bildgenerierung",
         "thirdPixabay": "– Fallback für lizenzfreie Bilder",
+        "thirdElevenLabs": "– KI-Sprachsynthese",
         "thirdAzure": "– Neuronale HD-Text-zu-Sprache",
+        "thirdStreamElements": "– kostenlose Sprachsynthese (kein Konto erforderlich)",
+        "thirdVoiceRSS": "– Sprachsynthese",
         "thirdAnalytics": "– anonyme Nutzungsanalyse",
         "thirdPayments": "– sichere Zahlungsabwicklung für Abonnements",
         "securityIntro": "Wir implementieren branchenübliche Sicherheitsmaßnahmen, darunter:",
@@ -1078,7 +1081,7 @@
           "q4": "Welche Zitierstile werden unterstützt?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE und Vancouver. Das System kann auch automatisch den passenden Stil für Ihren Dokumenttyp erkennen.",
           "q5": "Kann die KI mein Dokument vorlesen?",
-          "a5": "Ja. Jeder Generator und jedes Tool umfasst einen Text-to-Speech-Reader mit Azure Neural HD-Stimmen und einem browserbasierten Fallback. Sie können Stimme, Geschwindigkeit und Motor wählen."
+          "a5": "Ja. Jeder Generator und jedes Tool umfasst einen Text-to-Speech-Reader mit mehreren Sprach-Engines — ElevenLabs, Azure Neural HD, StreamElements und VoiceRSS — sowie einem browserbasierten Fallback. Sie können Ihre bevorzugte Stimme, Geschwindigkeit und Engine in den Einstellungen wählen."
         },
         "account": {
           "q1": "Werden meine Dokumente auf Ihren Servern gespeichert?",

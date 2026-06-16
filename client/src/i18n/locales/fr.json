@@ -521,7 +521,7 @@
       "tableCloudStorage": "Stockage de projets cloud",
       "tableRefManager": "Gestionnaire de références",
       "tableLanguages": "Prise en charge de 12 langues",
-      "tableTTS": "Synthèse vocale (Azure HD)",
+      "tableTTS": "Synthèse vocale (voix premium)",
       "tablePrioritySupport": "Assistance prioritaire"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "À propos d'AcademicGen",
-      "tagline": "Une plateforme unifiée pour les outils académiques IA — générez des rapports, des présentations, des articles de conférence et des thèses ; humanisez le texte IA avec un score de détection de contournement ; validez les citations pour détecter les fausses références ; générez des images ; et lisez tout à voix haute avec les voix Azure Neural HD.",
+      "tagline": "Une plateforme unifiée pour les outils académiques IA — générez des rapports, des présentations, des articles de conférence et des thèses ; humanisez le texte IA avec un score de détection de contournement ; validez les citations pour détecter les fausses références ; générez des images ; et lisez tout à voix haute avec des voix IA premium (ElevenLabs, Azure, StreamElements et VoiceRSS).",
       "docGenerators": "Générateurs de documents",
       "platformFeatures": "Fonctionnalités de la plateforme",
       "techStack": "Stack technologique",
@@ -633,7 +633,7 @@
       "cap8": "Assistant Chatbot IA",
       "cap9": "Humaniseur de Texte IA avec Détection par Phrase",
       "cap10": "Vérificateur de Citations avec Détection de Références Fausses",
-      "cap11": "Synthèse Vocale Azure Neural HD sur Tous les Outils",
+      "cap11": "Synthèse Vocale Premium sur Tous les Outils (ElevenLabs, Azure, StreamElements et VoiceRSS)",
       "techAIItem1": "Google Gémeaux 2.5 Flash",
       "techAIItem2": "Pollinisations.ai (images IA gratuites)",
       "techAIItem3": "API Pixabay (de secours)",
@@ -875,7 +875,7 @@
       "features": "Fonctionnalités de l'Humaniseur IA :",
       "feature1": "Réécrit le texte pour qu'il sonne naturellement humain",
       "feature2": "Détection IA par phrase avec codage couleur",
-      "feature3": "Synthèse vocale avec les voix Azure Neural HD",
+      "feature3": "Synthèse vocale avec des voix IA premium",
       "feature4": "Plusieurs tours de paraphrase pour réduire le score IA",
       "feature5": "Téléchargement en TXT, HTML ou rapport complet",
       "feature6": "Modes Académique, Décontracté, Professionnel, Créatif",
@@ -895,7 +895,7 @@
       "feature3": "Signale les références fausses ou hallucinées",
       "feature4": "Suggère des corrections pour les mauvaises citations",
       "feature5": "Génère une section de références formatée",
-      "feature6": "Synthèse vocale avec les voix Azure Neural",
+      "feature6": "Synthèse vocale avec des voix IA premium",
       "feature7": "Téléchargez le rapport de citation complet en .txt",
       "textPlaceholder": "Collez votre texte académique contenant des citations ici…",
       "uploadFile": "Télécharger un Fichier",
@@ -1275,7 +1275,10 @@
         "thirdGemini": "- Génération de documents et de textes IA",
         "thirdPollinations": "- génération gratuite d'images IA",
         "thirdPixabay": "– image de secours libre de droits",
-        "thirdAzure": "– Synthèse vocale neuronale HD",
+        "thirdElevenLabs": "– synthèse vocale par IA",
+        "thirdAzure": "– Synthèse vocale neuronale HD",
+        "thirdStreamElements": "– synthèse vocale gratuite (aucun compte requis)",
+        "thirdVoiceRSS": "– synthèse vocale",
         "thirdAnalytics": "– analyses d'utilisation anonymes",
         "thirdPayments": "- traitement sécurisé des paiements pour les abonnements",
         "securityIntro": "Nous mettons en œuvre des mesures de sécurité conformes aux normes de l'industrie, notamment:",
@@ -1390,7 +1393,7 @@
           "q4": "Quels styles de citation sont pris en charge?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE, and Vancouver. Le système peut également détecter automatiquement le style approprié pour votre type de document.",
           "q5": "L’IA peut-elle lire mon document à haute voix?",
-          "a5": "Oui. Chaque générateur et outil comprend un lecteur de synthèse vocale alimenté par les voix Azure Neural HD et une solution de secours basée sur un navigateur. Vous pouvez choisir la voix, la vitesse et le moteur."
+          "a5": "Oui. Chaque générateur et outil comprend un lecteur de synthèse vocale avec plusieurs moteurs vocaux — ElevenLabs, Azure Neural HD, StreamElements et VoiceRSS — ainsi qu'une solution de secours basée sur un navigateur. Vous pouvez choisir votre voix, votre vitesse et votre moteur préférés dans les Paramètres."
         },
         "account": {
           "q1": "Mes documents sont-ils stockés sur vos serveurs?",

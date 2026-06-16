@@ -526,7 +526,7 @@
       "tableCloudStorage": "Cloud project storage",
       "tableRefManager": "Reference manager",
       "tableLanguages": "12-language support",
-      "tableTTS": "Text-to-Speech (Azure HD)",
+      "tableTTS": "Text-to-Speech (Premium Voices)",
       "tablePrioritySupport": "Priority support"
     },
     "checkoutCancel": {
@@ -796,7 +796,7 @@
       "features": "AI Humanizer Features:",
       "feature1": "Rewrites text to sound naturally human",
       "feature2": "Per-sentence AI detection with color coding",
-      "feature3": "Text-to-speech with Azure Neural HD voices",
+      "feature3": "Text-to-speech with premium AI voices",
       "feature4": "Multiple paraphrase rounds to lower AI score",
       "feature5": "Download as TXT, HTML, or full report",
       "feature6": "Academic, Casual, Professional, Creative modes",
@@ -816,7 +816,7 @@
       "feature3": "Flags fake or hallucinated references",
       "feature4": "Suggests corrections for bad citations",
       "feature5": "Generates a formatted References section",
-      "feature6": "Text-to-speech with Azure Neural voices",
+      "feature6": "Text-to-speech with premium AI voices",
       "feature7": "Download full citation report as .txt",
       "textPlaceholder": "Paste your academic text containing citations here…\n\nExample:\n  The neural network architecture [1] achieves state-of-the-art results (Smith et al., 2023).\n  Previous work by Jones (2021) demonstrated similar findings [2].",
       "uploadFile": "Upload File",
@@ -1196,7 +1196,10 @@
         "thirdGemini": "- AI document and text generation",
         "thirdPollinations": "- free AI image generation",
         "thirdPixabay": "- royalty-free image fallback",
+        "thirdElevenLabs": "- AI voice synthesis",
         "thirdAzure": "- Neural HD text-to-speech",
+        "thirdStreamElements": "- free voice synthesis (no account required)",
+        "thirdVoiceRSS": "- voice synthesis",
         "thirdAnalytics": "- anonymous usage analytics",
         "thirdPayments": "- secure payment processing for subscriptions",
         "securityIntro": "We implement industry-standard security measures including:",
@@ -1311,7 +1314,7 @@
           "q4": "What citation styles are supported?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE, and Vancouver. The system can also auto-detect the appropriate style for your document type.",
           "q5": "Can the AI read my document aloud?",
-          "a5": "Yes. Every generator and tool includes a Text-to-Speech reader powered by Azure Neural HD voices and a browser-based fallback. You can choose voice, speed, and engine."
+          "a5": "Yes. Every generator and tool includes a Text-to-Speech reader with multiple voice engines — ElevenLabs, Azure Neural HD, StreamElements, and VoiceRSS — plus a browser-based fallback. You can choose your preferred voice, speed, and engine in Settings."
         },
         "account": {
           "q1": "Are my documents stored on your servers?",
@@ -1704,7 +1707,7 @@
     },
     "about": {
       "title": "About AcademicGen",
-      "tagline": "A unified platform for academic AI tools — generate reports, presentations, conference papers, and theses; humanize AI text with bypass detection scoring; validate citations for fake references; generate images; and read everything aloud with Azure Neural HD voices.",
+      "tagline": "A unified platform for academic AI tools — generate reports, presentations, conference papers, and theses; humanize AI text with bypass detection scoring; validate citations for fake references; generate images; and read everything aloud with premium AI voices (ElevenLabs, Azure, StreamElements & VoiceRSS).",
       "docGenerators": "Document Generators",
       "platformFeatures": "Platform Features",
       "techStack": "Technology Stack",
@@ -1771,7 +1774,7 @@
       "cap8": "AI Chatbot Assistant",
       "cap9": "AI Text Humanizer with Per-Sentence Detection",
       "cap10": "Citation Checker with Fake Reference Detection",
-      "cap11": "Azure Neural HD Text-to-Speech on All Tools",
+      "cap11": "Premium Text-to-Speech on All Tools (ElevenLabs, Azure, StreamElements & VoiceRSS)",
       "techAIItem1": "Google Gemini 2.5 Flash",
       "techAIItem2": "Pollinations.ai (Free AI Images)",
       "techAIItem3": "Pixabay API (Fallback)",

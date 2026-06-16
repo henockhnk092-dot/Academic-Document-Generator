@@ -521,7 +521,7 @@
       "tableCloudStorage": "Armazenamento de projetos em nuvem",
       "tableRefManager": "Gerenciador de referências",
       "tableLanguages": "Suporte a 12 idiomas",
-      "tableTTS": "Conversão de texto para fala (Azure HD)",
+      "tableTTS": "Conversão de texto para fala (vozes premium)",
       "tablePrioritySupport": "Suporte prioritário"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "Sobre o AcademicGen",
-      "tagline": "Uma plataforma unificada para ferramentas acadêmicas de IA — gere relatórios, apresentações, artigos de conferência e teses; humanize texto de IA com pontuação de detecção de bypass; valide citações para referências falsas; gere imagens; e leia tudo em voz alta com vozes Azure Neural HD.",
+      "tagline": "Uma plataforma unificada para ferramentas acadêmicas de IA — gere relatórios, apresentações, artigos de conferência e teses; humanize texto de IA com pontuação de detecção de bypass; valide citações para referências falsas; gere imagens; e leia tudo em voz alta com vozes premium de IA (ElevenLabs, Azure, StreamElements e VoiceRSS).",
       "docGenerators": "Geradores de documentos",
       "platformFeatures": "Recursos da plataforma",
       "techStack": "Stack tecnológico",
@@ -633,7 +633,7 @@
       "cap8": "Assistente de chatbot de IA",
       "cap9": "Humanizador de texto AI com detecção por frase",
       "cap10": "Verificador de citações com detecção de referências falsas",
-      "cap11": "Azure Neural HD Conversão de texto em fala em todas as ferramentas",
+      "cap11": "Conversão de texto em fala premium em todas as ferramentas (ElevenLabs, Azure, StreamElements e VoiceRSS)",
       "techAIItem1": "Google Gêmeos 2.5 Flash",
       "techAIItem2": "Pollinations.ai (imagens de IA gratuitas)",
       "techAIItem3": "API Pixabay (substituto)",
@@ -655,7 +655,7 @@
       "features": "Recursos do Humanizador de IA:",
       "feature1": "Reescreve o texto para soar naturalmente humano",
       "feature2": "Detecção de IA por frase com codificação de cores",
-      "feature3": "Conversão de texto para fala com Azure Neural HD vozes",
+      "feature3": "Conversão de texto para fala com vozes premium de IA",
       "feature4": "Várias rodadas de paráfrase para diminuir a pontuação de IA",
       "feature5": "Baixe como TXT, HTML ou relatório completo",
       "feature6": "Modos Acadêmico, Casual, Profissional, Criativo",
@@ -675,7 +675,7 @@
       "feature3": "Sinaliza referências falsas ou alucinadas",
       "feature4": "Sugere correções para citações incorretas",
       "feature5": "Gera uma seção de Referências formatada",
-      "feature6": "Conversão de texto para fala com Azure Vozes neurais",
+      "feature6": "Conversão de texto para fala com vozes premium de IA",
       "feature7": "Baixe o relatório de citações completo como.txt",
       "textPlaceholder": "Cole seu texto acadêmico contendo citações aqui…\n\nExemplo:\n A arquitetura de rede neural [1] alcança resultados de última geração (Smith et al., 2023).\n Trabalho anterior de Jones (2021) demonstrou descobertas semelhantes [2].",
       "uploadFile": "Carregar arquivo",
@@ -963,7 +963,10 @@
         "thirdGemini": "- Documento AI e geração de texto",
         "thirdPollinations": "- geração gratuita de imagens de IA",
         "thirdPixabay": "- alternativa de imagem isenta de royalties",
+        "thirdElevenLabs": "- síntese de voz por IA",
         "thirdAzure": "- Conversão de texto para fala em HD neural",
+        "thirdStreamElements": "- síntese de voz gratuita (sem necessidade de conta)",
+        "thirdVoiceRSS": "- síntese de voz",
         "thirdAnalytics": "- análise de uso anônima",
         "thirdPayments": "- processamento seguro de pagamentos para assinaturas",
         "securityIntro": "Implementamos medidas de segurança padrão do setor, incluindo:",
@@ -1078,7 +1081,7 @@
           "q4": "Quais estilos de citação são suportados?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE e Vancouver. O sistema também pode detectar automaticamente o estilo apropriado para o seu tipo de documento.",
           "q5": "A IA pode ler meu documento em voz alta?",
-          "a5": "Sim. Cada gerador e ferramenta inclui um leitor de conversão de texto em fala alimentado por vozes Azure Neural HD e um substituto baseado em navegador. Você pode escolher voz, velocidade e motor."
+          "a5": "Sim. Cada gerador e ferramenta inclui um leitor de conversão de texto em fala com vários mecanismos de voz — ElevenLabs, Azure Neural HD, StreamElements e VoiceRSS — além de um substituto baseado no navegador. Você pode escolher sua voz, velocidade e mecanismo preferidos em Configurações."
         },
         "account": {
           "q1": "Meus documentos estão armazenados em seus servidores?",

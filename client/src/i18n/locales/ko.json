@@ -521,7 +521,7 @@
       "tableCloudStorage": "클라우드 프로젝트 스토리지",
       "tableRefManager": "참조 관리자",
       "tableLanguages": "12개 언어 지원",
-      "tableTTS": "텍스트 음성 변환(Azure HD)",
+      "tableTTS": "텍스트 음성 변환(프리미엄 음성)",
       "tablePrioritySupport": "우선 지원"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "AcademicGen 소개",
-      "tagline": "학술 AI 도구를 위한 통합 플랫폼 — 보고서, 프레젠테이션, 학회 논문, 학위 논문을 생성하고; 우회 감지 점수로 AI 텍스트를 인간화하고; 가짜 참조에 대한 인용을 검증하고; 이미지를 생성하고; Azure Neural HD 음성으로 모든 것을 읽어드립니다.",
+      "tagline": "학술 AI 도구를 위한 통합 플랫폼 — 보고서, 프레젠테이션, 학회 논문, 학위 논문을 생성하고; 우회 감지 점수로 AI 텍스트를 인간화하고; 가짜 참조에 대한 인용을 검증하고; 이미지를 생성하고; ElevenLabs, Azure, StreamElements, VoiceRSS의 프리미엄 AI 음성으로 모든 것을 읽어드립니다.",
       "docGenerators": "문서 생성기",
       "platformFeatures": "플랫폼 기능",
       "techStack": "기술 스택",
@@ -633,7 +633,7 @@
       "cap8": "AI 챗봇 도우미",
       "cap9": "문장별 감지 기능을 갖춘 AI 텍스트 휴머나이저",
       "cap10": "가짜 참조 감지 기능을 갖춘 인용 검사기",
-      "cap11": "Azure Neural HD 모든 도구의 텍스트 음성 변환",
+      "cap11": "모든 도구에서 프리미엄 텍스트 음성 변환(ElevenLabs, Azure, StreamElements 및 VoiceRSS)",
       "techAIItem1": "구글 제미니 2.5 플래시",
       "techAIItem2": "Pollinations.ai (무료 AI 이미지)",
       "techAIItem3": "Pixabay API(대체)",
@@ -655,7 +655,7 @@
       "features": "AI 휴머나이저 기능:",
       "feature1": "자연스럽게 사람처럼 들리도록 텍스트를 다시 작성합니다.",
       "feature2": "색상 코딩을 통한 문장별 AI 감지",
-      "feature3": "Azure Neural HD 음성으로 텍스트 음성 변환",
+      "feature3": "프리미엄 AI 음성으로 텍스트 음성 변환",
       "feature4": "AI 점수를 낮추기 위한 여러 의역 라운드",
       "feature5": "TXT, HTML 또는 전체 보고서로 다운로드",
       "feature6": "아카데믹, 캐주얼, 프로페셔널, 크리에이티브 모드",
@@ -675,7 +675,7 @@
       "feature3": "가짜 또는 환각적인 참조 신고",
       "feature4": "잘못된 인용에 대한 수정 제안",
       "feature5": "형식화된 참조 섹션을 생성합니다.",
-      "feature6": "Azure 신경 음성을 사용한 텍스트 음성 변환",
+      "feature6": "프리미엄 AI 음성을 사용한 텍스트 음성 변환",
       "feature7": "전체 인용 보고서를.txt로 다운로드",
       "textPlaceholder": "인용문이 포함된 학술 텍스트를 여기에 붙여넣으세요…\n\n예:\n 신경망 아키텍처[1]는 최첨단 결과를 달성합니다(Smith et al., 2023).\n Jones(2021)의 이전 연구에서도 유사한 결과가 나타났습니다[2].",
       "uploadFile": "파일 업로드",
@@ -963,7 +963,10 @@
         "thirdGemini": "- AI 문서 및 텍스트 생성",
         "thirdPollinations": "- 무료 AI 이미지 생성",
         "thirdPixabay": "- 로열티 프리 이미지 대체",
+        "thirdElevenLabs": "- AI 음성 합성",
         "thirdAzure": "- 신경 HD 텍스트 음성 변환",
+        "thirdStreamElements": "- 무료 음성 합성(계정 불필요)",
+        "thirdVoiceRSS": "- 음성 합성",
         "thirdAnalytics": "- 익명 사용 분석",
         "thirdPayments": "- 구독에 대한 안전한 결제 처리",
         "securityIntro": "우리는 다음을 포함한 업계 표준 보안 조치를 구현합니다.",
@@ -1078,7 +1081,7 @@
           "q4": "어떤 인용 스타일이 지원되나요?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE 및 Vancouver. 시스템은 문서 유형에 적합한 스타일을 자동 감지할 수도 있습니다.",
           "q5": "AI가 내 문서를 소리내어 읽을 수 있나요?",
-          "a5": "네. 모든 생성기와 도구에는 Azure Neural HD 음성 및 브라우저 기반 대체 기능으로 구동되는 텍스트 음성 변환 리더가 포함되어 있습니다. 음성, 속도, 엔진을 선택할 수 있습니다."
+          "a5": "네. 모든 생성기와 도구에는 ElevenLabs, Azure Neural HD, StreamElements, VoiceRSS 등 여러 음성 엔진과 브라우저 기반 대체 기능을 갖춘 텍스트 음성 변환 리더가 포함되어 있습니다. 설정에서 원하는 음성, 속도, 엔진을 선택할 수 있습니다."
         },
         "account": {
           "q1": "내 문서가 귀하의 서버에 저장되어 있나요?",

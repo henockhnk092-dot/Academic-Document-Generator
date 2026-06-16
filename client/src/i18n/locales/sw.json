@@ -521,7 +521,7 @@
       "tableCloudStorage": "Hifadhi ya mradi wa wingu",
       "tableRefManager": "Kidhibiti cha Marejeleo",
       "tableLanguages": "Usaidizi wa lugha 12",
-      "tableTTS": "Maandishi-hadi-Hotuba (Azure HD)",
+      "tableTTS": "Maandishi-hadi-Hotuba (Sauti za Hali ya Juu)",
       "tablePrioritySupport": "Usaidizi wa kipaumbele"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "Kuhusu AcademicGen",
-      "tagline": "Jukwaa moja la zana za kitaaluma za AI — zalisha ripoti, uwasilishaji, makala za mkutano, na tasnifu; fanya maandishi ya AI kuwa ya kibinadamu kwa alama ya ugunduzi wa kupita; thibitisha manukuu kwa marejeleo ya uongo; zalisha picha; na soma kila kitu kwa sauti ukitumia sauti za Azure Neural HD.",
+      "tagline": "Jukwaa moja la zana za kitaaluma za AI — zalisha ripoti, uwasilishaji, makala za mkutano, na tasnifu; fanya maandishi ya AI kuwa ya kibinadamu kwa alama ya ugunduzi wa kupita; thibitisha manukuu kwa marejeleo ya uongo; zalisha picha; na soma kila kitu kwa sauti ukitumia sauti za AI za hali ya juu (ElevenLabs, Azure, StreamElements na VoiceRSS).",
       "docGenerators": "Vizalishi vya Nyaraka",
       "platformFeatures": "Vipengele vya Jukwaa",
       "techStack": "Mfumo wa Teknolojia",
@@ -633,7 +633,7 @@
       "cap8": "Msaidizi wa Chatbot wa AI",
       "cap9": "AI Nakala ya Kuboresha Kibinadamu yenye Utambuzi wa Kila Sentensi",
       "cap10": "Kikagua Manukuu chenye Marejeleo Bandia",
-      "cap11": "Azure Neural HD Maandishi-hadi-Hotuba kwenye Zana Zote",
+      "cap11": "Maandishi-hadi-Hotuba ya Hali ya Juu kwenye Zana Zote (ElevenLabs, Azure, StreamElements na VoiceRSS)",
       "techAIItem1": "Google Gemini 2.5 Flash",
       "techAIItem2": "Pollinations.ai (Picha za Bure za AI)",
       "techAIItem3": "API ya Pixabay (Fallback)",
@@ -655,7 +655,7 @@
       "features": "Sifa za AI za Kibinadamu:",
       "feature1": "Huandika upya maandishi ili yasikike kama ya kibinadamu",
       "feature2": "Utambuzi wa AI kwa sentensi kwa kutumia usimbaji wa rangi",
-      "feature3": "Nakala-kwa-hotuba yenye sauti Azure Neural HD",
+      "feature3": "Nakala-kwa-hotuba yenye sauti za AI za hali ya juu",
       "feature4": "Duru nyingi za vifungu vya maneno ili kupunguza alama ya AI",
       "feature5": "Pakua kama TXT, HTML, au ripoti kamili",
       "feature6": "Mbinu za Kielimu, Kawaida, Kitaalamu, Ubunifu",
@@ -675,7 +675,7 @@
       "feature3": "Huripoti marejeleo bandia au ya uwongo",
       "feature4": "Inapendekeza masahihisho kwa manukuu mabaya",
       "feature5": "Inazalisha sehemu ya Marejeleo iliyoumbizwa",
-      "feature6": "Nakala-kwa-hotuba yenye Azure Sauti za Neural",
+      "feature6": "Nakala-kwa-hotuba yenye sauti za AI za hali ya juu",
       "feature7": "Pakua ripoti kamili ya nukuu kama.txt",
       "textPlaceholder": "Bandika maandishi yako ya kitaaluma yaliyo na manukuu hapa…\n\nMfano:\n  Usanifu wa mtandao wa neva [1] hupata matokeo ya hali ya juu (Smith et al., 2023).\n  Kazi ya awali ya Jones (2021) ilionyesha matokeo sawa [2].",
       "uploadFile": "Pakia Faili",
@@ -963,7 +963,10 @@
         "thirdGemini": "- Hati ya AI na utengenezaji wa maandishi",
         "thirdPollinations": "- utengenezaji wa picha za AI bila malipo",
         "thirdPixabay": "- picha mbadala bila malipo",
+        "thirdElevenLabs": "- utengenezaji wa sauti wa AI",
         "thirdAzure": "- Nakala ya Neural HD-kwa-hotuba",
+        "thirdStreamElements": "- utengenezaji wa sauti wa bure (hauhitaji akaunti)",
+        "thirdVoiceRSS": "- utengenezaji wa sauti",
         "thirdAnalytics": "- uchanganuzi wa matumizi usiojulikana",
         "thirdPayments": "- uchakataji salama wa malipo kwa usajili",
         "securityIntro": "Tunatekeleza hatua za usalama za kiwango cha sekta zikiwemo:",
@@ -1078,7 +1081,7 @@
           "q4": "Ni mitindo gani ya kunukuu inayotumika?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE, na Vancouver. Mfumo unaweza pia kutambua kiotomatiki mtindo unaofaa kwa aina ya hati yako.",
           "q5": "Je, AI inaweza kusoma hati yangu kwa sauti?",
-          "a5": "Ndiyo. Kila jenereta na zana inajumuisha kisomaji cha Maandishi hadi Usemi kinachoendeshwa na sauti Azure Neural HD na njia mbadala inayotegemea kivinjari. Unaweza kuchagua sauti, kasi na injini."
+          "a5": "Ndiyo. Kila jenereta na zana inajumuisha kisomaji cha Maandishi hadi Usemi chenye injini nyingi za sauti — ElevenLabs, Azure Neural HD, StreamElements, na VoiceRSS — pamoja na njia mbadala inayotegemea kivinjari. Unaweza kuchagua sauti, kasi, na injini unayopendelea katika Mipangilio."
         },
         "account": {
           "q1": "Je, hati zangu zimehifadhiwa kwenye seva zako?",

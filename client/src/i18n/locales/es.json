@@ -521,7 +521,7 @@
       "tableCloudStorage": "Almacenamiento de proyectos en la nube",
       "tableRefManager": "Administrador de referencias",
       "tableLanguages": "Compatibilidad con 12 idiomas",
-      "tableTTS": "Texto a voz (Azure HD)",
+      "tableTTS": "Texto a voz (voces premium)",
       "tablePrioritySupport": "Soporte prioritario"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "Acerca de AcademicGen",
-      "tagline": "Una plataforma unificada para herramientas académicas de IA — genera informes, presentaciones, artículos de conferencia y tesis; humaniza texto de IA con puntuación de detección de omisión; valida citas para referencias falsas; genera imágenes; y lee todo en voz alta con voces Azure Neural HD.",
+      "tagline": "Una plataforma unificada para herramientas académicas de IA — genera informes, presentaciones, artículos de conferencia y tesis; humaniza texto de IA con puntuación de detección de omisión; valida citas para referencias falsas; genera imágenes; y lee todo en voz alta con voces premium de IA (ElevenLabs, Azure, StreamElements y VoiceRSS).",
       "docGenerators": "Generadores de documentos",
       "platformFeatures": "Características de la plataforma",
       "techStack": "Stack tecnológico",
@@ -633,7 +633,7 @@
       "cap8": "Asistente Chatbot IA",
       "cap9": "Humanizador de Texto IA con Detección por Oración",
       "cap10": "Verificador de Citas con Detección de Referencias Falsas",
-      "cap11": "Texto a Voz Azure Neural HD en Todas las Herramientas",
+      "cap11": "Texto a Voz Premium en Todas las Herramientas (ElevenLabs, Azure, StreamElements y VoiceRSS)",
       "techAIItem1": "Google Géminis 2.5 Flash",
       "techAIItem2": "Pollinations.ai (Imágenes AI gratuitas)",
       "techAIItem3": "API de Pixabay (alternativa)",
@@ -875,7 +875,7 @@
       "features": "Características del Humanizador IA:",
       "feature1": "Reescribe el texto para que suene naturalmente humano",
       "feature2": "Detección IA por oración con código de color",
-      "feature3": "Texto a voz con voces Azure Neural HD",
+      "feature3": "Texto a voz con voces premium de IA",
       "feature4": "Múltiples rondas de paráfrasis para reducir la puntuación IA",
       "feature5": "Descarga como TXT, HTML o informe completo",
       "feature6": "Modos Académico, Casual, Profesional, Creativo",
@@ -895,7 +895,7 @@
       "feature3": "Marca referencias falsas o alucinadas",
       "feature4": "Sugiere correcciones para citas incorrectas",
       "feature5": "Genera una sección de referencias formateada",
-      "feature6": "Texto a voz con voces Azure Neural",
+      "feature6": "Texto a voz con voces premium de IA",
       "feature7": "Descargue el informe completo de citas como .txt",
       "textPlaceholder": "Pegue su texto académico con citas aquí…",
       "uploadFile": "Cargar Archivo",
@@ -1275,7 +1275,10 @@
         "thirdGemini": "- Generación de texto y documentos AI",
         "thirdPollinations": "- generación gratuita de imágenes con IA",
         "thirdPixabay": "- reserva de imágenes libres de derechos",
+        "thirdElevenLabs": "- síntesis de voz por IA",
         "thirdAzure": "- Texto a voz neuronal HD",
+        "thirdStreamElements": "- síntesis de voz gratuita (sin necesidad de cuenta)",
+        "thirdVoiceRSS": "- síntesis de voz",
         "thirdAnalytics": "- análisis de uso anónimo",
         "thirdPayments": "- procesamiento de pagos seguro para suscripciones",
         "securityIntro": "Implementamos medidas de seguridad estándar de la industria que incluyen:",
@@ -1390,7 +1393,7 @@
           "q4": "¿Qué estilos de citas se admiten?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE y Vancouver. El sistema también puede detectar automáticamente el estilo apropiado para su tipo de documento.",
           "q5": "¿Puede la IA leer mi documento en voz alta?",
-          "a5": "Sí. Cada generador y herramienta incluye un lector de texto a voz con tecnología de voces Azure Neural HD y un respaldo basado en navegador. Puedes elegir voz, velocidad y motor."
+          "a5": "Sí. Cada generador y herramienta incluye un lector de texto a voz con varios motores de voz — ElevenLabs, Azure Neural HD, StreamElements y VoiceRSS — además de un respaldo basado en el navegador. Puedes elegir tu voz, velocidad y motor preferidos en Configuración."
         },
         "account": {
           "q1": "¿Mis documentos están almacenados en sus servidores?",

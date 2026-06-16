@@ -521,7 +521,7 @@
       "tableCloudStorage": "云项目存储",
       "tableRefManager": "参考管理器",
       "tableLanguages": "12 种语言支持",
-      "tableTTS": "文本转语音 (Azure HD)",
+      "tableTTS": "文本转语音（高级语音）",
       "tablePrioritySupport": "优先支持"
     },
     "contact": {
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "关于 AcademicGen",
-      "tagline": "统一的学术 AI 工具平台——生成报告、演示文稿、会议论文和学位论文；使用绕过检测评分人性化 AI 文本；验证引用以发现虚假参考文献；生成图像；并使用 Azure Neural HD 语音大声朗读所有内容。",
+      "tagline": "统一的学术 AI 工具平台——生成报告、演示文稿、会议论文和学位论文；使用绕过检测评分人性化 AI 文本；验证引用以发现虚假参考文献；生成图像；并使用 ElevenLabs、Azure、StreamElements 和 VoiceRSS 的高级 AI 语音大声朗读所有内容。",
       "docGenerators": "文档生成器",
       "platformFeatures": "平台功能",
       "techStack": "技术栈",
@@ -633,7 +633,7 @@
       "cap8": "AI 聊天机器人助手",
       "cap9": "具有逐句检测功能的 AI 文本人性化",
       "cap10": "具有虚假参考检测功能的引文检查器",
-      "cap11": "Azure Neural HD 所有工具上的文本转语音",
+      "cap11": "所有工具上的高级文本转语音（ElevenLabs、Azure、StreamElements 和 VoiceRSS）",
       "techAIItem1": "谷歌双子座 2.5 闪存",
       "techAIItem2": "Pollinations.ai（免费 AI 图像）",
       "techAIItem3": "Pixabay API（后备）",
@@ -655,7 +655,7 @@
       "features": "AI ????? 功能：",
       "feature1": "将文本重写为听起来自然的人类",
       "feature2": "使用颜色编码进行逐句 AI 检测",
-      "feature3": "使用 Azure Neural HD 语音进行文本转语音",
+      "feature3": "使用高级 AI 语音进行文本转语音",
       "feature4": "多轮释义以降低 AI 分数",
       "feature5": "下载 TXT、HTML 或完整报告",
       "feature6": "学术、休闲、专业、创意模式",
@@ -675,7 +675,7 @@
       "feature3": "标记虚假或幻觉参考资料",
       "feature4": "建议纠正不良引用",
       "feature5": "生成格式化的参考文献部分",
-      "feature6": "使用 Azure 神经语音",
+      "feature6": "使用高级 AI 语音",
       "feature7": "下载完整的引文报告作为.txt",
       "textPlaceholder": "在此处粘贴包含引文的学术文本…\n\n示例：\n 神经网络架构 [1] 实现了最先进的结果（Smith 等人，2023）。\n Jones 之前的工作（2021）展示了类似的发现 [2]。",
       "uploadFile": "上传文件",
@@ -963,7 +963,10 @@
         "thirdGemini": "- AI 文档和文本生成",
         "thirdPollinations": "- 免费 AI 图像生成",
         "thirdPixabay": "- 免版税图像后备",
+        "thirdElevenLabs": "- AI 语音合成",
         "thirdAzure": "- 神经高清文本转语音",
+        "thirdStreamElements": "- 免费语音合成（无需账户）",
+        "thirdVoiceRSS": "- 语音合成",
         "thirdAnalytics": "- 匿名使用情况分析",
         "thirdPayments": "- 订阅的安全支付处理",
         "securityIntro": "我们实施行业标准的安全措施，包括：",
@@ -1078,7 +1081,7 @@
           "q4": "支持哪些引用样式？",
           "a4": "APA、MLA、Chicago、Harvard、IEEE 和 Vancouver。系统还可以自动检测适合您的文档类型的样式。",
           "q5": "AI 可以大声朗读我的文档吗？",
-          "a5": "是的。每个生成器和工具都包含一个由 Azure Neural HD 语音和基于浏览器的后备功能提供支持的文本转语音阅读器。您可以选择语音、速度和引擎。"
+          "a5": "是的。每个生成器和工具都包含一个文本转语音阅读器，支持多种语音引擎——ElevenLabs、Azure Neural HD、StreamElements 和 VoiceRSS——以及基于浏览器的后备功能。您可以在设置中选择您喜欢的语音、速度和引擎。"
         },
         "account": {
           "q1": "我的文档存储在你们的服务器上吗？",
