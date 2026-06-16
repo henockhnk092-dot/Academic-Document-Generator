@@ -25,7 +25,9 @@ import { parseMarkdownToHtml, sanitizeHtml } from "@/lib/markdown-parser";
 import { saveDocument } from "@/lib/firebase";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { exportToPPTX, exportToHTML } from "@/lib/pptx-export";
-import { azureAvailable, AZURE_VOICES, fetchAzureAudio, getSpeechPrefs } from "@/hooks/use-speech";
+import { azureAvailable, AZURE_VOICES, fetchAzureAudio, fetchElevenLabsAudio, fetchVoiceRSSAudio, fetchStreamElementsAudio, getSpeechPrefs } from "@/hooks/use-speech";
+import { useGeminiTTS } from "@/hooks/use-gemini-tts";
+import { DocumentTTSControls } from "@/components/document-tts-controls";
 import type { ToneType } from "@shared/schema";
 import { useTranslation } from "react-i18next";
 
@@ -95,19 +97,30 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
         setIsLoadingAudio(true);
         setAudioError(null);
         try {
+          const prefs = getSpeechPrefs();
+          const primaryEngine = prefs.engineMode ?? "azure";
+          const azureVoice = prefs.voiceName || AZURE_VOICES[0]?.name || "en-US-JennyNeural";
+          const voicerssLang = prefs.voicerssLang || "en-us";
+
           let blob: Blob | null = null;
 
-          // Try Azure TTS first (highest quality, generous limits)
-          const azureVoice = getSpeechPrefs().voiceName || AZURE_VOICES[0]?.name || "en-US-JennyNeural";
-          if (azureAvailable) {
-            try {
-              blob = await fetchAzureAudio(scriptText, azureVoice, 1);
-            } catch {
-              // fall through to Gemini TTS
+          // Full provider fallback chain — try preferred engine first, then the rest
+          const fetchMap: Record<string, () => Promise<Blob>> = {
+            azure: () => fetchAzureAudio(scriptText, azureVoice, 1),
+            elevenlabs: () => fetchElevenLabsAudio(scriptText, "21m00Tcm4TlvDq8ikWAM"),
+            voicerss: () => fetchVoiceRSSAudio(scriptText, voicerssLang),
+            streamelements: () => fetchStreamElementsAudio(scriptText, "Brian"),
+          };
+          const order = ["azure", "elevenlabs", "voicerss", "streamelements"];
+          const tryOrder = [primaryEngine, ...order.filter(e => e !== primaryEngine)];
+
+          for (const engine of tryOrder) {
+            if (fetchMap[engine]) {
+              try { blob = await fetchMap[engine](); if (blob) break; } catch { /* next */ }
             }
           }
 
-          // Fall back to Gemini TTS
+          // Final fallback: Gemini TTS
           if (!blob) {
             const response = await apiRequest("POST", "/api/tts/generate", {
               text: scriptText,
@@ -402,6 +415,7 @@ export default function GeneratePowerPoint() {
   const [isSaving, setIsSaving] = useState(false);
   const [presentation, setPresentation] = useState<any>(null);
 
+  const tts = useGeminiTTS({ tone });
   const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("powerpoint");
   const [undoContent, setUndoContent] = useState<any>(null);
   const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
@@ -726,6 +740,23 @@ export default function GeneratePowerPoint() {
 
   const totalSlides = presentation?.slides?.length || 0;
 
+  const getPresentationText = () => {
+    if (!presentation) return "";
+    const parts: string[] = [];
+    if (presentation.title) parts.push(presentation.title);
+    presentation.slides?.forEach((slide: any, i: number) => {
+      parts.push(`Slide ${i + 1}: ${slide.title || ""}`);
+      if (Array.isArray(slide.content)) {
+        parts.push(slide.content.join(". "));
+      } else if (slide.content) {
+        parts.push(slide.content);
+      }
+      const notes = slide.speaker_script || slide.speakerNotes;
+      if (notes) parts.push(notes);
+    });
+    return parts.join("\n\n");
+  };
+
   return (
     <UsageGate>
       {({ checkUsage, remainingAttempts, usageStatus, openPricing }) => (
@@ -917,7 +948,10 @@ export default function GeneratePowerPoint() {
                       data-testid="button-generate-presentation"
                     >
                       {isGenerating ? (
-                        <>{t("common.generating")}</>
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {t("common.generating")}
+                        </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
@@ -946,6 +980,27 @@ export default function GeneratePowerPoint() {
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                      {/* TTS Controls — read full presentation aloud */}
+                      {presentation && (
+                        <DocumentTTSControls
+                          status={tts.status}
+                          progress={tts.progress}
+                          onPlay={() => tts.play({ html: getPresentationText() })}
+                          onPause={tts.pause}
+                          onResume={tts.resume}
+                          onStop={tts.stop}
+                          onRestart={tts.restart}
+                          disabled={!presentation}
+                          showProgress={false}
+                          compact={true}
+                          engineMode={tts.engineMode}
+                          voiceName={tts.voiceName}
+                          voices={tts.voices}
+                          onEngineModeChange={tts.setEngineMode}
+                          onVoiceChange={tts.setVoiceName}
+                          azureVoices={tts.azureVoices}
+                        />
+                      )}
                       {totalSlides > 0 && viewMode === 'slideshow' && (
                         <div className="flex items-center gap-1 mr-2">
                           <Button
@@ -1085,7 +1140,8 @@ export default function GeneratePowerPoint() {
                   {isGenerating && (
                     <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={t("pages.powerpoint.generatingProgress", { progress })}>
                       <Progress value={progress} className="w-full" />
-                      <div className="text-sm text-muted-foreground text-center">
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         {t("pages.powerpoint.creatingSlides")}
                       </div>
                     </div>
