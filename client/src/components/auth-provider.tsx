@@ -5,25 +5,25 @@ import { onAuthChange, signInWithGoogle, signInWithEmail, signUpWithEmail, signO
 // User roles: "user" (regular), "developer" (no payment), "admin" (full access)
 export type UserRole = "user" | "developer" | "admin";
 
-// Admin and developer emails - add your emails here for full access without payment
-const ADMIN_EMAILS: string[] = [
-  "henockhnk092@gmail.com",
-  "admin@test.com",
-];
+function parseEmailList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
 
-const DEVELOPER_EMAILS: string[] = [
-  "hhnk3693@gmail.com",
-];
+const ADMIN_EMAILS = parseEmailList(import.meta.env.VITE_ADMIN_EMAILS);
+const DEVELOPER_EMAILS = parseEmailList(import.meta.env.VITE_DEVELOPER_EMAILS);
 
 // Function to determine user role based on email
 function getUserRole(email: string | null): UserRole {
   if (!email) return "user";
   const lowerEmail = email.toLowerCase();
 
-  if (ADMIN_EMAILS.map(e => e.toLowerCase()).includes(lowerEmail)) {
+  if (ADMIN_EMAILS.includes(lowerEmail)) {
     return "admin";
   }
-  if (DEVELOPER_EMAILS.map(e => e.toLowerCase()).includes(lowerEmail)) {
+  if (DEVELOPER_EMAILS.includes(lowerEmail)) {
     return "developer";
   }
   return "user";

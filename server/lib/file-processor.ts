@@ -1,37 +1,18 @@
 import mammoth from "mammoth";
-import PDFParser from "pdf2json";
+import { createRequire } from "node:module";
+const _require = createRequire(import.meta.url);
+// pdf-parse is CJS-only; use createRequire to avoid ESM default-export mismatch
+const pdfParse: (buf: Buffer) => Promise<{ text: string; numpages: number }> = _require("pdf-parse");
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      const pdfParser = new PDFParser();
-
-      pdfParser.on("pdfParser_dataError", (errData: any) => {
-        console.error("PDF extraction error:", errData.parserError);
-        reject(new Error(`Failed to extract text from PDF: ${errData.parserError}`));
-      });
-
-      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-        try {
-          // Extract text from all pages
-          const textContent = pdfData.Pages.map((page: any) => {
-            return page.Texts.map((text: any) => {
-              return text.R.map((r: any) => decodeURIComponent(r.T)).join("");
-            }).join(" ");
-          }).join("\n\n");
-
-          resolve(textContent.trim());
-        } catch (err) {
-          reject(new Error(`Failed to parse PDF content: ${err}`));
-        }
-      });
-
-      pdfParser.parseBuffer(buffer);
-    } catch (error) {
-      console.error("PDF extraction error:", error);
-      reject(new Error(`Failed to extract text from PDF: ${error}`));
-    }
-  });
+  try {
+    const data = await pdfParse(buffer);
+    const text = data.text?.trim() ?? "";
+    if (!text) throw new Error("No text layer found in this PDF.");
+    return text;
+  } catch (error) {
+    throw new Error(`Failed to extract text from PDF: ${error}`);
+  }
 }
 
 export async function extractTextFromDOCX(buffer: Buffer): Promise<string> {

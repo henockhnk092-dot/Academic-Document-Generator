@@ -1,8 +1,61 @@
 import { GoogleGenAI } from "@google/genai";
 
-const AI_API_KEY = process.env.GEMINI_API_KEY || "";
+// Collect all configured API keys (Railway env vars + legacy fallback)
+const API_KEYS = [
+  process.env.GEMINI_API_KEY_1,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
+  process.env.GEMINI_API_KEY_4,
+  process.env.GEMINI_API_KEY, // legacy single-key support
+].filter((k): k is string => Boolean(k));
 
-const ai = new GoogleGenAI({ apiKey: AI_API_KEY });
+// Index of the currently preferred key; rotates on failure
+let currentKeyIndex = 0;
+
+function isKeyFailureError(error: any): boolean {
+  const msg = String(error?.message ?? error ?? "").toLowerCase();
+  const status = error?.status ?? error?.statusCode ?? error?.code;
+  return (
+    status === 429 ||
+    status === 401 ||
+    status === 403 ||
+    msg.includes("quota") ||
+    msg.includes("rate limit") ||
+    msg.includes("api_key_invalid") ||
+    msg.includes("api key") ||
+    msg.includes("exhausted") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("permission_denied")
+  );
+}
+
+async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<T> {
+  if (API_KEYS.length === 0) {
+    throw new Error("No Gemini API keys configured. Add GEMINI_API_KEY_1 (and optionally _2, _3) to environment variables.");
+  }
+
+  let lastError: any;
+  for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
+    const keyIndex = (currentKeyIndex + attempt) % API_KEYS.length;
+    const client = new GoogleGenAI({ apiKey: API_KEYS[keyIndex] });
+    try {
+      const result = await fn(client);
+      currentKeyIndex = keyIndex; // stick with this key while it works
+      return result;
+    } catch (error: any) {
+      if (isKeyFailureError(error)) {
+        console.warn(`Gemini key ${keyIndex + 1} failed (${error?.message ?? error}), trying next key...`);
+        lastError = error;
+        continue;
+      }
+      throw error; // non-key error — rethrow immediately
+    }
+  }
+
+  // All keys exhausted — rotate so the next request starts fresh
+  currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+  throw lastError;
+}
 
 const LANG_NAMES: Record<string, string> = {
   en: "English", fr: "French", es: "Spanish", pt: "Portuguese",
@@ -105,9 +158,9 @@ export async function generateContent(
   prompt: string,
   options: GenerateContentOptions = {}
 ): Promise<string> {
-  if (!AI_API_KEY) {
+  if (API_KEYS.length === 0) {
     console.warn("Gemini API key not configured");
-    throw new Error("AI API key not configured. Please add GEMINI_API_KEY to your environment variables.");
+    throw new Error("AI API key not configured. Please add GEMINI_API_KEY_1 to your environment variables.");
   }
 
   const {
@@ -119,42 +172,44 @@ export async function generateContent(
   } = options;
 
   try {
-    const config: any = {
-      temperature,
-      maxOutputTokens: maxTokens,
-    };
+    return await withKeyFallback(async (ai) => {
+      const config: any = {
+        temperature,
+        maxOutputTokens: maxTokens,
+      };
 
-    if (systemInstruction) {
-      config.systemInstruction = systemInstruction;
-    }
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
 
-    if (responseFormat === "json") {
-      config.responseMimeType = "application/json";
-    }
+      if (responseFormat === "json") {
+        config.responseMimeType = "application/json";
+      }
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config,
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config,
+      });
+
+      const text = response.text;
+
+      // Safety filter or empty response — surface a clear message instead of
+      // letting downstream JSON parsing fail with a cryptic error.
+      if (!text || text.trim() === "") {
+        const candidate = response.candidates?.[0];
+        const reason = String(candidate?.finishReason ?? "");
+        if (reason === "SAFETY" || reason === "BLOCKED") {
+          throw new Error("The AI declined to generate this content due to safety filters. Please rephrase your topic.");
+        }
+        if (reason === "MAX_TOKENS") {
+          throw new Error("The AI response was too long and got cut off. Try a shorter target length.");
+        }
+        throw new Error("The AI returned an empty response. Please try again.");
+      }
+
+      return text;
     });
-
-    const text = response.text;
-
-    // Safety filter or empty response — surface a clear message instead of
-    // letting downstream JSON parsing fail with a cryptic error.
-    if (!text || text.trim() === "") {
-      const candidate = response.candidates?.[0];
-      const reason = String(candidate?.finishReason ?? "");
-      if (reason === "SAFETY" || reason === "BLOCKED") {
-        throw new Error("The AI declined to generate this content due to safety filters. Please rephrase your topic.");
-      }
-      if (reason === "MAX_TOKENS") {
-        throw new Error("The AI response was too long and got cut off. Try a shorter target length.");
-      }
-      throw new Error("The AI returned an empty response. Please try again.");
-    }
-
-    return text;
   } catch (error: any) {
     // Re-throw errors we already formatted
     if (error.message && !error.message.startsWith("Failed to generate content:")) {
@@ -333,43 +388,45 @@ function createWavFromPcm(pcmData: Buffer, sampleRate: number = 24000, numChanne
 export async function generateSpeechAudio(text: string, tone: string): Promise<{ audioBase64: string; mimeType: string } | null> {
   try {
     const cleanText = text.replace(/[*#]/g, '').substring(0, 500);
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [
-        {
-          parts: [{ text: `Say in a ${tone || 'professional'} tone: ${cleanText}` }]
-        }
-      ],
-      config: {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: "Kore" }
+
+    return await withKeyFallback(async (ai) => {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [
+          {
+            parts: [{ text: `Say in a ${tone || 'professional'} tone: ${cleanText}` }]
+          }
+        ],
+        config: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: "Kore" }
+            }
           }
         }
-      }
-    });
+      });
 
-    const audioData = response?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-    if (audioData && audioData.data) {
-      const mimeType = audioData.mimeType || "";
-      
-      if (mimeType.includes("L16") || mimeType.includes("pcm") || mimeType === "audio/raw") {
-        const pcmBuffer = Buffer.from(audioData.data, 'base64');
-        const wavBuffer = createWavFromPcm(pcmBuffer, 24000, 1, 16);
+      const audioData = response?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      if (audioData && audioData.data) {
+        const mimeType = audioData.mimeType || "";
+
+        if (mimeType.includes("L16") || mimeType.includes("pcm") || mimeType === "audio/raw") {
+          const pcmBuffer = Buffer.from(audioData.data, 'base64');
+          const wavBuffer = createWavFromPcm(pcmBuffer, 24000, 1, 16);
+          return {
+            audioBase64: wavBuffer.toString('base64'),
+            mimeType: "audio/wav"
+          };
+        }
+
         return {
-          audioBase64: wavBuffer.toString('base64'),
-          mimeType: "audio/wav"
+          audioBase64: audioData.data,
+          mimeType: mimeType || "audio/wav"
         };
       }
-      
-      return {
-        audioBase64: audioData.data,
-        mimeType: mimeType || "audio/wav"
-      };
-    }
-    return null;
+      return null;
+    });
   } catch (error) {
     console.error("TTS generation error:", error);
     return null;
@@ -932,20 +989,21 @@ CRITICAL REQUIREMENTS:
 
 export async function extractTextFromImage(imageBase64: string): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: "image/jpeg",
+    return await withKeyFallback(async (ai) => {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: "image/jpeg",
+            },
           },
-        },
-        "Extract and transcribe all text from this image. Provide only the extracted text without any additional commentary.",
-      ],
+          "Extract and transcribe all text from this image. Provide only the extracted text without any additional commentary.",
+        ],
+      });
+      return response.text || "";
     });
-
-    return response.text || "";
   } catch (error) {
     console.error("Image OCR error:", error);
     throw new Error(`Failed to extract text from image: ${error}`);

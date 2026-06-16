@@ -9,6 +9,7 @@ export interface SpeechPrefs {
   voiceName?: string;
   engineMode?: string;
   language?: string;
+  voicerssLang?: string;
 }
 
 export function getSpeechPrefs(): SpeechPrefs {
@@ -21,12 +22,13 @@ export function saveSpeechPrefs(updates: Partial<SpeechPrefs>) {
   localStorage.setItem(PREFS_KEY, JSON.stringify({ ...p, ...updates }));
 }
 
-// ── Azure TTS config ──────────────────────────────────────────────────────────
+// ── TTS provider config ──────────────────────────────────────────────────────
 
-const AZURE_KEY    = (import.meta as any).env?.VITE_AZURE_TTS_KEY    || "";
-const AZURE_REGION = (import.meta as any).env?.VITE_AZURE_TTS_REGION || "eastus";
+export const TTS_PROVIDERS = ["azure", "elevenlabs", "voicerss", "streamelements", "gemini", "browser"] as const;
+export type TTSProvider = typeof TTS_PROVIDERS[number];
 
-export const azureAvailable = !!AZURE_KEY;
+// All server-side providers are available (keys live on Railway, never exposed to client)
+export const azureAvailable = true;
 
 export const AZURE_VOICES = [
   // English
@@ -168,40 +170,33 @@ export function getBrowserVoiceLanguage(voice: SpeechSynthesisVoice): string {
   return LANG_CODE_TO_NAME[code] || voice.lang;
 }
 
-function escapeXml(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function langFromVoice(voiceName: string): string {
-  const parts = voiceName.split("-");
-  return parts.length >= 2 ? `${parts[0]}-${parts[1]}` : "en-US";
+async function fetchTTSBlob(endpoint: string, body: Record<string, unknown>): Promise<Blob> {
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `TTS request failed (${res.status})`);
+  }
+  return res.blob();
 }
 
 export async function fetchAzureAudio(text: string, voiceName: string, rate = 1): Promise<Blob> {
-  const rateAttr =
-    rate === 1 ? "" : ` rate="${rate >= 1 ? "+" : ""}${Math.round((rate - 1) * 100)}%"`;
-  const lang = langFromVoice(voiceName);
-  const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">\
-<voice name="${voiceName}"><prosody${rateAttr}>${escapeXml(text)}</prosody></voice></speak>`;
+  return fetchTTSBlob("/api/tts/azure", { text, voice: voiceName, rate });
+}
 
-  const res = await fetch(
-    `https://${AZURE_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": AZURE_KEY,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-      },
-      body: ssml,
-    }
-  );
-  if (!res.ok) throw new Error(`Azure TTS error ${res.status}`);
-  return res.blob();
+export async function fetchElevenLabsAudio(text: string, voiceId: string): Promise<Blob> {
+  return fetchTTSBlob("/api/tts/elevenlabs", { text, voiceId });
+}
+
+export async function fetchVoiceRSSAudio(text: string, lang = "en-us"): Promise<Blob> {
+  return fetchTTSBlob("/api/tts/voicerss", { text, lang });
+}
+
+export async function fetchStreamElementsAudio(text: string, voice = "Brian"): Promise<Blob> {
+  return fetchTTSBlob("/api/tts/streamelements", { text, voice });
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -233,10 +228,11 @@ export function useSpeech() {
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
-  // Chrome bug: browser TTS silently stops after ~15 s — keep it alive
+  // Chrome bug: browser TTS silently stops after ~15 s — keep it alive (server engines use Audio, not SpeechSynthesis)
   useEffect(() => {
     if (!speaking || paused) return;
-    if (getSpeechPrefs().engineMode === "azure") return;
+    const e = getSpeechPrefs().engineMode ?? "browser";
+    if (e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements") return;
     const id = setInterval(() => {
       if (window.speechSynthesis?.speaking && !window.speechSynthesis?.paused) {
         window.speechSynthesis.pause();
@@ -259,8 +255,13 @@ export function useSpeech() {
     setProgress(0);
   }, []);
 
+  const isServerEngine = () => {
+    const e = getSpeechPrefs().engineMode ?? "browser";
+    return e === "azure" || e === "elevenlabs" || e === "voicerss" || e === "streamelements";
+  };
+
   const pause = useCallback(() => {
-    if (getSpeechPrefs().engineMode === "azure") {
+    if (isServerEngine()) {
       audioRef.current?.pause();
     } else {
       window.speechSynthesis?.pause();
@@ -269,7 +270,7 @@ export function useSpeech() {
   }, []);
 
   const resume = useCallback(() => {
-    if (getSpeechPrefs().engineMode === "azure") {
+    if (isServerEngine()) {
       audioRef.current?.play?.();
     } else {
       window.speechSynthesis?.resume();
@@ -313,8 +314,11 @@ export function useSpeech() {
     window.speechSynthesis.speak(utt);
   }, []);
 
-  // ── Azure TTS (sentence-by-sentence for accurate highlighting) ────────────────
-  const speakAzure = useCallback(async (sentences: string[], rate: number, voiceName: string) => {
+  // ── Server TTS sentence-by-sentence (Azure / ElevenLabs / VoiceRSS / StreamElements) ──
+  const speakWithServer = useCallback(async (
+    sentences: string[],
+    fetchFn: (text: string) => Promise<Blob>
+  ) => {
     cancelRef.current = false;
     setSpeaking(true);
     setPaused(false);
@@ -326,7 +330,7 @@ export function useSpeech() {
       setCurrentSentIdx(i);
       setProgress(Math.round((i / sentences.length) * 100));
       try {
-        const blob = await fetchAzureAudio(sentences[i], voiceName, rate);
+        const blob = await fetchFn(sentences[i]);
         if (cancelRef.current) break;
         const url = URL.createObjectURL(blob);
         await new Promise<void>((resolve) => {
@@ -338,7 +342,7 @@ export function useSpeech() {
           audio.onerror = done;
           audio.play().catch(done);
         });
-      } catch { /* skip failed sentence */ }
+      } catch { /* skip failed sentence, continue */ }
     }
 
     if (!cancelRef.current) {
@@ -353,16 +357,42 @@ export function useSpeech() {
     (sentences: string[], rate = 1, voiceName: string | null = null) => {
       stop();
       const prefs = getSpeechPrefs();
-      const useAzure = prefs.engineMode === "azure" && azureAvailable;
+      const engine = prefs.engineMode ?? "elevenlabs";
       setTimeout(() => {
-        if (useAzure) {
-          speakAzure(sentences, rate, voiceName || AZURE_VOICES[0].name);
+        if (engine === "elevenlabs") {
+          speakWithServer(sentences, (text) =>
+            fetchElevenLabsAudio(text, voiceName || "21m00Tcm4TlvDq8ikWAM")
+          );
+        } else if (engine === "azure") {
+          speakWithServer(sentences, (text) =>
+            fetchAzureAudio(text, voiceName || AZURE_VOICES[0].name, rate)
+          );
+        } else if (engine === "streamelements") {
+          speakWithServer(sentences, (text) =>
+            fetchStreamElementsAudio(text, voiceName || "Brian")
+          );
+        } else if (engine === "voicerss") {
+          const lang = prefs.voicerssLang || "en-us";
+          speakWithServer(sentences, (text) => fetchVoiceRSSAudio(text, lang));
+        } else if (engine === "gemini") {
+          speakWithServer(sentences, async (text) => {
+            const res = await fetch("/api/tts/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, tone: "professional" }),
+            });
+            if (!res.ok) throw new Error("Gemini TTS failed");
+            const data = await res.json();
+            if (!data?.audio?.audioBase64) throw new Error("No audio data");
+            const bytes = Uint8Array.from(atob(data.audio.audioBase64), c => c.charCodeAt(0));
+            return new Blob([bytes], { type: data.audio.mimeType || "audio/wav" });
+          });
         } else {
           speakBrowser(sentences, rate, voiceName);
         }
       }, 60);
     },
-    [stop, speakBrowser, speakAzure]
+    [stop, speakBrowser, speakWithServer]
   );
 
   return { supported, browserSupported, voices, speaking, paused, currentSentIdx, progress, speak, stop, pause, resume };

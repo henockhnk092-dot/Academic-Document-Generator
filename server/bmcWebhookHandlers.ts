@@ -260,30 +260,42 @@ export class BMCWebhookHandlers {
   }
 
   /**
-   * Find or create a placeholder user by email
-   * Creates a subscription record that will be linked when user signs in with same email
+   * Find or create a subscription record by email.
+   * Priority: Firebase Auth lookup → subscription email search → placeholder.
    */
   private static async findOrCreateUserByEmail(email: string, name?: string): Promise<string | null> {
     try {
-      // First try to find existing user
-      let subscription = await firebaseSubscriptionStorage.findByEmail(email);
+      // 1. Try Firebase Admin Auth — this returns the real UID for any signed-up user
+      try {
+        const { getApps, getApp } = await import('firebase-admin/app');
+        const { getAuth } = await import('firebase-admin/auth');
+        if (getApps().length > 0) {
+          const userRecord = await getAuth(getApp()).getUserByEmail(email);
+          log(`Found Firebase Auth user for ${email}: ${userRecord.uid}`, 'bmc');
+          return userRecord.uid;
+        }
+      } catch (authErr: any) {
+        // User not found in Firebase Auth — fall through to next method
+        if (authErr.code !== 'auth/user-not-found') {
+          log(`Firebase Auth lookup error for ${email}: ${authErr.message}`, 'bmc');
+        }
+      }
 
+      // 2. Try subscriptions collection email field (legacy placeholder records)
+      const subscription = await firebaseSubscriptionStorage.findByEmail(email);
       if (subscription) {
         return subscription.userId;
       }
 
-      // Create a placeholder using email as userId
-      // When the user signs in with Firebase Auth using this email,
-      // they should update their subscription record
+      // 3. Create a placeholder — linked when user later signs up with same email
       const userId = `bmc_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
       await firebaseSubscriptionStorage.createUserSubscription(userId, {
         subscriptionStatus: 'pending',
         subscriptionTier: 'free',
         email,
       });
 
-      log(`Created placeholder subscription for ${email} with userId ${userId}`, 'bmc');
+      log(`Created placeholder subscription for ${email} (uid: ${userId})`, 'bmc');
       return userId;
     } catch (error: any) {
       log(`Error finding/creating user by email: ${error.message}`, 'bmc');

@@ -155,6 +155,24 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.replace(/\\/g, "/");
+          const localeMatch = normalizedId.match(/\/client\/src\/i18n\/locales\/([^/]+)\.json$/);
+          if (localeMatch) return `locale-${localeMatch[1]}`;
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("pptxgenjs")) return "vendor-pptx";
+          if (id.includes("docx")) return "vendor-docx";
+          if (id.includes("firebase")) return "vendor-firebase";
+          if (id.includes("@radix-ui")) return "vendor-radix";
+          if (id.includes("react") || id.includes("wouter")) return "vendor-react";
+          if (id.includes("i18next")) return "vendor-i18n";
+          if (id.includes("highlight.js")) return "vendor-highlight";
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     fs: {

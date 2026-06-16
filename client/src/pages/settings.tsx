@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider";
 import { useUsage } from "@/hooks/use-usage";
 import { PricingModal } from "@/components/pricing-modal";
-import { apiRequest } from "@/lib/queryClient";
 import { PRICING_TIERS } from "@shared/schema";
 import {
   Settings as SettingsIcon,
@@ -42,11 +42,29 @@ import { AZURE_VOICES, AZURE_LANGUAGES, getBrowserVoiceLanguage, azureAvailable,
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
-interface PaymentProviderInfo {
-  preferred: 'bmc' | 'yoco' | 'stripe' | 'none';
-  bmc: boolean;
-  yoco: boolean;
-  stripe: boolean;
+const ELEVENLABS_VOICES = [
+  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel",  desc: "Female · Narration" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella",   desc: "Female · Calm" },
+  { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi",    desc: "Female · Strong" },
+  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli",    desc: "Female · Young" },
+  { id: "pNInz6obpgDQGcFmaJgB", name: "Adam",    desc: "Male · Narration" },
+  { id: "ErXwobaYiN019PkySvjV", name: "Antoni",  desc: "Male · Professional" },
+  { id: "VR6AewLTigWG4xSOukaG", name: "Arnold",  desc: "Male · Crisp" },
+  { id: "TxGEqnHWrfWFTfGW9XjX", name: "Josh",    desc: "Male · Deep" },
+  { id: "yoZ06aMxZJJ28mfd3POQ", name: "Sam",     desc: "Male · Raspy" },
+];
+
+const STREAMELEMENTS_VOICES = [
+  "Brian", "Amy", "Emma", "Joey", "Salli", "Matthew", "Joanna",
+  "Kendra", "Kimberly", "Ivy", "Justin", "Russell", "Nicole", "Geraint",
+];
+
+interface AdminConfigEntry {
+  key: string;
+  label: string;
+  masked: string;
+  hasValue: boolean;
+  group?: string;
 }
 
 export default function Settings() {
@@ -54,8 +72,10 @@ export default function Settings() {
 
   // Voice & language prefs
   const sp0 = getSpeechPrefs();
-  const [voiceEngine, setVoiceEngine] = useState(sp0.engineMode ?? "azure");
+  const [voiceEngine, setVoiceEngine] = useState(sp0.engineMode ?? "elevenlabs");
+  // Azure/browser use human-readable language names ("English"); VoiceRSS uses BCP-47 ("en-us")
   const [voiceLang, setVoiceLang] = useState(sp0.language ?? "English");
+  const [voicerssLang, setVoicerssLang] = useState(sp0.voicerssLang ?? "en-us");
   const [selectedVoice, setSelectedVoice] = useState(sp0.voiceName ?? (AZURE_VOICES[0]?.name ?? ""));
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
@@ -77,10 +97,23 @@ export default function Settings() {
   const handleVoiceEngine = (eng: string) => {
     setVoiceEngine(eng);
     saveSpeechPrefs({ engineMode: eng });
-    // Reset voice to first in current language for the new engine
     if (eng === "azure") {
       const first = AZURE_VOICES.find(v => v.language === voiceLang);
       if (first) { setSelectedVoice(first.name); saveSpeechPrefs({ voiceName: first.name }); }
+    } else if (eng === "elevenlabs") {
+      setSelectedVoice(ELEVENLABS_VOICES[0].id);
+      saveSpeechPrefs({ voiceName: ELEVENLABS_VOICES[0].id });
+    } else if (eng === "streamelements") {
+      setSelectedVoice(STREAMELEMENTS_VOICES[0]);
+      saveSpeechPrefs({ voiceName: STREAMELEMENTS_VOICES[0] });
+    } else if (eng === "voicerss") {
+      setSelectedVoice("Linda");
+      saveSpeechPrefs({ voiceName: "Linda" });
+      // Ensure voicerssLang is a BCP-47 code, not an Azure-format name
+      if (!voicerssLang || voicerssLang.length > 6) {
+        setVoicerssLang("en-us");
+        saveSpeechPrefs({ voicerssLang: "en-us" });
+      }
     } else {
       const first = browserVoices.find(v => getBrowserVoiceLanguage(v) === voiceLang);
       if (first) { setSelectedVoice(first.name); saveSpeechPrefs({ voiceName: first.name }); }
@@ -114,15 +147,16 @@ export default function Settings() {
     darkMode: false,
   });
   const [showPricingModal, setShowPricingModal] = useState(false);
-  const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
-  const [paymentProvider, setPaymentProvider] = useState<PaymentProviderInfo | null>(null);
 
-  const [adminKeys, setAdminKeys] = useState<Array<{ key: string; label: string; masked: string; hasValue: boolean }>>([]);
+  const [adminKeys, setAdminKeys] = useState<AdminConfigEntry[]>([]);
   const [adminKeyEdits, setAdminKeyEdits] = useState<Record<string, string>>({});
   const [adminKeyVisible, setAdminKeyVisible] = useState<Record<string, boolean>>({});
   const [adminKeysLoading, setAdminKeysLoading] = useState(false);
   const [adminKeysSaving, setAdminKeysSaving] = useState(false);
+  const [paraphraseModel, setParaphraseModel] = useState("auto");
+  const [requirePaidForScan, setRequirePaidForScan] = useState(true);
+  const [planLimitsLoading, setPlanLimitsLoading] = useState(false);
 
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -140,12 +174,52 @@ export default function Settings() {
         console.error("Failed to load settings:", e);
       }
     }
-    fetchPaymentProvider();
   }, []);
 
   useEffect(() => {
     if (isAdmin) fetchAdminKeys();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const db = getFirebaseDb();
+    if (!db) return;
+    getDoc(doc(db, "users", user.uid))
+      .then(snap => { if (snap.exists()) setParaphraseModel(snap.data()?.paraphraseModel ?? "auto"); })
+      .catch(() => {});
+  }, [user?.uid]);
+
+  const handleParaphraseModelChange = async (value: string) => {
+    setParaphraseModel(value);
+    if (!user?.uid) return;
+    const db = getFirebaseDb();
+    if (!db) return;
+    try {
+      await setDoc(doc(db, "users", user.uid), { paraphraseModel: value }, { merge: true });
+    } catch { /* non-critical */ }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const db = getFirebaseDb();
+    if (!db) return;
+    getDoc(doc(db, "settings", "planLimits"))
+      .then(snap => { if (snap.exists()) setRequirePaidForScan(snap.data()?.requirePaidForScan !== false); })
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const handleRequirePaidToggle = async (checked: boolean) => {
+    setRequirePaidForScan(checked);
+    setPlanLimitsLoading(true);
+    const db = getFirebaseDb();
+    if (!db) { setPlanLimitsLoading(false); return; }
+    try {
+      await setDoc(doc(db, "settings", "planLimits"), { requirePaidForScan: checked }, { merge: true });
+      toast({ title: checked ? "Restriction enabled" : "Restriction disabled", description: checked ? "Only Pro/Business users can scan." : "All logged-in users can scan." });
+    } catch {
+      toast({ title: "Failed to update setting", variant: "destructive" });
+    } finally { setPlanLimitsLoading(false); }
+  };
 
   const getAdminHeaders = async (): Promise<Record<string, string>> => {
     const auth = getFirebaseAuth();
@@ -161,10 +235,10 @@ export default function Settings() {
       const response = await fetch("/api/admin/config", { headers });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Forbidden");
-      const entries = data.entries || [];
+      const entries = (data.entries || []) as AdminConfigEntry[];
       setAdminKeys(entries);
       const edits: Record<string, string> = {};
-      entries.forEach((e: any) => { edits[e.key] = ""; });
+      entries.forEach((entry) => { edits[entry.key] = ""; });
       setAdminKeyEdits(edits);
     } catch {
       toast({ title: t("common.errorTitle"), description: t("pages.settings.failedLoadConfig"), variant: "destructive" });
@@ -195,21 +269,14 @@ export default function Settings() {
       toast({ title: t("pages.settings.keysUpdated"), description: t("pages.settings.keysUpdatedDesc", { count: data.updated }) });
       setAdminKeyEdits(prev => Object.fromEntries(Object.keys(prev).map(k => [k, ""])));
       await fetchAdminKeys();
-    } catch (error: any) {
-      toast({ title: t("common.errorTitle"), description: error.message || t("pages.settings.failedSaveKeys"), variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("common.errorTitle"),
+        description: error instanceof Error ? error.message : t("pages.settings.failedSaveKeys"),
+        variant: "destructive",
+      });
     } finally {
       setAdminKeysSaving(false);
-    }
-  };
-
-  const fetchPaymentProvider = async () => {
-    try {
-      const response = await fetch("/api/payment/provider");
-      const data = await response.json();
-      setPaymentProvider(data);
-    } catch (error) {
-      console.error("Failed to fetch payment provider:", error);
-      setPaymentProvider({ preferred: 'none', bmc: false, yoco: false, stripe: false });
     }
   };
 
@@ -240,43 +307,28 @@ export default function Settings() {
   };
 
   const handleManageSubscription = async () => {
-    if (!user?.uid) return;
-
-    // For BMC, open the membership page directly
-    if (paymentProvider?.preferred === 'bmc') {
-      window.open("https://buymeacoffee.com/horizonhnk/membership", '_blank');
+    try {
+      const response = await fetch("/api/bmc/checkout-url");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || t("pages.settings.errorOpenPortal"));
+      }
+      window.open(data.url, "_blank", "noopener,noreferrer");
       toast({
         title: t("pages.settings.openingBMC"),
         description: t("pages.settings.openingBMCDesc"),
       });
-      return;
-    }
-
-    setIsPortalLoading(true);
-    try {
-      const response = await apiRequest("POST", "/api/stripe/portal", {
-        userId: user.uid,
-      });
-      const data = await (response as any).json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No portal URL returned");
-      }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Portal error:", error);
       toast({
         title: t("common.errorTitle"),
-        description: error.message || t("pages.settings.errorOpenPortal"),
+        description: error instanceof Error ? error.message : t("pages.settings.errorOpenPortal"),
         variant: "destructive",
       });
-    } finally {
-      setIsPortalLoading(false);
     }
   };
 
-  const handleSelectPlan = async (plan: keyof typeof PRICING_TIERS, priceId?: string, provider?: string) => {
+  const handleSelectPlan = async (plan: keyof typeof PRICING_TIERS) => {
     if (!user?.uid) {
       toast({
         title: t("common.errorTitle"),
@@ -288,69 +340,26 @@ export default function Settings() {
 
     setIsCheckoutLoading(true);
     try {
-      // Handle Buy Me a Coffee checkout
-      const effectiveProvider = provider || paymentProvider?.preferred;
-      if (effectiveProvider === 'bmc') {
-        const response = await fetch(`/api/bmc/checkout-url?tier=${plan}`);
-        const data = await response.json();
-        if (data.url) {
-          window.open(data.url, '_blank');
-          setShowPricingModal(false);
-          toast({
-            title: t("pages.pricing.openingBMC"),
-            description: t("pages.pricing.openingBMCDesc"),
-          });
-        } else {
-          throw new Error("No checkout URL returned");
-        }
-        setIsCheckoutLoading(false);
-        return;
+      const response = await fetch(`/api/bmc/checkout-url?tier=${encodeURIComponent(plan)}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || t("pages.settings.checkoutFailedDesc"));
       }
-
-      // Handle Yoco checkout
-      if (effectiveProvider === 'yoco') {
-        const data = await apiRequest<{ url: string }>("POST", "/api/yoco/checkout", {
-          tier: plan,
-          userId: user.uid,
-          userEmail: user.email,
-        });
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          throw new Error("No checkout URL returned");
-        }
-        return;
-      }
-
-      // Handle Stripe checkout (default)
-      if (!priceId) {
-        toast({
-          title: t("common.errorTitle"),
-          description: t("pages.settings.signInToTryAgain"),
-          variant: "destructive",
-        });
-        setIsCheckoutLoading(false);
-        return;
-      }
-
-      const response = await apiRequest("POST", "/api/stripe/checkout", {
-        priceId,
-        userId: user.uid,
-        userEmail: user.email,
-      });
-
-      const data = await (response as any).json();
-
       if (data.url) {
-        window.location.href = data.url;
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        setShowPricingModal(false);
+        toast({
+          title: t("pages.pricing.openingBMC"),
+          description: t("pages.pricing.openingBMCDesc"),
+        });
       } else {
         throw new Error("No checkout URL returned");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Checkout error:", error);
       toast({
         title: t("pages.settings.checkoutFailed"),
-        description: error.message || t("pages.settings.checkoutFailedDesc"),
+        description: error instanceof Error ? error.message : t("pages.settings.checkoutFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -472,18 +481,11 @@ export default function Settings() {
                     <Button
                       variant="outline"
                       onClick={handleManageSubscription}
-                      disabled={isPortalLoading}
                       className="flex-1"
                     >
-                      {isPortalLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : paymentProvider?.preferred === 'bmc' ? (
-                        <Coffee className="mr-2 h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                      )}
+                      <Coffee className="mr-2 h-4 w-4" />
                       {t("pages.settings.manageSubscription")}
-                      {paymentProvider?.preferred === 'bmc' && <ExternalLink className="ml-2 h-3 w-3" />}
+                      <ExternalLink className="ml-2 h-3 w-3" />
                     </Button>
                   </div>
                 ) : (
@@ -703,16 +705,40 @@ export default function Settings() {
                       voiceEngine === "azure" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Zap className="h-3.5 w-3.5" /> {t("pages.settings.azureNeuralHD")}
+                    <Zap className="h-3.5 w-3.5" /> Azure Neural HD
                   </button>
                 )}
+                <button
+                  onClick={() => handleVoiceEngine("elevenlabs")}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    voiceEngine === "elevenlabs" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Volume2 className="h-3.5 w-3.5" /> ElevenLabs
+                </button>
+                <button
+                  onClick={() => handleVoiceEngine("voicerss")}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    voiceEngine === "voicerss" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  VoiceRSS
+                </button>
+                <button
+                  onClick={() => handleVoiceEngine("streamelements")}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    voiceEngine === "streamelements" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  StreamElements
+                </button>
                 <button
                   onClick={() => handleVoiceEngine("gemini")}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${
                     voiceEngine === "gemini" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> {t("pages.settings.googleGeminiTTS")}
+                  <Sparkles className="h-3.5 w-3.5" /> Gemini TTS
                 </button>
                 <button
                   onClick={() => handleVoiceEngine("browser")}
@@ -720,100 +746,222 @@ export default function Settings() {
                     voiceEngine === "browser" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t("pages.settings.browserDefault")}
+                  Browser Default
                 </button>
               </div>
-              {voiceEngine === "azure" && !azureAvailable && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  {t("pages.settings.azureKeyMissing")}
-                </p>
-              )}
-              {voiceEngine === "gemini" && (
-                <p className="text-xs text-muted-foreground">
-                  {t("pages.settings.geminiTTSNote")}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                {voiceEngine === "azure" && "High-quality Neural voices. 500K chars/month free, fallback to next provider on failure."}
+                {voiceEngine === "elevenlabs" && "Most realistic AI voices. Select a voice below. Falls back to StreamElements on failure."}
+                {voiceEngine === "voicerss" && "Reliable TTS in 50+ languages. Select language below. Falls back to StreamElements on failure."}
+                {voiceEngine === "streamelements" && "Free, no key required. Amazon Polly voices. Select voice below."}
+                {voiceEngine === "gemini" && "Google Gemini TTS. Falls back to browser on failure."}
+                {voiceEngine === "browser" && "Uses your device's built-in voices. No server needed."}
+              </p>
             </div>
 
             <Separator />
 
-            {/* Language + Voice selection */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <Globe className="h-4 w-4" /> {t("pages.settings.language")}
-                </Label>
-                <Select
-                  value={voiceLang}
-                  onValueChange={handleVoiceLang}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {isAzureEngine ? `${langFlag} ${voiceLang}` : voiceLang}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    {activeLangList.map(lang => {
-                      const flag = isAzureEngine ? (AZURE_VOICES.find(v => v.language === lang)?.flag ?? "") : "";
-                      return (
-                        <SelectItem key={lang} value={lang}>
-                          {flag}{flag ? " " : ""}{lang}
-                        </SelectItem>
-                      );
-                    })}
-                    {!isAzureEngine && browserVoices.length === 0 && (
-                      <SelectItem value="English" disabled>{t("pages.settings.loadingBrowserVoices")}</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {isAzureEngine
-                    ? `${AZURE_LANGUAGES.length} ${t("pages.settings.azureLanguagesNote")}`
-                    : `${activeLangList.length} ${t("pages.settings.browserLanguagesNote")}`}
-                </p>
-              </div>
+            {/* Voice selection — changes based on active engine */}
+            {(voiceEngine === "azure" || voiceEngine === "browser") && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Globe className="h-4 w-4" /> {t("pages.settings.language")}
+                  </Label>
+                  <Select value={voiceLang} onValueChange={handleVoiceLang}>
+                    <SelectTrigger>
+                      <SelectValue>
+                        {isAzureEngine ? `${langFlag} ${voiceLang}` : voiceLang}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {activeLangList.map(lang => {
+                        const flag = isAzureEngine ? (AZURE_VOICES.find(v => v.language === lang)?.flag ?? "") : "";
+                        return (
+                          <SelectItem key={lang} value={lang}>
+                            {flag}{flag ? " " : ""}{lang}
+                          </SelectItem>
+                        );
+                      })}
+                      {!isAzureEngine && browserVoices.length === 0 && (
+                        <SelectItem value="English" disabled>{t("pages.settings.loadingBrowserVoices")}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {isAzureEngine
+                      ? `${AZURE_LANGUAGES.length} languages available`
+                      : `${activeLangList.length} languages on your device`}
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label>{t("pages.settings.voiceSpeaker")}</Label>
-                <Select
-                  value={selectedVoice}
-                  onValueChange={handleVoiceSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("pages.settings.selectVoice")} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    {isAzureEngine ? (
-                      azureLangVoices.map(v => (
-                        <SelectItem key={v.name} value={v.name}>
-                          {v.flag} {v.label}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      browserLangVoices.length === 0 ? (
-                        <SelectItem value="" disabled>{t("pages.settings.noVoicesForLang")}</SelectItem>
-                      ) : (
-                        browserLangVoices.map(v => (
+                <div className="space-y-2">
+                  <Label>{t("pages.settings.voiceSpeaker")}</Label>
+                  <Select value={selectedVoice} onValueChange={handleVoiceSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("pages.settings.selectVoice")} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {isAzureEngine ? (
+                        azureLangVoices.map(v => (
                           <SelectItem key={v.name} value={v.name}>
-                            {v.name}
+                            {v.flag} {v.label}
                           </SelectItem>
                         ))
-                      )
-                    )}
+                      ) : (
+                        browserLangVoices.length === 0 ? (
+                          <SelectItem value="" disabled>{t("pages.settings.noVoicesForLang")}</SelectItem>
+                        ) : (
+                          browserLangVoices.map(v => (
+                            <SelectItem key={v.name} value={v.name}>
+                              {v.name}
+                            </SelectItem>
+                          ))
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {isAzureEngine ? "Neural voices via Azure (server-proxied)" : "Voices installed on your device"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {voiceEngine === "elevenlabs" && (
+              <div className="space-y-2">
+                <Label>ElevenLabs Voice</Label>
+                <Select value={selectedVoice || ELEVENLABS_VOICES[0].id} onValueChange={handleVoiceSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ELEVENLABS_VOICES.map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.name} — {v.desc}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  {isAzureEngine ? t("pages.settings.azureVoicesNote") : t("pages.settings.browserVoicesNote")}
-                </p>
+                <p className="text-xs text-muted-foreground">Powered by ElevenLabs. Turbo v2.5 model.</p>
               </div>
-            </div>
+            )}
+
+            {voiceEngine === "streamelements" && (
+              <div className="space-y-2">
+                <Label>StreamElements Voice</Label>
+                <Select value={selectedVoice || "Brian"} onValueChange={handleVoiceSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STREAMELEMENTS_VOICES.map(v => (
+                      <SelectItem key={v} value={v}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Amazon Polly voices. Free, no API key required.</p>
+              </div>
+            )}
+
+            {voiceEngine === "voicerss" && (
+              <div className="space-y-2">
+                <Label>VoiceRSS Language</Label>
+                <Select
+                  value={voicerssLang}
+                  onValueChange={(lang) => {
+                    setVoicerssLang(lang);
+                    saveSpeechPrefs({ voicerssLang: lang });
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {[
+                      { code: "en-us", label: "English (US)" },
+                      { code: "en-gb", label: "English (UK)" },
+                      { code: "fr-fr", label: "French" },
+                      { code: "de-de", label: "German" },
+                      { code: "es-es", label: "Spanish" },
+                      { code: "pt-br", label: "Portuguese (Brazil)" },
+                      { code: "it-it", label: "Italian" },
+                      { code: "ja-jp", label: "Japanese" },
+                      { code: "zh-cn", label: "Chinese (Mandarin)" },
+                      { code: "ar-sa", label: "Arabic" },
+                    ].map(l => (
+                      <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">VoiceRSS — 350 requests/day on free tier.</p>
+              </div>
+            )}
 
             <div className="rounded-lg bg-muted/40 px-4 py-3 text-xs text-muted-foreground space-y-1">
-              <p>{t("pages.settings.voiceInfoAzure")}</p>
-              <p>{t("pages.settings.voiceInfoGemini")}</p>
-              <p>{t("pages.settings.voiceInfoBrowser")}</p>
-              <p className="text-[11px] pt-1 opacity-70">{t("pages.settings.voiceFallback")}</p>
+              <p><strong>Fallback order:</strong> ElevenLabs → Azure → StreamElements → VoiceRSS → Browser</p>
+              <p>If a provider fails or runs out of quota, the next one is tried automatically.</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Paraphrasing Model Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              AI Paraphrasing Model
+            </CardTitle>
+            <CardDescription>
+              Choose which AI model handles text humanization on the Humanizer page
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              {
+                value: "auto",
+                label: "⚡ Auto — Best Available",
+                desc: "System picks best model automatically: Humanize AI Pro → Gemini (×4) → DeepSeek",
+              },
+              {
+                value: "humanize_ai",
+                label: "🎯 Humanize AI Pro — Highest Quality",
+                desc: "Best humanization, uses your dedicated credits",
+              },
+              {
+                value: "deepseek",
+                label: "🇨🇳 DeepSeek — Fast & Efficient",
+                desc: "Chinese AI, very fast, nearly free to run",
+              },
+              {
+                value: "gemini",
+                label: "🔵 Gemini — Google AI (×4 accounts)",
+                desc: "4 Google accounts in rotation, always available, completely free",
+              },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleParaphraseModelChange(opt.value)}
+                className={`w-full text-left flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                  paraphraseModel === opt.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/50"
+                }`}
+              >
+                <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  paraphraseModel === opt.value ? "border-primary" : "border-muted-foreground"
+                }`}>
+                  {paraphraseModel === opt.value && (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                </div>
+              </button>
+            ))}
+            {!isAuthenticated && (
+              <p className="text-xs text-muted-foreground text-center pt-2">Sign in to save your preference</p>
+            )}
           </CardContent>
         </Card>
 
@@ -850,33 +998,59 @@ export default function Settings() {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3">
-                    {adminKeys.map((entry) => (
-                      <div key={entry.key} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-mono text-muted-foreground">{entry.key}</Label>
-                          <span className="text-xs text-muted-foreground">{entry.label}</span>
+                  <div className="space-y-5">
+                    {/* Group keys by their service category */}
+                    {Array.from(new Set(adminKeys.map(e => e.group ?? "Other"))).map(group => (
+                      <div key={group} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group}</span>
+                          <div className="flex-1 h-px bg-border" />
                         </div>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <Input
-                              type={adminKeyVisible[entry.key] ? "text" : "password"}
-                              placeholder={entry.hasValue ? entry.masked : t("pages.settings.notSetEnterValue")}
-                              value={adminKeyEdits[entry.key] || ""}
-                              onChange={(e) => setAdminKeyEdits(prev => ({ ...prev, [entry.key]: e.target.value }))}
-                              className="font-mono text-sm pr-10"
-                            />
+                        {adminKeys.filter(e => (e.group ?? "Other") === group).map((entry) => (
+                          <div key={entry.key} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-mono text-muted-foreground">{entry.key}</Label>
+                              <span className="text-xs text-muted-foreground">{entry.label}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <Input
+                                  type={adminKeyVisible[entry.key] ? "text" : "password"}
+                                  placeholder={entry.hasValue ? entry.masked : t("pages.settings.notSetEnterValue")}
+                                  value={adminKeyEdits[entry.key] || ""}
+                                  onChange={(e) => setAdminKeyEdits(prev => ({ ...prev, [entry.key]: e.target.value }))}
+                                  className="font-mono text-sm pr-10"
+                                />
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setAdminKeyVisible(prev => ({ ...prev, [entry.key]: !prev[entry.key] }))}
+                              >
+                                {adminKeyVisible[entry.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setAdminKeyVisible(prev => ({ ...prev, [entry.key]: !prev[entry.key] }))}
-                          >
-                            {adminKeyVisible[entry.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
+                        ))}
                       </div>
                     ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Plan limits toggle */}
+                  <div className="flex items-center justify-between py-1">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm">Require paid plan for scanning</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When ON, only Pro/Business users can use AI detection and paraphrasing
+                      </p>
+                    </div>
+                    <Switch
+                      checked={requirePaidForScan}
+                      onCheckedChange={handleRequirePaidToggle}
+                      disabled={planLimitsLoading}
+                    />
                   </div>
 
                   <Separator />

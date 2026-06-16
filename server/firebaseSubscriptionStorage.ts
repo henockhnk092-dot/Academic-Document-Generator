@@ -211,23 +211,6 @@ export class FirebaseSubscriptionStorage {
     };
   }
 
-  async setStripeCustomerId(userId: string, customerId: string): Promise<void> {
-    if (!this.db) {
-      console.log('[Firebase Admin] Database not available - cannot set customer ID');
-      return;
-    }
-    const docRef = this.db.collection(SUBSCRIPTIONS_COLLECTION).doc(userId);
-    const doc = await docRef.get();
-
-    if (doc.exists) {
-      await docRef.update({
-        stripeCustomerId: customerId,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    } else {
-      await this.createUserSubscription(userId, { stripeCustomerId: customerId });
-    }
-  }
 
   async activateSubscription(
     userId: string,

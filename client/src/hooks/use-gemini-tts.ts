@@ -1,6 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
-import { azureAvailable, AZURE_VOICES, fetchAzureAudio, getSpeechPrefs, saveSpeechPrefs } from "@/hooks/use-speech";
+import {
+  azureAvailable, AZURE_VOICES,
+  fetchAzureAudio, fetchElevenLabsAudio, fetchVoiceRSSAudio, fetchStreamElementsAudio,
+  getSpeechPrefs, saveSpeechPrefs,
+} from "@/hooks/use-speech";
 
 type TTSStatus = "idle" | "loading" | "playing" | "paused";
 
@@ -281,7 +285,7 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
 
   // Engine / voice state
   const prefs0 = getSpeechPrefs();
-  const [engineMode, setEngineModeRaw] = useState(prefs0.engineMode ?? "azure");
+  const [engineMode, setEngineModeRaw] = useState(prefs0.engineMode ?? "elevenlabs");
   const [voiceName, setVoiceNameRaw]   = useState(prefs0.voiceName ?? (AZURE_VOICES[0]?.name ?? ""));
   const [voices, setVoices]            = useState<SpeechSynthesisVoice[]>([]);
 
@@ -321,6 +325,27 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
     }
   }, []);
 
+  const playAudioBlob = useCallback((blob: Blob, onEnd: () => void) => {
+    const audioUrl = URL.createObjectURL(blob);
+    cleanup();
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    usingBrowserTTSRef.current = false;
+    // Guard against double-call (onerror + play() rejection can both fire)
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(audioUrl);
+      audioRef.current = null;
+      onEnd();
+    };
+    audio.onended = finish;
+    audio.onerror = finish;
+    setStatus("playing");
+    audio.play().catch(finish); // catch autoplay-blocked rejection
+  }, [cleanup]);
+
   const speakSection = useCallback(async (index: number) => {
     if (isStoppedRef.current || index >= sectionsRef.current.length) {
       setStatus("idle");
@@ -335,201 +360,114 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
     setCurrentSectionIndex(index);
     setProgress(Math.round((index / sectionsRef.current.length) * 100));
 
-    // If we already hit rate limit, use browser TTS directly
-    if (rateLimitHitRef.current) {
-      try {
-        // Clean up any previous audio before starting browser TTS
-        cleanup();
-        setStatus("playing");
-        usingBrowserTTSRef.current = true;
-        await speakWithBrowserTTS(text);
-
-        if (!isStoppedRef.current) {
-          const nextIndex = index + 1;
-          if (nextIndex < sectionsRef.current.length) {
-            speakSection(nextIndex);
-          } else {
-            setStatus("idle");
-            setCurrentSectionIndex(0);
-            setProgress(100);
-          }
-        }
-      } catch (error) {
-        console.error("Browser TTS error:", error);
-        if (!isStoppedRef.current && index + 1 < sectionsRef.current.length) {
-          speakSection(index + 1);
-        } else {
-          setStatus("idle");
-        }
+    const advance = () => {
+      if (isStoppedRef.current) return;
+      const next = index + 1;
+      if (next < sectionsRef.current.length) {
+        speakSection(next);
+      } else {
+        setStatus("idle");
+        setCurrentSectionIndex(0);
+        setProgress(100);
       }
+    };
+
+    // If already in browser fallback mode, skip straight to it
+    if (rateLimitHitRef.current) {
+      cleanup();
+      setStatus("playing");
+      usingBrowserTTSRef.current = true;
+      await speakWithBrowserTTS(text).catch(() => {});
+      advance();
       return;
     }
 
-    // ── Azure TTS path ───────────────────────────────────────────────────────
-    if (engineModeRef.current === "azure" && azureAvailable) {
+    const engine = engineModeRef.current;
+    const voice  = voiceNameRef.current;
+
+    // ── Try selected provider ────────────────────────────────────────────────
+    const tryBlob = async (): Promise<Blob | null> => {
       try {
-        const blob = await fetchAzureAudio(text, voiceNameRef.current || AZURE_VOICES[0].name, 1);
-        if (isStoppedRef.current) return;
-        const audioUrl = URL.createObjectURL(blob);
-        cleanup();
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-        usingBrowserTTSRef.current = false;
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          if (!isStoppedRef.current) {
-            const nextIndex = index + 1;
-            if (nextIndex < sectionsRef.current.length) {
-              speakSection(nextIndex);
-            } else {
-              setStatus("idle");
-              setCurrentSectionIndex(0);
-              setProgress(100);
-            }
+        if (engine === "azure") {
+          return await fetchAzureAudio(text, voice || AZURE_VOICES[0].name, 1);
+        }
+        if (engine === "elevenlabs") {
+          return await fetchElevenLabsAudio(text, voice || "21m00Tcm4TlvDq8ikWAM");
+        }
+        if (engine === "voicerss") {
+          const lang = getSpeechPrefs().voicerssLang || "en-us";
+          return await fetchVoiceRSSAudio(text, lang);
+        }
+        if (engine === "streamelements") {
+          return await fetchStreamElementsAudio(text, voice || "Brian");
+        }
+        if (engine === "gemini") {
+          const response = await apiRequest("POST", "/api/tts/generate", { text, tone }) as any;
+          if (response?.audio?.audioBase64) {
+            const bytes = Uint8Array.from(atob(response.audio.audioBase64), c => c.charCodeAt(0));
+            return new Blob([bytes], { type: response.audio.mimeType || "audio/wav" });
           }
-        };
-        audio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          if (!isStoppedRef.current && index + 1 < sectionsRef.current.length) {
-            speakSection(index + 1);
-          } else {
-            setStatus("idle");
-          }
-        };
-        setStatus("playing");
-        await audio.play();
-        return;
-      } catch (azureErr) {
-        console.warn("Azure TTS error, falling back to Gemini:", azureErr);
-        // fall through to Gemini / browser fallback below
+          return null;
+        }
+      } catch (err) {
+        console.warn(`TTS provider "${engine}" failed:`, err);
       }
+      return null;
+    };
+
+    // ── Fallback chain: ElevenLabs → Azure → StreamElements → VoiceRSS ────────
+    const tryFallbacks = async (): Promise<Blob | null> => {
+      const fallbacks: Array<() => Promise<Blob | null>> = [
+        () => engine !== "elevenlabs"
+          ? fetchElevenLabsAudio(text, "21m00Tcm4TlvDq8ikWAM").catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "azure"
+          ? fetchAzureAudio(text, AZURE_VOICES[0].name, 1).catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "streamelements"
+          ? fetchStreamElementsAudio(text).catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "voicerss"
+          ? fetchVoiceRSSAudio(text, getSpeechPrefs().voicerssLang || "en-us").catch(() => null)
+          : Promise.resolve(null),
+      ];
+      for (const fn of fallbacks) {
+        if (isStoppedRef.current) return null;
+        const blob = await fn();
+        if (blob) return blob;
+      }
+      return null;
+    };
+
+    // Skip server providers if user explicitly chose browser
+    if (engine === "browser") {
+      cleanup();
+      setStatus("playing");
+      usingBrowserTTSRef.current = true;
+      await speakWithBrowserTTS(text).catch(() => {});
+      advance();
+      return;
     }
 
-    try {
-      // Try Gemini TTS (high quality)
-      const response = await apiRequest("POST", "/api/tts/generate", {
-        text,
-        tone,
-      }) as { success?: boolean; audio?: { audioBase64: string; mimeType: string }; error?: string };
+    let blob = await tryBlob();
 
-      if (isStoppedRef.current) return;
-
-      // Check if we got audio data
-      if (response.audio && response.audio.audioBase64) {
-        // Convert base64 to blob
-        const binaryString = atob(response.audio.audioBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const mimeType = response.audio.mimeType || "audio/wav";
-        const audioBlob = new Blob([bytes], { type: mimeType });
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        cleanup();
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-        usingBrowserTTSRef.current = false;
-
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          if (!isStoppedRef.current) {
-            const nextIndex = index + 1;
-            if (nextIndex < sectionsRef.current.length) {
-              speakSection(nextIndex);
-            } else {
-              setStatus("idle");
-              setCurrentSectionIndex(0);
-              setProgress(100);
-            }
-          }
-        };
-
-        audio.onerror = () => {
-          console.error("Audio playback error");
-          URL.revokeObjectURL(audioUrl);
-          if (!isStoppedRef.current && index + 1 < sectionsRef.current.length) {
-            speakSection(index + 1);
-          } else {
-            setStatus("idle");
-          }
-        };
-
-        setStatus("playing");
-        await audio.play();
-      } else {
-        // TTS generation failed, fall back to browser TTS
-        console.warn("Gemini TTS failed, using browser TTS fallback");
-        // Clean up any previous audio before starting browser TTS
-        cleanup();
-        setStatus("playing");
-        usingBrowserTTSRef.current = true;
-
-        try {
-          await speakWithBrowserTTS(text);
-
-          if (!isStoppedRef.current) {
-            const nextIndex = index + 1;
-            if (nextIndex < sectionsRef.current.length) {
-              speakSection(nextIndex);
-            } else {
-              setStatus("idle");
-              setCurrentSectionIndex(0);
-              setProgress(100);
-            }
-          }
-        } catch (browserError) {
-          console.error("Browser TTS also failed:", browserError);
-          if (index + 1 < sectionsRef.current.length) {
-            speakSection(index + 1);
-          } else {
-            setStatus("idle");
-            setProgress(100);
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error("TTS API error:", error);
-
-      // Check if it's a rate limit or server error - switch to browser TTS for remaining
-      // Server returns 500 when Gemini API fails (including rate limits)
-      if (error?.status === 429 || error?.status === 500 ||
-          error?.message?.includes('429') || error?.message?.includes('500') ||
-          error?.message?.includes('rate') || error?.message?.includes('quota') ||
-          error?.message?.includes('Failed to generate')) {
-        console.log("API error detected, switching to browser TTS for remaining sections");
-        rateLimitHitRef.current = true;
-      }
-
-      // Fall back to browser TTS
-      try {
-        // Clean up any previous audio before starting browser TTS
-        cleanup();
-        setStatus("playing");
-        usingBrowserTTSRef.current = true;
-        await speakWithBrowserTTS(text);
-
-        if (!isStoppedRef.current) {
-          const nextIndex = index + 1;
-          if (nextIndex < sectionsRef.current.length) {
-            speakSection(nextIndex);
-          } else {
-            setStatus("idle");
-            setCurrentSectionIndex(0);
-            setProgress(100);
-          }
-        }
-      } catch (browserError) {
-        console.error("Browser TTS also failed:", browserError);
-        if (!isStoppedRef.current && index + 1 < sectionsRef.current.length) {
-          speakSection(index + 1);
-        } else {
-          setStatus("idle");
-        }
-      }
+    if (!blob) {
+      blob = await tryFallbacks();
     }
-  }, [tone, cleanup]);
+
+    if (blob && !isStoppedRef.current) {
+      await playAudioBlob(blob, advance);
+      return;
+    }
+
+    // Last resort: browser TTS
+    rateLimitHitRef.current = true;
+    cleanup();
+    setStatus("playing");
+    usingBrowserTTSRef.current = true;
+    await speakWithBrowserTTS(text).catch(() => {});
+    if (!isStoppedRef.current) advance();
+  }, [tone, cleanup, playAudioBlob]);
 
   const play = useCallback((content: DocumentContent) => {
     isStoppedRef.current = false;

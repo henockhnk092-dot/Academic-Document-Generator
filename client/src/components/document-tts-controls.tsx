@@ -57,7 +57,9 @@ export function DocumentTTSControls({
   const isIdle = status === "idle";
   const isLoading = status === "loading";
   const isAzure = engineMode === "azure" && azureAvailable;
-  const showEngineToggle = azureAvailable && !!onEngineModeChange;
+  // Only show the azure/browser toggle when the active engine is already one of those two;
+  // other engines (elevenlabs, voicerss, streamelements) are configured in Settings only.
+  const showEngineToggle = azureAvailable && !!onEngineModeChange && (!engineMode || ["azure", "browser", undefined].includes(engineMode));
 
   const azureLangVoices = azureVoices.filter(v => v.language === selectedLang);
   const browserLangVoices = voices.filter(v => getBrowserVoiceLanguage(v) === selectedLang);

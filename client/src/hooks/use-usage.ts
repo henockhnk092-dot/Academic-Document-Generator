@@ -45,11 +45,25 @@ export function useUsage() {
   const { data: serverUsage, isLoading: usageLoading } = useQuery<{ usage: UsageData }>({
     queryKey: ["/api/usage", user?.uid],
     enabled: isAuthenticated && !!user?.uid,
+    queryFn: async () => {
+      if (!user?.uid) throw new Error("User is not authenticated");
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/usage/${encodeURIComponent(user.uid)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch usage");
+      }
+      return data;
+    },
   });
 
   const recordUsageMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("POST", "/api/usage/record", { userId });
+      const token = await user?.getIdToken();
+      return apiRequest("POST", "/api/usage/record", { userId, token });
     },
   });
 

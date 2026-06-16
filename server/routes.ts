@@ -1,22 +1,119 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import { lookup } from "node:dns/promises";
+import net from "node:net";
 import { storage } from "./storage";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { generateReportContent, generatePresentationContent, generateConferencePaperContent, generateThesisContent, extractTextFromImage, generateChatResponse, generateSpeechAudio, checkGrammar, generateContent, generateSectionContent } from "./lib/gemini";
+import { generateAzureAudio, generateElevenLabsAudio, generateVoiceRSSAudio, generateStreamElementsAudio, ELEVENLABS_VOICES, STREAMELEMENTS_VOICES } from "./lib/tts";
 import { searchImages, getRandomImage } from "./lib/pixabay";
 import { extractTextFromFile } from "./lib/file-processor";
 import { getRandomTopic } from "../shared/random-topics";
 import { generatePdf } from "./lib/pdf-export";
-import { stripeService } from "./stripeService";
-import { getStripePublishableKey, getUncachableStripeClient } from "./stripeClient";
 import { firebaseSubscriptionStorage } from "./firebaseSubscriptionStorage";
 import { USAGE_LIMITS, PRICING_TIERS } from "@shared/schema";
-import { yocoService } from "./yocoService";
-import { getYocoPublicKey, isYocoConfigured } from "./yocoClient";
 import { getBMCCheckoutUrl, getBMCProducts, isBMCConfigured } from "./bmcClient";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const PAYMENT_PROVIDERS = ["bmc", "yoco", "stripe", "none"] as const;
+type PaymentProvider = typeof PAYMENT_PROVIDERS[number];
+type PricingTier = keyof typeof PRICING_TIERS;
+
+function isPricingTier(tier: unknown): tier is PricingTier {
+  return typeof tier === "string" && tier in PRICING_TIERS;
+}
+
+function parseCsvEnv(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+const ADMIN_EMAILS_SERVER = parseCsvEnv(process.env.ADMIN_EMAILS);
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function getAuthenticatedUid(req: Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const bodyToken = typeof req.body?.token === "string" ? req.body.token : undefined;
+  const idToken = bearerToken ?? bodyToken;
+
+  if (!idToken) return null;
+
+  const { getApps, getApp } = await import("firebase-admin/app");
+  const { getAuth } = await import("firebase-admin/auth");
+  if (getApps().length === 0) return null;
+
+  const decoded = await getAuth(getApp()).verifyIdToken(idToken);
+  return decoded.uid;
+}
+
+async function requireMatchingUser(
+  req: Request,
+  res: Response,
+  userId: string,
+): Promise<string | null> {
+  const uid = await getAuthenticatedUid(req).catch(() => null);
+  if (!uid) {
+    res.status(401).json({ error: "Authentication required" });
+    return null;
+  }
+  if (uid !== userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
+  return uid;
+}
+
+function isPrivateIp(address: string): boolean {
+  if (net.isIPv4(address)) {
+    const parts = address.split(".").map(Number);
+    const [a, b] = parts;
+    return (
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      address === "0.0.0.0"
+    );
+  }
+  if (net.isIPv6(address)) {
+    const normalized = address.toLowerCase();
+    return (
+      normalized === "::1" ||
+      normalized === "::" ||
+      normalized.startsWith("fc") ||
+      normalized.startsWith("fd") ||
+      normalized.startsWith("fe80:")
+    );
+  }
+  return true;
+}
+
+async function assertPublicHttpUrl(url: string): Promise<URL> {
+  const parsedUrl = new URL(url);
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    throw new Error("Only HTTP and HTTPS URLs are supported");
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+    throw new Error("Local URLs are not allowed");
+  }
+
+  const addresses = await lookup(hostname, { all: true });
+  if (addresses.length === 0 || addresses.some(({ address }) => isPrivateIp(address))) {
+    throw new Error("Private or internal network URLs are not allowed");
+  }
+
+  return parsedUrl;
+}
 
 // Rate limiters — protect AI generation endpoints from abuse
 const generateLimiter = rateLimit({
@@ -380,6 +477,70 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
     }
   });
 
+  app.post("/api/tts/azure", async (req, res) => {
+    try {
+      const { text, voice = "en-US-JennyNeural", rate = 1 } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const buffer = await generateAzureAudio(text, voice, rate);
+      res.set("Content-Type", "audio/mpeg");
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("Azure TTS error:", error?.response?.status ?? error.message);
+      res.status(500).json({ error: error.message || "Azure TTS failed" });
+    }
+  });
+
+  app.post("/api/tts/elevenlabs", async (req, res) => {
+    try {
+      const { text, voiceId = "21m00Tcm4TlvDq8ikWAM" } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const buffer = await generateElevenLabsAudio(text, voiceId);
+      res.set("Content-Type", "audio/mpeg");
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("ElevenLabs TTS error:", error?.response?.status ?? error.message);
+      res.status(500).json({ error: error.message || "ElevenLabs TTS failed" });
+    }
+  });
+
+  app.post("/api/tts/voicerss", async (req, res) => {
+    try {
+      const { text, lang = "en-us", voice } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const buffer = await generateVoiceRSSAudio(text, lang, voice || undefined);
+      res.set("Content-Type", "audio/mpeg");
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("VoiceRSS TTS error:", error?.response?.status ?? error.message);
+      res.status(500).json({ error: error.message || "VoiceRSS TTS failed" });
+    }
+  });
+
+  app.post("/api/tts/streamelements", async (req, res) => {
+    try {
+      const { text, voice = "Brian" } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const buffer = await generateStreamElementsAudio(text, voice);
+      res.set("Content-Type", "audio/mpeg");
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("StreamElements TTS error:", error?.response?.status ?? error.message);
+      res.status(500).json({ error: error.message || "StreamElements TTS failed" });
+    }
+  });
+
+  app.get("/api/tts/providers", (_req, res) => {
+    res.json({
+      azure: Boolean(process.env.AZURE_TTS_KEY),
+      elevenlabs: Boolean(process.env.ELEVENLABS_API_KEY),
+      voicerss: Boolean(process.env.VOICERSS_API_KEY),
+      streamelements: true,
+      gemini: Boolean(process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY),
+      elevenLabsVoices: ELEVENLABS_VOICES,
+      streamElementsVoices: STREAMELEMENTS_VOICES,
+    });
+  });
+
   app.post("/api/files/process", upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
@@ -638,12 +799,11 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ success: false, error: "URL is required" });
       }
 
-      // Validate URL
       let parsedUrl: URL;
       try {
-        parsedUrl = new URL(url);
-      } catch {
-        return res.status(400).json({ success: false, error: "Invalid URL format" });
+        parsedUrl = await assertPublicHttpUrl(url);
+      } catch (error) {
+        return res.status(400).json({ success: false, error: getErrorMessage(error) || "Invalid URL format" });
       }
 
 
@@ -651,7 +811,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-      const response = await fetch(url, {
+      const response = await fetch(parsedUrl.toString(), {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -661,7 +821,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
           'Upgrade-Insecure-Requests': '1',
         },
         signal: controller.signal,
-        redirect: 'follow',
+        redirect: 'error',
       });
 
       clearTimeout(timeoutId);
@@ -707,7 +867,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
       const description = getMetaContent('og:description') || getMetaContent('description') || getMetaContent('twitter:description');
 
       // Extract site name as source
-      const source = getMetaContent('og:site_name') || getMetaContent('application-name') || new URL(url).hostname;
+      const source = getMetaContent('og:site_name') || getMetaContent('application-name') || parsedUrl.hostname;
 
       // Extract DOI if present
       let doi = getMetaContent('citation_doi') || getMetaContent('DC.identifier');
@@ -723,7 +883,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
           authors: authors.replace(/\s+/g, ' ').trim(),
           year,
           source,
-          url,
+          url: parsedUrl.toString(),
           doi,
           notes: description ? description.substring(0, 500) : '',
           type: 'website',
@@ -1088,6 +1248,9 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ error: "User ID is required" });
       }
 
+      const authenticatedUid = await requireMatchingUser(req, res, userId);
+      if (!authenticatedUid) return;
+
       // Use getOrCreateSubscription to ensure usage persists across login/logout
       // This creates a record if it doesn't exist and returns the persisted data
       const subscription = await firebaseSubscriptionStorage.getOrCreateSubscription(userId);
@@ -1126,6 +1289,9 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(400).json({ error: "User ID is required" });
       }
 
+      const authenticatedUid = await requireMatchingUser(req, res, userId);
+      if (!authenticatedUid) return;
+
       // Use Firebase subscription storage
       const result = await firebaseSubscriptionStorage.incrementUsage(userId);
 
@@ -1149,207 +1315,6 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
     }
   });
 
-  app.get("/api/stripe/publishable-key", async (req, res) => {
-    try {
-      const publishableKey = await getStripePublishableKey();
-      res.json({ publishableKey });
-    } catch (error: any) {
-      console.error("Stripe key error:", error);
-      res.status(500).json({ error: "Failed to get Stripe key" });
-    }
-  });
-
-  app.get("/api/stripe/products", async (req, res) => {
-    try {
-      const products = await stripeService.listProductsWithPrices();
-      res.json({ products });
-    } catch (error: any) {
-      console.error("Products fetch error:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
-  });
-
-  app.post("/api/stripe/checkout", async (req, res) => {
-    try {
-      const { priceId, userId, userEmail } = req.body;
-
-      if (!priceId || !userId) {
-        return res.status(400).json({ error: "Price ID and User ID are required" });
-      }
-
-      // Try to get existing customer from Firebase (may return null if Firebase unavailable)
-      let subscription = null;
-      let customerId: string | null = null;
-
-      if (firebaseSubscriptionStorage.isAvailable()) {
-        subscription = await firebaseSubscriptionStorage.getUserSubscription(userId);
-        customerId = subscription?.stripeCustomerId || null;
-      }
-
-      if (!customerId) {
-        // Create new Stripe customer with userId in metadata
-        const customer = await stripeService.createCustomer(
-          userEmail || `user-${userId}@papergen.ai`,
-          userId
-        );
-        customerId = customer.id;
-
-        // Save to Firebase if available
-        if (firebaseSubscriptionStorage.isAvailable()) {
-          if (subscription) {
-            await firebaseSubscriptionStorage.updateUserSubscription(userId, { stripeCustomerId: customerId });
-          } else {
-            await firebaseSubscriptionStorage.createUserSubscription(userId, {
-              stripeCustomerId: customerId,
-            });
-          }
-        }
-      }
-
-      const host = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const baseUrl = `${protocol}://${host}`;
-
-      const session = await stripeService.createCheckoutSession(
-        customerId,
-        priceId,
-        `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        `${baseUrl}/checkout/cancel`
-      );
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Checkout error:", error);
-      res.status(500).json({ error: error.message || "Failed to create checkout session" });
-    }
-  });
-
-  app.post("/api/stripe/portal", async (req, res) => {
-    try {
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
-      }
-
-      // Use Firebase subscription storage
-      const subscription = await firebaseSubscriptionStorage.getUserSubscription(userId);
-
-      if (!subscription?.stripeCustomerId) {
-        return res.status(404).json({ error: "No subscription found" });
-      }
-
-      const host = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const baseUrl = `${protocol}://${host}`;
-
-      const session = await stripeService.createCustomerPortalSession(
-        subscription.stripeCustomerId,
-        `${baseUrl}/settings`
-      );
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Portal error:", error);
-      res.status(500).json({ error: error.message || "Failed to create portal session" });
-    }
-  });
-
-  app.get("/api/stripe/subscription/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-
-      // Use Firebase subscription storage
-      const subscription = await firebaseSubscriptionStorage.getUserSubscription(userId);
-
-      if (!subscription?.stripeCustomerId) {
-        return res.json({ subscription: null });
-      }
-
-      const customerSubs = await stripeService.getCustomerSubscriptions(subscription.stripeCustomerId);
-
-      res.json({
-        subscription: {
-          status: subscription.subscriptionStatus,
-          tier: subscription.subscriptionTier,
-          expiry: subscription.subscriptionExpiry,
-          activeStripeSubscriptions: customerSubs,
-        }
-      });
-    } catch (error: any) {
-      console.error("Subscription fetch error:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch subscription" });
-    }
-  });
-
-  // ============== YOCO PAYMENT ROUTES ==============
-
-  // Get Yoco public key
-  app.get("/api/yoco/public-key", async (req, res) => {
-    try {
-      if (!isYocoConfigured()) {
-        return res.status(503).json({ error: "Yoco is not configured" });
-      }
-      const publicKey = getYocoPublicKey();
-      res.json({ publicKey });
-    } catch (error: any) {
-      console.error("Yoco key error:", error);
-      res.status(500).json({ error: "Failed to get Yoco key" });
-    }
-  });
-
-  // Get Yoco products (with ZAR pricing)
-  app.get("/api/yoco/products", async (req, res) => {
-    try {
-      const products = yocoService.getProducts();
-      res.json({
-        products,
-        currency: "ZAR",
-        isTestMode: yocoService.isTestMode(),
-      });
-    } catch (error: any) {
-      console.error("Yoco products error:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
-  });
-
-  // Create Yoco checkout session
-  app.post("/api/yoco/checkout", async (req, res) => {
-    try {
-      const { tier, userId, userEmail } = req.body;
-
-      if (!tier || !userId) {
-        return res.status(400).json({ error: "Tier and User ID are required" });
-      }
-
-      // Validate tier
-      if (!PRICING_TIERS[tier as keyof typeof PRICING_TIERS]) {
-        return res.status(400).json({ error: "Invalid tier" });
-      }
-
-      const host = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const baseUrl = `${protocol}://${host}`;
-
-      const checkout = await yocoService.createCheckout({
-        tier: tier as keyof typeof PRICING_TIERS,
-        userId,
-        userEmail,
-        successUrl: `${baseUrl}/checkout/success?provider=yoco`,
-        cancelUrl: `${baseUrl}/pricing`,
-        failureUrl: `${baseUrl}/checkout/failed`,
-      });
-
-      res.json({
-        url: checkout.redirectUrl,
-        checkoutId: checkout.id,
-      });
-    } catch (error: any) {
-      console.error("Yoco checkout error:", error);
-      res.status(500).json({ error: error.message || "Failed to create checkout session" });
-    }
-  });
-
   // ============== BUY ME A COFFEE ROUTES ==============
 
   // Get BMC checkout URL
@@ -1359,7 +1324,10 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
         return res.status(503).json({ error: "Buy Me a Coffee is not configured" });
       }
       const tier = req.query.tier as string | undefined;
-      const url = getBMCCheckoutUrl(tier as any);
+      if (tier && !isPricingTier(tier)) {
+        return res.status(400).json({ error: "Invalid pricing tier" });
+      }
+      const url = getBMCCheckoutUrl(tier ? tier as PricingTier : undefined);
       res.json({ url });
     } catch (error: any) {
       console.error("BMC URL error:", error);
@@ -1382,36 +1350,70 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
   });
 
   // Get payment provider info
-  app.get("/api/payment/provider", async (req, res) => {
-    try {
-      const bmcAvailable = isBMCConfigured();
-      const yocoAvailable = isYocoConfigured();
-      const stripeAvailable = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PUBLISHABLE_KEY);
-
-      // Prefer BMC (simplest setup), then Yoco, then Stripe
-      let preferredProvider = 'none';
-      if (bmcAvailable) {
-        preferredProvider = 'bmc';
-      } else if (yocoAvailable) {
-        preferredProvider = 'yoco';
-      } else if (stripeAvailable) {
-        preferredProvider = 'stripe';
-      }
-
-      res.json({
-        preferred: preferredProvider,
-        bmc: bmcAvailable,
-        yoco: yocoAvailable,
-        stripe: stripeAvailable,
-        yocoTestMode: yocoAvailable ? yocoService.isTestMode() : null,
-      });
-    } catch (error: any) {
-      console.error("Payment provider error:", error);
-      res.status(500).json({ error: "Failed to get payment provider info" });
-    }
+  app.get("/api/payment/provider", (_req, res) => {
+    const bmc = isBMCConfigured();
+    const preferred: PaymentProvider = bmc ? "bmc" : "none";
+    res.json({ preferred, bmc, yoco: false, stripe: false });
   });
 
   // ============== HUMANIZER API ==============
+
+  let _requirePaidCache: { value: boolean; at: number } | null = null;
+
+  async function getRequirePaidForScan(): Promise<boolean> {
+    const now = Date.now();
+    if (_requirePaidCache && now - _requirePaidCache.at < 60000) return _requirePaidCache.value;
+    try {
+      const { getApps, getApp } = await import("firebase-admin/app");
+      const { getFirestore: getAdminFs } = await import("firebase-admin/firestore");
+      if (getApps().length === 0) return true;
+      const snap = await getAdminFs(getApp()).collection("settings").doc("planLimits").get();
+      const value = snap.data()?.requirePaidForScan !== false;
+      _requirePaidCache = { value, at: now };
+      return value;
+    } catch { return true; }
+  }
+
+  async function checkPaidAccess(req: Request): Promise<{ allowed: boolean; uid: string | null; plan: string; isAdmin: boolean; reason?: string }> {
+    const token = req.body?.token as string | undefined;
+    if (!token) return { allowed: false, uid: null, plan: "none", isAdmin: false, reason: "not_authenticated" };
+    try {
+      const { getApps, getApp } = await import("firebase-admin/app");
+      const { getAuth } = await import("firebase-admin/auth");
+      const { getFirestore: getAdminFs } = await import("firebase-admin/firestore");
+      if (getApps().length === 0) return { allowed: true, uid: null, plan: "unknown", isAdmin: false };
+
+      const decoded = await getAuth(getApp()).verifyIdToken(token);
+      const uid = decoded.uid;
+      const db = getAdminFs(getApp());
+
+      const userSnap = await db.collection("users").doc(uid).get();
+      const userData = userSnap.data() ?? {};
+      if (userData.isAdmin === true) return { allowed: true, uid, plan: "admin", isAdmin: true };
+
+      const userPlan = (userData.plan as string) ?? "";
+      const PAID_PLANS = ["pro", "business", "monthly", "yearly", "weekly", "day_pass"];
+      if (PAID_PLANS.includes(userPlan)) {
+        // Also check planExpiresAt if present (set by BMC frontend activation)
+        const planExpiresAt = userData.planExpiresAt as string | undefined;
+        if (!planExpiresAt || new Date(planExpiresAt) > new Date()) {
+          return { allowed: true, uid, plan: userPlan, isAdmin: false };
+        }
+      }
+
+      // Fallback: check subscriptions collection for any active paid subscription
+      const subSnap = await db.collection("subscriptions").doc(uid).get();
+      const sub = subSnap.data() ?? {};
+      const isActive = sub.subscriptionStatus === "active" &&
+        sub.subscriptionExpiry && new Date(sub.subscriptionExpiry.toDate?.() ?? sub.subscriptionExpiry) > new Date();
+      if (isActive) return { allowed: true, uid, plan: (sub.subscriptionTier as string) ?? "paid", isAdmin: false };
+
+      return { allowed: false, uid, plan: userPlan || "free", isAdmin: false, reason: "upgrade_required" };
+    } catch (e: any) {
+      console.warn(`[Access] Auth check failed: ${e.message}`);
+      return { allowed: false, uid: null, plan: "none", isAdmin: false, reason: "auth_failed" };
+    }
+  }
 
   interface SentenceScore {
     idx: number;
@@ -1421,12 +1423,43 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
   }
 
   async function detectAiContentFull(text: string): Promise<{ aiPercentage: number; sentenceScores: SentenceScore[] }> {
-    // Split text into sentences (cap at 50 for prompt size)
     const raw = text.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [text];
     const sentences = raw.slice(0, 50).map(s => s.trim()).filter(s => s.length > 8);
 
-    if (sentences.length === 0) return { aiPercentage: 50, sentenceScores: [] };
+    // 1. GPTZero (primary)
+    const gptzeroKey = process.env.GPTZERO_API_KEY;
+    if (gptzeroKey) {
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 30000);
+        const resp = await fetch("https://api.gptzero.me/v2/predict/text", {
+          method: "POST",
+          headers: { "x-api-key": gptzeroKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ document: text }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        if (resp.ok) {
+          const data = await resp.json();
+          const docData = data.documents?.[0] ?? data;
+          const aiPercentage = Math.round((docData.completely_generated_prob ?? 0) * 100);
+          const sents: any[] = docData.sentences ?? [];
+          const sentenceScores: SentenceScore[] = sents.map((s: any, idx: number) => ({
+            idx,
+            text: s.sentence ?? "",
+            score: Math.round((s.generated_prob ?? 0) * 100),
+            isAI: (s.generated_prob ?? 0) > 0.5,
+          }));
+          console.log("[Detection] GPTZero succeeded");
+          return { aiPercentage: Math.max(0, Math.min(100, aiPercentage)), sentenceScores };
+        }
+      } catch (e: any) {
+        console.warn(`[Detection] GPTZero failed: ${e.message}`);
+      }
+    }
 
+    // 2. Gemini rotation (keys 1→2→3→4 via withKeyFallback in generateChatResponse)
+    if (sentences.length === 0) return { aiPercentage: 50, sentenceScores: [] };
     const numbered = sentences.map((s, i) => `${i + 1}. ${s}`).join("\n");
     const prompt = `Analyze this text for AI-generated content. For each numbered sentence estimate probability (0-100) it was written by AI.
 Factors: uniform tone, repetitive structures, lack of personal voice, overly formal/generic phrasing.
@@ -1450,14 +1483,63 @@ ${numbered}`;
         const overall = parsed.aiPercentage ?? Math.round(
           sentenceScores.reduce((s, x) => s + x.score, 0) / sentenceScores.length
         );
+        console.log("[Detection] Gemini succeeded");
         return { aiPercentage: Math.max(0, Math.min(100, overall)), sentenceScores };
       }
-    } catch (e) {}
+    } catch (e: any) {
+      console.warn(`[Detection] All Gemini keys failed: ${e.message}`);
+    }
 
-    // Fallback: overall score only
+    // 3. DeepSeek (last resort)
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
+    if (deepseekKey) {
+      try {
+        const ctrl2 = new AbortController();
+        const tid2 = setTimeout(() => ctrl2.abort(), 30000);
+        const dsResp = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${deepseekKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+              { role: "system", content: "Analyze text for AI-generated content. Return only valid JSON." },
+              { role: "user", content: `For each numbered sentence, estimate probability (0-100) it was AI-written.\nReturn ONLY JSON: {"aiPercentage": 65, "scores": [72, 15, 88]}\n\n${numbered}` },
+            ],
+            temperature: 0.3,
+            max_tokens: 1000,
+          }),
+          signal: ctrl2.signal,
+        });
+        clearTimeout(tid2);
+        if (dsResp.ok) {
+          const dsData = await dsResp.json();
+          const content = dsData.choices?.[0]?.message?.content ?? "";
+          const objM = content.match(/\{[\s\S]*?\}/);
+          if (objM) {
+            const parsed = JSON.parse(objM[0]);
+            const rawScores = Array.isArray(parsed.scores) ? parsed.scores : [];
+            const sentenceScores: SentenceScore[] = sentences.map((t, idx) => ({
+              idx,
+              text: t,
+              score: Math.max(0, Math.min(100, rawScores[idx] ?? 50)),
+              isAI: (rawScores[idx] ?? 50) >= 60,
+            }));
+            const overall = parsed.aiPercentage ?? Math.round(
+              sentenceScores.reduce((s, x) => s + x.score, 0) / Math.max(sentenceScores.length, 1)
+            );
+            console.log("[Detection] DeepSeek succeeded");
+            return { aiPercentage: Math.max(0, Math.min(100, overall)), sentenceScores };
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[Detection] DeepSeek failed: ${e.message}`);
+      }
+    }
+
+    // Final fallback: overall % only via Gemini
     const fallback = await generateChatResponse(
       `Estimate what % (0-100) of this text was written by AI. Return ONLY JSON: {"aiPercentage": 65}\n\n${text.substring(0, 2000)}`
-    );
+    ).catch(() => '{"aiPercentage": 50}');
     const fm = fallback.match(/\{\s*"aiPercentage"\s*:\s*(\d+)/);
     const pct = fm ? Math.max(0, Math.min(100, Number(fm[1]))) : 50;
     return {
@@ -1466,26 +1548,13 @@ ${numbered}`;
     };
   }
 
-  async function humanizeWithApi(text: string, mode: string): Promise<string> {
+  async function humanizeWithApi(
+    text: string,
+    mode: string,
+    modelPref = "auto"
+  ): Promise<{ text: string; modelUsed: string }> {
     const humanizeKey = process.env.HUMANIZE_API_KEY || "";
-    if (humanizeKey) {
-      try {
-        const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 30000);
-        const apiRes = await fetch("https://thehumanizeai.pro/api/humanize", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${humanizeKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ text, mode: mode || "academic" }),
-          signal: controller.signal,
-        });
-        clearTimeout(tid);
-        if (apiRes.ok) {
-          const data = await apiRes.json();
-          const result = data.humanized_text || data.humanizedText || "";
-          if (result) return result;
-        }
-      } catch { console.log("[Humanizer] HumanizeAI Pro unavailable, using Gemini"); }
-    }
+    const deepseekKey = process.env.DEEPSEEK_API_KEY || "";
 
     const modeHints: Record<string, string> = {
       academic: "maintaining academic vocabulary and formal scholarly tone",
@@ -1494,9 +1563,93 @@ ${numbered}`;
       professional: "using clear, concise professional business language",
     };
     const hint = modeHints[mode] || modeHints.academic;
-    return generateChatResponse(
-      `Rewrite the following text to sound natural and human-written, ${hint}.\nVary sentence structure, use natural transitions, avoid repetitive phrasing. Preserve all factual information.\nReturn ONLY the rewritten text.\n\nText:\n${text}`
-    );
+
+    const tryHumanizeAIPro = async (): Promise<string | null> => {
+      if (!humanizeKey) return null;
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 30000);
+        const apiRes = await fetch("https://thehumanizeai.pro/api/humanize", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${humanizeKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ text, mode: mode || "academic" }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          return data.humanized_text || data.humanizedText || null;
+        }
+        return null;
+      } catch { console.log("[Paraphrase] Humanize AI Pro unavailable"); return null; }
+    };
+
+    const tryGemini = async (): Promise<string | null> => {
+      try {
+        return await generateChatResponse(
+          `Rewrite the following text to sound natural and human-written, ${hint}.\nVary sentence structure, use natural transitions, avoid repetitive phrasing. Preserve all factual information.\nReturn ONLY the rewritten text.\n\nText:\n${text}`
+        );
+      } catch { console.log("[Paraphrase] All Gemini keys failed"); return null; }
+    };
+
+    const tryDeepSeek = async (): Promise<string | null> => {
+      if (!deepseekKey) return null;
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 60000);
+        const resp = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${deepseekKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert text humanizer. Rewrite AI-generated text to sound completely natural and human-written. Rules: vary sentence length, use natural contractions, avoid robotic patterns, add natural transitions, preserve original meaning exactly, do not add new information, write as a human would naturally.",
+              },
+              { role: "user", content: `Humanize: ${text}` },
+            ],
+            temperature: 0.8,
+            max_tokens: 2000,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        if (resp.ok) {
+          const data = await resp.json();
+          return data.choices?.[0]?.message?.content || null;
+        }
+        return null;
+      } catch { console.log("[Paraphrase] DeepSeek unavailable"); return null; }
+    };
+
+    if (modelPref === "gemini") {
+      const r = await tryGemini();
+      if (r) return { text: r, modelUsed: "Gemini" };
+      const r2 = await tryDeepSeek();
+      if (r2) return { text: r2, modelUsed: "DeepSeek" };
+      throw new Error("All paraphrasing services failed.");
+    }
+
+    if (modelPref === "deepseek") {
+      const r = await tryDeepSeek();
+      if (r) return { text: r, modelUsed: "DeepSeek" };
+      const r2 = await tryGemini();
+      if (r2) return { text: r2, modelUsed: "Gemini (fallback)" };
+      throw new Error("All paraphrasing services failed.");
+    }
+
+    // "auto" or "humanize_ai" — try full chain in priority order
+    const r1 = await tryHumanizeAIPro();
+    if (r1) return { text: r1, modelUsed: "Humanize AI Pro" };
+
+    const r2 = await tryGemini();
+    if (r2) return { text: r2, modelUsed: "Gemini" };
+
+    const r3 = await tryDeepSeek();
+    if (r3) return { text: r3, modelUsed: "DeepSeek" };
+
+    throw new Error("All paraphrasing services failed. Please try again.");
   }
 
   // Extract text from uploaded file
@@ -1527,30 +1680,10 @@ ${numbered}`;
           });
         }
       } catch (extractErr: any) {
-        // Primary extractor failed — try Gemini as fallback for PDFs/DOCX
         console.warn(`[Humanizer Upload] Primary extraction failed (${ext}):`, extractErr.message);
-        if (["pdf", "docx"].includes(ext)) {
-          try {
-            // Attempt to read as plain text (works for some PDFs with text layer)
-            const rawText = buffer.toString("latin1")
-              .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, " ")
-              .replace(/\s{3,}/g, "\n\n")
-              .trim();
-            if (rawText.length > 100) {
-              text = rawText;
-            } else {
-              return res.status(400).json({
-                error: `Could not extract text from this ${ext.toUpperCase()} file. Try copying the text and pasting it directly instead.`,
-              });
-            }
-          } catch {
-            return res.status(400).json({
-              error: `Could not extract text from this ${ext.toUpperCase()} file. Try pasting the text directly.`,
-            });
-          }
-        } else {
-          return res.status(400).json({ error: extractErr.message || "Text extraction failed" });
-        }
+        return res.status(422).json({
+          error: `Could not extract readable text from this ${ext.toUpperCase()} file. Please open the file, select all text (Ctrl+A), copy (Ctrl+C), then paste it here instead.`,
+        });
       }
 
       if (!text.trim()) {
@@ -1566,6 +1699,20 @@ ${numbered}`;
     }
   });
 
+  async function getParaphraseModel(uid: string | undefined): Promise<string> {
+    if (!uid) return "auto";
+    try {
+      const { getApps, getApp } = await import("firebase-admin/app");
+      const { getFirestore: getAdminFs } = await import("firebase-admin/firestore");
+      const apps = getApps();
+      if (apps.length === 0) return "auto";
+      const snap = await getAdminFs(getApp()).collection("users").doc(uid).get();
+      return (snap.data()?.paraphraseModel as string) ?? "auto";
+    } catch {
+      return "auto";
+    }
+  }
+
   app.post("/api/humanize", async (req, res) => {
     try {
       const { text, mode } = req.body;
@@ -1574,7 +1721,23 @@ ${numbered}`;
       const wordCount = text.trim().split(/\s+/).length;
       if (wordCount > 10000) return res.status(400).json({ error: "Text exceeds 10,000 word limit" });
 
-      const humanizedText = await humanizeWithApi(text, mode || "academic");
+      let accessUid: string | null | undefined = req.body?.uid;
+      const requirePaid = await getRequirePaidForScan();
+      if (requirePaid) {
+        const access = await checkPaidAccess(req);
+        if (!access.allowed) {
+          return res.status(403).json({
+            error: "upgrade_required",
+            message: "AI detection and paraphrasing are available on Pro and Business plans only. Upgrade now to humanize your documents.",
+            redirect: "/pricing",
+            reason: access.reason,
+          });
+        }
+        accessUid = access.uid ?? accessUid;
+      }
+
+      const modelPref = await getParaphraseModel(accessUid ?? undefined);
+      const { text: humanizedText, modelUsed } = await humanizeWithApi(text, mode || "academic", modelPref);
 
       // Run detection on original and humanized in parallel
       const [originalResult, humanizedResult] = await Promise.all([
@@ -1590,6 +1753,7 @@ ${numbered}`;
         humanizedAiScore: humanizedResult.aiPercentage,
         humanizedScores: humanizedResult.sentenceScores,
         originalScores: originalResult.sentenceScores,
+        modelUsed,
       });
     } catch (error: any) {
       console.error("[Humanizer] Error:", error);
@@ -1601,6 +1765,20 @@ ${numbered}`;
     try {
       const { text } = req.body;
       if (!text?.trim()) return res.status(400).json({ error: "Text is required" });
+
+      const requirePaid = await getRequirePaidForScan();
+      if (requirePaid) {
+        const access = await checkPaidAccess(req);
+        if (!access.allowed) {
+          return res.status(403).json({
+            error: "upgrade_required",
+            message: "AI detection requires a Pro or Business plan. Upgrade now.",
+            redirect: "/pricing",
+            reason: access.reason,
+          });
+        }
+      }
+
       const result = await detectAiContentFull(text);
       res.json({ success: true, ...result });
     } catch (error: any) {
@@ -1691,21 +1869,37 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
   });
 
   // ── Admin Config Routes ─────────────────────────────────────────────────────
-  const ADMIN_EMAILS_SERVER = ["henockhnk092@gmail.com", "admin@test.com"];
-
-  // Keys exposed to admin (display names + env var names)
+  // All API keys exposed to admin, grouped by service
   const MANAGED_KEYS = [
-    { key: "GEMINI_API_KEY",        label: "Gemini API Key" },
-    { key: "HUMANIZE_API_KEY",      label: "HumanizeAI Pro Key" },
-    { key: "VITE_AZURE_TTS_KEY",    label: "Azure TTS Key" },
-    { key: "VITE_AZURE_TTS_REGION", label: "Azure TTS Region" },
-    { key: "PIXABAY_API_KEY",       label: "Pixabay API Key" },
-    { key: "STRIPE_SECRET_KEY",     label: "Stripe Secret Key" },
-    { key: "STRIPE_PUBLISHABLE_KEY",label: "Stripe Publishable Key" },
-    { key: "FIREBASE_PROJECT_ID",   label: "Firebase Project ID" },
+    // ── AI Services ──
+    { key: "GEMINI_API_KEY_1",              label: "Gemini Key 1",               group: "AI Services" },
+    { key: "GEMINI_API_KEY_2",              label: "Gemini Key 2",               group: "AI Services" },
+    { key: "GEMINI_API_KEY_3",              label: "Gemini Key 3",               group: "AI Services" },
+    { key: "GEMINI_API_KEY_4",              label: "Gemini Key 4",               group: "AI Services" },
+    { key: "GEMINI_API_KEY",                label: "Gemini Key (Legacy)",        group: "AI Services" },
+    { key: "GPTZERO_API_KEY",               label: "GPTZero Detection Key",      group: "AI Services" },
+    { key: "DEEPSEEK_API_KEY",              label: "DeepSeek API Key",           group: "AI Services" },
+    { key: "HUMANIZE_API_KEY",              label: "HumanizeAI Pro Key",         group: "AI Services" },
+    // ── Voice & Images ──
+    { key: "AZURE_TTS_KEY",                 label: "Azure TTS Key 1",            group: "Voice & Images" },
+    { key: "AZURE_TTS_KEY_2",               label: "Azure TTS Key 2",            group: "Voice & Images" },
+    { key: "AZURE_TTS_REGION",              label: "Azure TTS Region",           group: "Voice & Images" },
+    { key: "ELEVENLABS_API_KEY",            label: "ElevenLabs API Key",         group: "Voice & Images" },
+    { key: "VOICERSS_API_KEY",              label: "VoiceRSS API Key",           group: "Voice & Images" },
+    { key: "PIXABAY_API_KEY",               label: "Pixabay API Key",            group: "Voice & Images" },
+    // ── Buy Me a Coffee ──
+    { key: "BMC_USERNAME",                  label: "BMC Username",               group: "Buy Me a Coffee" },
+    { key: "BMC_WEBHOOK_SECRET",            label: "Webhook Secret",             group: "Buy Me a Coffee" },
+    // ── Firebase ──
+    { key: "VITE_FIREBASE_API_KEY",         label: "Firebase API Key",           group: "Firebase" },
+    { key: "FIREBASE_PROJECT_ID",           label: "Project ID",                 group: "Firebase" },
+    { key: "VITE_FIREBASE_APP_ID",          label: "App ID",                     group: "Firebase" },
+    { key: "FIREBASE_SERVICE_ACCOUNT_KEY",  label: "Service Account JSON",       group: "Firebase" },
+    // ── Other ──
+    { key: "VITE_FORMSPREE_ENDPOINT",       label: "Formspree Endpoint",         group: "Other" },
   ];
 
-  async function isAdminRequest(req: any): Promise<boolean> {
+  async function isAdminRequest(req: Request): Promise<boolean> {
     try {
       const authHeader = req.headers["authorization"] as string;
       if (!authHeader?.startsWith("Bearer ")) return false;
@@ -1716,7 +1910,7 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
       if (apps.length === 0) return false;
       const decoded = await getAuth(getApp()).verifyIdToken(idToken);
       const email = (decoded.email || "").toLowerCase();
-      return ADMIN_EMAILS_SERVER.map(e => e.toLowerCase()).includes(email);
+      return ADMIN_EMAILS_SERVER.includes(email);
     } catch {
       return false;
     }
@@ -1730,9 +1924,10 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
 
   app.get("/api/admin/config", async (req, res) => {
     if (!await isAdminRequest(req)) return res.status(403).json({ error: "Forbidden" });
-    const entries = MANAGED_KEYS.map(({ key, label }) => ({
+    const entries = MANAGED_KEYS.map(({ key, label, group }) => ({
       key,
       label,
+      group,
       masked: maskValue(process.env[key]),
       hasValue: !!process.env[key],
     }));
