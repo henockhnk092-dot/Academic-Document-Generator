@@ -353,11 +353,13 @@ export function useSpeech() {
   }, []);
 
   // ── Server engine fetch with automatic cross-provider fallback ────────────────
-  // Order: ElevenLabs → Azure → VoiceRSS → StreamElements (StreamElements last —
-  // its public API has had a platform-wide outage affecting every third-party
-  // tool that depends on it, not just this app). The user's chosen engine is
-  // always tried first; fallbacks use sensible default voices, not the user's
-  // voice pick, since that voice ID/name is only valid for its own engine.
+  // TEMPORARY order: Azure → ElevenLabs → VoiceRSS → StreamElements. Azure moved
+  // first since the ElevenLabs account is out of quota (402 on every request) —
+  // revert this `order` array to ElevenLabs-first once that's fixed. StreamElements
+  // stays last: its public API has had a platform-wide outage affecting every
+  // third-party tool that depends on it, not just this app. The user's chosen
+  // engine is always tried first; fallbacks use sensible default voices, not the
+  // user's voice pick, since that voice ID/name is only valid for its own engine.
   const fetchServerAudioWithFallback = useCallback(
     async (text: string, primaryEngine: string, voiceName: string | null, rate: number): Promise<Blob> => {
       const voicerssLang = getSpeechPrefs().voicerssLang || "en-us";
@@ -367,7 +369,7 @@ export function useSpeech() {
         voicerss: () => fetchVoiceRSSAudio(text, voicerssLang),
         streamelements: () => fetchStreamElementsAudio(text, primaryEngine === "streamelements" && voiceName ? voiceName : "Brian"),
       };
-      const order = ["elevenlabs", "azure", "voicerss", "streamelements"];
+      const order = ["azure", "elevenlabs", "voicerss", "streamelements"];
       const tryOrder = [primaryEngine, ...order.filter((e) => e !== primaryEngine)];
       let lastErr: unknown;
       for (const engineKey of tryOrder) {
@@ -387,7 +389,9 @@ export function useSpeech() {
     (sentences: string[], rate = 1, voiceName: string | null = null) => {
       stop();
       const prefs = getSpeechPrefs();
-      const engine = prefs.engineMode ?? "elevenlabs";
+      // TEMPORARY: default "azure" instead of "elevenlabs" while the ElevenLabs
+      // account is out of quota — revert once billing is fixed there.
+      const engine = prefs.engineMode ?? "azure";
       setTimeout(() => {
         if (engine === "elevenlabs" || engine === "azure" || engine === "voicerss" || engine === "streamelements") {
           speakWithServer(sentences, (text) => fetchServerAudioWithFallback(text, engine, voiceName, rate));

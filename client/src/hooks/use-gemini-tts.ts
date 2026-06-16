@@ -285,7 +285,10 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
 
   // Engine / voice state
   const prefs0 = getSpeechPrefs();
-  const [engineMode, setEngineModeRaw] = useState(prefs0.engineMode ?? "elevenlabs");
+  // TEMPORARY: defaulting to "azure" instead of "elevenlabs" while the ElevenLabs
+  // account is out of quota (402s on every request). Revert to "elevenlabs" once
+  // billing is fixed there.
+  const [engineMode, setEngineModeRaw] = useState(prefs0.engineMode ?? "azure");
   const [voiceName, setVoiceNameRaw]   = useState(prefs0.voiceName ?? (AZURE_VOICES[0]?.name ?? ""));
   const [voices, setVoices]            = useState<SpeechSynthesisVoice[]>([]);
 
@@ -415,17 +418,19 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
       return null;
     };
 
-    // ── Fallback chain: ElevenLabs → Azure → VoiceRSS → StreamElements ────────
-    // StreamElements moved last: its public API has been experiencing a
-    // platform-wide outage (affects every third-party tool using it, not just
-    // this app), so it's deprioritized until that's resolved upstream.
+    // ── Fallback chain: Azure → ElevenLabs → VoiceRSS → StreamElements ────────
+    // TEMPORARY order: Azure moved first since the ElevenLabs account is out of
+    // quota (402 on every request) — revert to ElevenLabs → Azure → VoiceRSS →
+    // StreamElements once that's fixed. StreamElements stays last: its public
+    // API has a platform-wide outage (affects every third-party tool using it,
+    // not just this app), so it's deprioritized until that's resolved upstream.
     const tryFallbacks = async (): Promise<Blob | null> => {
       const fallbacks: Array<() => Promise<Blob | null>> = [
-        () => engine !== "elevenlabs"
-          ? fetchElevenLabsAudio(text, "21m00Tcm4TlvDq8ikWAM").catch(() => null)
-          : Promise.resolve(null),
         () => engine !== "azure"
           ? fetchAzureAudio(text, AZURE_VOICES[0].name, 1).catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "elevenlabs"
+          ? fetchElevenLabsAudio(text, "21m00Tcm4TlvDq8ikWAM").catch(() => null)
           : Promise.resolve(null),
         () => engine !== "voicerss"
           ? fetchVoiceRSSAudio(text, getSpeechPrefs().voicerssLang || "en-us").catch(() => null)
