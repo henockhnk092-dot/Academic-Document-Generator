@@ -418,12 +418,12 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
       return null;
     };
 
-    // ── Fallback chain: Azure → ElevenLabs → VoiceRSS → StreamElements ────────
+    // ── Fallback chain: Azure → ElevenLabs → VoiceRSS → StreamElements → Gemini ──
     // TEMPORARY order: Azure moved first since the ElevenLabs account is out of
     // quota (402 on every request) — revert to ElevenLabs → Azure → VoiceRSS →
-    // StreamElements once that's fixed. StreamElements stays last: its public
-    // API has a platform-wide outage (affects every third-party tool using it,
-    // not just this app), so it's deprioritized until that's resolved upstream.
+    // StreamElements once that's fixed. StreamElements stays second-to-last: its
+    // public API has a platform-wide outage. Gemini TTS is the final server-side
+    // attempt before falling back to browser speech synthesis.
     const tryFallbacks = async (): Promise<Blob | null> => {
       const fallbacks: Array<() => Promise<Blob | null>> = [
         () => engine !== "azure"
@@ -437,6 +437,17 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
           : Promise.resolve(null),
         () => engine !== "streamelements"
           ? fetchStreamElementsAudio(text).catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "gemini"
+          ? (apiRequest("POST", "/api/tts/generate", { text, tone }) as Promise<any>)
+              .then((r: any) => {
+                if (r?.audio?.audioBase64) {
+                  const bytes = Uint8Array.from(atob(r.audio.audioBase64), c => c.charCodeAt(0));
+                  return new Blob([bytes], { type: r.audio.mimeType || "audio/wav" });
+                }
+                return null;
+              })
+              .catch(() => null)
           : Promise.resolve(null),
       ];
       for (const fn of fallbacks) {

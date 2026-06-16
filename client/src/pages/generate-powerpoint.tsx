@@ -105,34 +105,27 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
           let blob: Blob | null = null;
 
           // Full provider fallback chain — try preferred engine first, then the rest
-          const fetchMap: Record<string, () => Promise<Blob>> = {
+          // Order: azure → elevenlabs → voicerss → streamelements → gemini → browser
+          const fetchMap: Record<string, () => Promise<Blob | null>> = {
             azure: () => fetchAzureAudio(scriptText, azureVoice, 1),
             elevenlabs: () => fetchElevenLabsAudio(scriptText, "21m00Tcm4TlvDq8ikWAM"),
             voicerss: () => fetchVoiceRSSAudio(scriptText, voicerssLang),
             streamelements: () => fetchStreamElementsAudio(scriptText, "Brian"),
+            gemini: () => (apiRequest("POST", "/api/tts/generate", { text: scriptText, tone }) as Promise<any>)
+              .then((r: any) => {
+                if (r?.audio?.audioBase64) {
+                  const bytes = Uint8Array.from(atob(r.audio.audioBase64), c => c.charCodeAt(0));
+                  return new Blob([bytes], { type: r.audio.mimeType || "audio/wav" });
+                }
+                return null;
+              }),
           };
-          const order = ["azure", "elevenlabs", "voicerss", "streamelements"];
+          const order = ["azure", "elevenlabs", "voicerss", "streamelements", "gemini"];
           const tryOrder = [primaryEngine, ...order.filter(e => e !== primaryEngine)];
 
           for (const engine of tryOrder) {
             if (fetchMap[engine]) {
               try { blob = await fetchMap[engine](); if (blob) break; } catch { /* next */ }
-            }
-          }
-
-          // Final fallback: Gemini TTS
-          if (!blob) {
-            const response = await apiRequest("POST", "/api/tts/generate", {
-              text: scriptText,
-              tone: tone
-            }) as { success: boolean; audio?: { audioBase64: string; mimeType: string }; error?: string };
-            if (response.audio?.audioBase64) {
-              const binaryString = atob(response.audio.audioBase64);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              blob = new Blob([bytes], { type: response.audio.mimeType || "audio/wav" });
             }
           }
 
