@@ -90,9 +90,16 @@ export default function GenerateImages() {
     // Get dimensions from size
     const [width, height] = size.split('x');
 
+    // Map style/quality to Pollinations.ai params
+    const extraParams = [
+      quality === "hd" ? "enhance=true" : "",
+      style === "natural" ? "model=turbo" : "",
+    ].filter(Boolean).join("&");
+    const extra = extraParams ? `&${extraParams}` : "";
+
     const apiEndpoints = [
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&nologo=true&width=${width}&height=${height}`,
-      `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}`,
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&nologo=true&width=${width}&height=${height}${extra}`,
+      `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}${extra}`,
       `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`,
     ];
 

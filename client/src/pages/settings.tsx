@@ -37,6 +37,7 @@ import {
   Globe,
   ChevronDown,
   Zap,
+  Image as ImageIcon,
 } from "lucide-react";
 import { AZURE_VOICES, AZURE_LANGUAGES, getBrowserVoiceLanguage, azureAvailable, getSpeechPrefs, saveSpeechPrefs } from "@/hooks/use-speech";
 import { useTranslation } from "react-i18next";
@@ -899,8 +900,69 @@ export default function Settings() {
             )}
 
             <div className="rounded-lg bg-muted/40 px-4 py-3 text-xs text-muted-foreground space-y-1">
-              <p><strong>Fallback order:</strong> ElevenLabs → Azure → StreamElements → VoiceRSS → Browser</p>
+              <p><strong>Fallback order:</strong> Azure → ElevenLabs → VoiceRSS → StreamElements → Gemini → Browser</p>
               <p>If a provider fails or runs out of quota, the next one is tried automatically.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Image Generator Settings Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Image Generator
+            </CardTitle>
+            <CardDescription>
+              AI image generation and stock photo search for your documents
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="flex items-center gap-1.5 mb-2">
+                <Sparkles className="h-4 w-4" /> AI Image Generation
+              </Label>
+              <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm space-y-1">
+                <p className="font-medium">Provider: Pollinations.ai</p>
+                <p className="text-xs text-muted-foreground">
+                  Free AI image generation — no API key required. Generates images from text prompts at{" "}
+                  <span className="font-mono">/generate/images</span>. Supports Standard and HD quality (with AI prompt enhancement), plus Vivid and Natural styles.
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="flex items-center gap-1.5 mb-2">
+                <ImageIcon className="h-4 w-4" /> Stock Photos for Documents
+              </Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Used when embedding images in research papers, theses, reports, and presentations. Tries each provider in order until one returns results.
+              </p>
+              <div className="space-y-2">
+                {[
+                  { name: "Pixabay", desc: "Millions of free photos · Primary source", free: false },
+                  { name: "Pexels", desc: "High-quality stock photos · 1st fallback", free: false },
+                  { name: "Unsplash", desc: "Beautiful photography · 2nd fallback", free: false },
+                  { name: "Wikimedia Commons", desc: "Free encyclopedia images · Always available, no key needed", free: true },
+                ].map((p, i) => (
+                  <div key={p.name} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
+                    <div>
+                      <span className="font-medium">{i + 1}. {p.name}</span>
+                      <p className="text-xs text-muted-foreground">{p.desc}</p>
+                    </div>
+                    <Badge variant={p.free ? "secondary" : "outline"} className="text-xs shrink-0">
+                      {p.free ? "Free" : "API Key"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {isAdmin && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  API keys for Pixabay, Pexels, and Unsplash are configured in the Admin panel below.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

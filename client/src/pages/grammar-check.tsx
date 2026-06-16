@@ -72,6 +72,7 @@ export default function GrammarCheck() {
   const [engineMode, setEngineMode] = useState<string>(prefs0.engineMode ?? "azure");
 
   const handleTTSPlay = () => {
+    if (paused) { resume(); return; }
     if (!textToCheck.trim()) return;
     const sents = textToCheck.match(/[^.!?]+[.!?]+/g) || [textToCheck];
     speak(sents, speechRate, speechVoice);
