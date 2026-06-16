@@ -17,6 +17,9 @@ import { exportHtmlToDocx } from "@/lib/docx-export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
 export default function GenerateImages() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = usePersistedState<string>("generator_prompt_images", "");
@@ -118,6 +121,19 @@ export default function GenerateImages() {
             await sleep(3000);
             return generateImageAPI(retryCount + 1);
           }
+          // AI generation failed — try stock photo as last resort
+          try {
+            const resp = await fetch("/api/images/random", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query: cleanPrompt.substring(0, 100) }),
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              const url = data.image?.webformatURL || data.image?.largeImageURL;
+              if (url) return url;
+            }
+          } catch { /* ignore, fall through to error */ }
           throw new Error("Service temporarily unavailable. Please try again.");
         }
       }
@@ -200,7 +216,10 @@ export default function GenerateImages() {
       // Convert to desired format
       const mimeType = format === 'png' ? 'image/png' : format === 'jpeg' ? 'image/jpeg' : 'image/webp';
       canvas.toBlob((blob) => {
-        if (!blob) return;
+        if (!blob) {
+          toast({ title: t("pages.images.downloadFailed"), description: t("pages.images.downloadFailedDesc"), variant: "destructive" });
+          return;
+        }
 
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -319,11 +338,13 @@ export default function GenerateImages() {
   const handleExportHTML = () => {
     if (!generatedImage) return;
 
+    const safePrompt = escapeHtml(prompt || "");
+    const safeTitle = escapeHtml(prompt || t("pages.images.aiGeneratedImage"));
     const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${prompt || t("pages.images.aiGeneratedImage")}</title>
+  <title>${safeTitle}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
     img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; }
@@ -332,8 +353,8 @@ export default function GenerateImages() {
 </head>
 <body>
   <h1>${t("pages.images.aiGeneratedImage")}</h1>
-  <img src="${generatedImage}" alt="${prompt}" />
-  <p class="prompt">${prompt}</p>
+  <img src="${generatedImage}" alt="${safePrompt}" />
+  <p class="prompt">${safePrompt}</p>
 </body>
 </html>`;
 
@@ -357,11 +378,12 @@ export default function GenerateImages() {
     if (!generatedImage) return;
 
     try {
+      const safePrompt = escapeHtml(prompt || "");
       const htmlContent = `
         <h1>${t("pages.images.aiGeneratedImage")}</h1>
         <div style="text-align: center;">
-          <img src="${generatedImage}" alt="${prompt}" />
-          <p style="font-style: italic; margin-top: 10px;">${prompt}</p>
+          <img src="${generatedImage}" alt="${safePrompt}" />
+          <p style="font-style: italic; margin-top: 10px;">${safePrompt}</p>
         </div>
       `;
 
@@ -384,11 +406,13 @@ export default function GenerateImages() {
   const handlePrint = () => {
     if (!generatedImage) return;
 
+    const safePrompt = escapeHtml(prompt || "");
+    const safeTitle = escapeHtml(prompt || t("pages.images.aiGeneratedImage"));
     const printHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${prompt || t("pages.images.aiGeneratedImage")}</title>
+  <title>${safeTitle}</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
     img { max-width: 100%; height: auto; }
@@ -398,8 +422,8 @@ export default function GenerateImages() {
 </head>
 <body>
   <h1>${t("pages.images.aiGeneratedImage")}</h1>
-  <img src="${generatedImage}" alt="${prompt}" />
-  <p class="prompt">${prompt}</p>
+  <img src="${generatedImage}" alt="${safePrompt}" />
+  <p class="prompt">${safePrompt}</p>
 </body>
 </html>`;
 
