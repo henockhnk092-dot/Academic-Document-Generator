@@ -415,7 +415,10 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
       return null;
     };
 
-    // ── Fallback chain: ElevenLabs → Azure → StreamElements → VoiceRSS ────────
+    // ── Fallback chain: ElevenLabs → Azure → VoiceRSS → StreamElements ────────
+    // StreamElements moved last: its public API has been experiencing a
+    // platform-wide outage (affects every third-party tool using it, not just
+    // this app), so it's deprioritized until that's resolved upstream.
     const tryFallbacks = async (): Promise<Blob | null> => {
       const fallbacks: Array<() => Promise<Blob | null>> = [
         () => engine !== "elevenlabs"
@@ -424,11 +427,11 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
         () => engine !== "azure"
           ? fetchAzureAudio(text, AZURE_VOICES[0].name, 1).catch(() => null)
           : Promise.resolve(null),
-        () => engine !== "streamelements"
-          ? fetchStreamElementsAudio(text).catch(() => null)
-          : Promise.resolve(null),
         () => engine !== "voicerss"
           ? fetchVoiceRSSAudio(text, getSpeechPrefs().voicerssLang || "en-us").catch(() => null)
+          : Promise.resolve(null),
+        () => engine !== "streamelements"
+          ? fetchStreamElementsAudio(text).catch(() => null)
           : Promise.resolve(null),
       ];
       for (const fn of fallbacks) {

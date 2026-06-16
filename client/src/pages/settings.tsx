@@ -753,7 +753,7 @@ export default function Settings() {
                 {voiceEngine === "azure" && "High-quality Neural voices. 500K chars/month free, fallback to next provider on failure."}
                 {voiceEngine === "elevenlabs" && "Most realistic AI voices. Select a voice below. Falls back to StreamElements on failure."}
                 {voiceEngine === "voicerss" && "Reliable TTS in 50+ languages. Select language below. Falls back to StreamElements on failure."}
-                {voiceEngine === "streamelements" && "Free, no key required. Amazon Polly voices. Select voice below."}
+                {voiceEngine === "streamelements" && "Amazon Polly voices. Currently unreliable (provider outage) — falls back automatically if unavailable."}
                 {voiceEngine === "gemini" && "Google Gemini TTS. Falls back to browser on failure."}
                 {voiceEngine === "browser" && "Uses your device's built-in voices. No server needed."}
               </p>
@@ -860,7 +860,7 @@ export default function Settings() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Amazon Polly voices. Free, no API key required.</p>
+                <p className="text-xs text-muted-foreground">Amazon Polly voices. Currently experiencing a provider-side outage — other engines are recommended for now.</p>
               </div>
             )}
 

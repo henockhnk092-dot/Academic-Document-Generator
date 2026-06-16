@@ -352,6 +352,36 @@ export function useSpeech() {
     }
   }, []);
 
+  // ── Server engine fetch with automatic cross-provider fallback ────────────────
+  // Order: ElevenLabs → Azure → VoiceRSS → StreamElements (StreamElements last —
+  // its public API has had a platform-wide outage affecting every third-party
+  // tool that depends on it, not just this app). The user's chosen engine is
+  // always tried first; fallbacks use sensible default voices, not the user's
+  // voice pick, since that voice ID/name is only valid for its own engine.
+  const fetchServerAudioWithFallback = useCallback(
+    async (text: string, primaryEngine: string, voiceName: string | null, rate: number): Promise<Blob> => {
+      const voicerssLang = getSpeechPrefs().voicerssLang || "en-us";
+      const fetchers: Record<string, () => Promise<Blob>> = {
+        elevenlabs: () => fetchElevenLabsAudio(text, primaryEngine === "elevenlabs" && voiceName ? voiceName : "21m00Tcm4TlvDq8ikWAM"),
+        azure: () => fetchAzureAudio(text, primaryEngine === "azure" && voiceName ? voiceName : AZURE_VOICES[0].name, rate),
+        voicerss: () => fetchVoiceRSSAudio(text, voicerssLang),
+        streamelements: () => fetchStreamElementsAudio(text, primaryEngine === "streamelements" && voiceName ? voiceName : "Brian"),
+      };
+      const order = ["elevenlabs", "azure", "voicerss", "streamelements"];
+      const tryOrder = [primaryEngine, ...order.filter((e) => e !== primaryEngine)];
+      let lastErr: unknown;
+      for (const engineKey of tryOrder) {
+        try {
+          return await fetchers[engineKey]();
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr;
+    },
+    []
+  );
+
   // ── Public: speak array of sentence strings ───────────────────────────────────
   const speak = useCallback(
     (sentences: string[], rate = 1, voiceName: string | null = null) => {
@@ -359,21 +389,8 @@ export function useSpeech() {
       const prefs = getSpeechPrefs();
       const engine = prefs.engineMode ?? "elevenlabs";
       setTimeout(() => {
-        if (engine === "elevenlabs") {
-          speakWithServer(sentences, (text) =>
-            fetchElevenLabsAudio(text, voiceName || "21m00Tcm4TlvDq8ikWAM")
-          );
-        } else if (engine === "azure") {
-          speakWithServer(sentences, (text) =>
-            fetchAzureAudio(text, voiceName || AZURE_VOICES[0].name, rate)
-          );
-        } else if (engine === "streamelements") {
-          speakWithServer(sentences, (text) =>
-            fetchStreamElementsAudio(text, voiceName || "Brian")
-          );
-        } else if (engine === "voicerss") {
-          const lang = prefs.voicerssLang || "en-us";
-          speakWithServer(sentences, (text) => fetchVoiceRSSAudio(text, lang));
+        if (engine === "elevenlabs" || engine === "azure" || engine === "voicerss" || engine === "streamelements") {
+          speakWithServer(sentences, (text) => fetchServerAudioWithFallback(text, engine, voiceName, rate));
         } else if (engine === "gemini") {
           speakWithServer(sentences, async (text) => {
             const res = await fetch("/api/tts/generate", {
@@ -392,7 +409,7 @@ export function useSpeech() {
         }
       }, 60);
     },
-    [stop, speakBrowser, speakWithServer]
+    [stop, speakBrowser, speakWithServer, fetchServerAudioWithFallback]
   );
 
   return { supported, browserSupported, voices, speaking, paused, currentSentIdx, progress, speak, stop, pause, resume };
