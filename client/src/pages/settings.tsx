@@ -72,7 +72,9 @@ export default function Settings() {
 
   // Voice & language prefs
   const sp0 = getSpeechPrefs();
-  const [voiceEngine, setVoiceEngine] = useState(sp0.engineMode ?? "elevenlabs");
+  // TEMPORARY: defaulting to "azure" instead of "elevenlabs" while the ElevenLabs
+  // account is out of quota. Revert to "elevenlabs" once billing is fixed there.
+  const [voiceEngine, setVoiceEngine] = useState(sp0.engineMode ?? "azure");
   // Azure/browser use human-readable language names ("English"); VoiceRSS uses BCP-47 ("en-us")
   const [voiceLang, setVoiceLang] = useState(sp0.language ?? "English");
   const [voicerssLang, setVoicerssLang] = useState(sp0.voicerssLang ?? "en-us");
@@ -750,11 +752,11 @@ export default function Settings() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {voiceEngine === "azure" && "High-quality Neural voices. 500K chars/month free, fallback to next provider on failure."}
-                {voiceEngine === "elevenlabs" && "Most realistic AI voices. Select a voice below. Falls back to StreamElements on failure."}
-                {voiceEngine === "voicerss" && "Reliable TTS in 50+ languages. Select language below. Falls back to StreamElements on failure."}
-                {voiceEngine === "streamelements" && "Amazon Polly voices. Currently unreliable (provider outage) — falls back automatically if unavailable."}
-                {voiceEngine === "gemini" && "Google Gemini TTS. Falls back to browser on failure."}
+                {voiceEngine === "azure" && "High-quality Neural voices. 500K chars/month free. Falls back to ElevenLabs → VoiceRSS → StreamElements → Gemini → Browser."}
+                {voiceEngine === "elevenlabs" && "Most realistic AI voices. Select a voice below. Falls back to Azure → VoiceRSS → StreamElements → Gemini → Browser."}
+                {voiceEngine === "voicerss" && "Reliable TTS in 50+ languages. Select language below. Falls back to Azure → ElevenLabs → StreamElements → Gemini → Browser."}
+                {voiceEngine === "streamelements" && "Amazon Polly voices. Currently unreliable (provider outage) — falls back to Azure → ElevenLabs → VoiceRSS → Gemini → Browser automatically."}
+                {voiceEngine === "gemini" && "Google Gemini TTS. Falls back to Azure → ElevenLabs → VoiceRSS → StreamElements → Browser."}
                 {voiceEngine === "browser" && "Uses your device's built-in voices. No server needed."}
               </p>
             </div>
