@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2, Loader2 } from "lucide-react";
+import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentGenerator } from "@/hooks/use-document-generator";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useCtrlEnter } from "@/hooks/use-ctrl-enter";
 import { useRandomTopic } from "@/hooks/use-random-topic";
 import { useFileUpload } from "@/hooks/use-file-upload";
@@ -40,6 +41,7 @@ export default function GenerateThesis() {
   const [sectionImageUrls, setSectionImageUrls] = usePersistedState<Record<number, string>>("thesis_image_urls", {});
   
   const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("thesis");
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   const [undoContent, setUndoContent] = useState<any>(null);
   const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
@@ -77,18 +79,20 @@ export default function GenerateThesis() {
   useEffect(() => {
     if (generatedContent?.sections && generateImages) {
       generatedContent.sections.forEach(async (section: any, index: number) => {
-        if (section.image_prompt && !sectionImageUrls[index]) {
-          try {
-            const response: any = await apiRequest("POST", "/api/images/random", {
-              query: section.image_prompt
-            });
-            if (response.image) {
-              const url = response.image.webformatURL || response.image.largeImageURL;
-              setSectionImageUrls(prev => ({ ...prev, [index]: url }));
-            }
-          } catch (error) {
-            console.error(`Failed to fetch image for section ${index}:`, error);
+        if (sectionImageUrls[index]) return;
+        const hasFigureRef = /figure\s*\d/i.test(section.content || "");
+        const imageQuery = section.image_prompt || (hasFigureRef ? (section.heading || section.title) : null);
+        if (!imageQuery) return;
+        try {
+          const response: any = await apiRequest("POST", "/api/images/random", {
+            query: imageQuery
+          });
+          if (response.image) {
+            const url = response.image.webformatURL || response.image.largeImageURL;
+            setSectionImageUrls(prev => ({ ...prev, [index]: url }));
           }
+        } catch (error) {
+          console.error(`Failed to fetch image for section ${index}:`, error);
         }
       });
     }
@@ -729,7 +733,7 @@ export default function GenerateThesis() {
           </Card>
         </div>
 
-        <div className="lg:col-span-8 space-y-6">
+        <div className={`lg:col-span-8 space-y-6 ${fullscreenClass}`}>
           <Card className="h-full">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -738,6 +742,9 @@ export default function GenerateThesis() {
                   <CardDescription>{t("pages.thesis.previewSubtitle")}</CardDescription>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"} className="shrink-0 h-8 w-8">
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
                   {/* TTS Controls */}
                   {generatedContent && (
                     <DocumentTTSControls
@@ -847,7 +854,8 @@ export default function GenerateThesis() {
               {isGenerating && (
                 <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating thesis: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
-                  <div className="text-sm text-muted-foreground text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     {t("pages.report.generatingContent")}
                   </div>
                 </div>
@@ -901,11 +909,9 @@ export default function GenerateThesis() {
                                   }}
                                 />
                               </div>
-                              {section.image_caption && (
-                                <figcaption className="mt-3 text-sm text-gray-700 font-semibold text-center max-w-[80%]">
-                                  {section.image_caption}
-                                </figcaption>
-                              )}
+                              <figcaption className="mt-3 text-sm text-gray-700 font-semibold text-center max-w-[80%]">
+                                {section.image_caption || `${t("common.figure", { n: index + 1 })}`}
+                              </figcaption>
                             </div>
                           )}
                         </div>

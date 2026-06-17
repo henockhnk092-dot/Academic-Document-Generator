@@ -2,32 +2,39 @@ import puppeteer from "puppeteer-core";
 import { execSync } from "child_process";
 import { parseMarkdownToHtml } from "./markdown-html";
 
+let _chromiumPathCache: string | undefined | null = null;
+
 function findChromiumPath(): string | undefined {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+  if (_chromiumPathCache !== null) return _chromiumPathCache;
 
-  // Diagnostic: log what's available
+  // Search nix store for actual chromium binary (not snap stubs)
   try {
-    const diagPath = execSync(
-      'echo "NIX_BIN=$(ls /root/.nix-profile/bin/ 2>/dev/null | grep -i chrom || echo NONE)"; ' +
-      'echo "WHICH_CHROM=$(PATH=/root/.nix-profile/bin:$PATH which chromium 2>/dev/null || echo NONE)"; ' +
-      'echo "WHICH_BROWSER=$(PATH=/root/.nix-profile/bin:$PATH which chromium-browser 2>/dev/null || echo NONE)"; ' +
-      'echo "ENV_PATH=$PATH"',
-      { shell: "/bin/sh" }
-    ).toString();
-    console.log("[PDF] Chromium diagnostic:", diagPath);
-  } catch { /* ignore */ }
+    const found = execSync(
+      'find /nix/store -maxdepth 4 -name "chromium" -type f -executable 2>/dev/null | head -1'
+    ).toString().trim();
+    if (found) {
+      console.log("[PDF] Found chromium in nix store:", found);
+      _chromiumPathCache = found;
+      return found;
+    }
+  } catch { /* nix not available */ }
 
-  // Try with extended nix PATH
-  for (const cmd of ["chromium", "chromium-browser", "google-chrome"]) {
+  // Try known nix profile paths
+  for (const p of [
+    "/root/.nix-profile/bin/chromium",
+    "/nix/var/nix/profiles/default/bin/chromium",
+  ]) {
     try {
-      const p = execSync(
-        `PATH="/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH" which ${cmd} 2>/dev/null`,
-        { shell: "/bin/sh" }
-      ).toString().trim();
-      if (p && !p.includes("snap") && !p.endsWith("chromium-browser")) return p;
+      execSync(`test -f "${p}" && test -x "${p}"`);
+      console.log("[PDF] Found chromium at:", p);
+      _chromiumPathCache = p;
+      return p;
     } catch { /* not found */ }
   }
 
+  console.warn("[PDF] No real chromium binary found. Set PUPPETEER_EXECUTABLE_PATH env var.");
+  _chromiumPathCache = undefined;
   return undefined;
 }
 

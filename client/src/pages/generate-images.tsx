@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { Image as ImageIcon, Download, Sparkles, Loader2, FileImage, Cloud, FileCode, Printer, FileDown, RefreshCw, Trash2, Undo2, Maximize2, Minimize2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { saveDocument } from "@/lib/firebase";
 import { exportHtmlToDocx } from "@/lib/docx-export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { usePersistedState } from "@/hooks/use-persisted-state";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -33,6 +34,7 @@ export default function GenerateImages() {
   const [undoImage, setUndoImage] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   const imageRef = useRef<HTMLImageElement>(null);
   const stockFallbackRef = useRef(false);
   const [location] = useLocation();
@@ -570,7 +572,7 @@ export default function GenerateImages() {
             </div>
 
             {/* Preview Panel */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className={`lg:col-span-8 space-y-6 ${fullscreenClass}`}>
               <Card className="h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -671,6 +673,9 @@ export default function GenerateImages() {
                           <span className="hidden sm:inline">{t("common.undo")}</span>
                         </Button>
                       )}
+                      <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen preview"} className="shrink-0 h-8 w-8">
+                        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>

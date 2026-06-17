@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2 } from "lucide-react";
+import { Presentation, Sparkles, Upload, Download, Save, Play, Pause, X, FileIcon, FileCode, Cloud, Image as ImageIcon, Mic, MessageSquare, Volume2, LayoutTemplate, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2, Maximize2, Minimize2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { storeForHumanizer, storeForCitations } from "@/lib/humanize-transfer";
 import { GeneratorLayout } from "@/components/generator-layout";
@@ -30,6 +30,7 @@ import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import type { ToneType } from "@shared/schema";
 import { useTranslation } from "react-i18next";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface SlideImage {
   url: string;
@@ -409,6 +410,7 @@ export default function GeneratePowerPoint() {
   const [presentation, setPresentation] = useState<any>(null);
 
   const tts = useGeminiTTS({ tone });
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   const { generate, isGenerating, generatedContent, progress, clearContent, restore } = useDocumentGenerator("powerpoint");
   const [undoContent, setUndoContent] = useState<any>(null);
   const [undoImageUrls, setUndoImageUrls] = useState<Record<number, string>>({});
@@ -962,7 +964,7 @@ export default function GeneratePowerPoint() {
               </Card>
             </div>
 
-            <div className="lg:col-span-8 space-y-6">
+            <div className={`lg:col-span-8 space-y-6 ${fullscreenClass}`}>
               <Card className="h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1126,6 +1128,9 @@ export default function GeneratePowerPoint() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen preview"} className="shrink-0 h-8 w-8">
+                        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>

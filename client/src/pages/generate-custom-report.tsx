@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, Undo2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck } from "lucide-react";
+import { useFullscreen } from "@/hooks/use-fullscreen";
+import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, Undo2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck, Maximize2, Minimize2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -98,6 +99,7 @@ export default function GenerateCustomReport() {
   const [location, navigate] = useLocation();
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   // TTS hook for reading document aloud (high-quality Gemini TTS)
   const tts = useGeminiTTS({ tone });
 
@@ -213,19 +215,23 @@ export default function GenerateCustomReport() {
   // Fetch images for figures
   useEffect(() => {
     if (generatedContent?.sections && numFigures > 0) {
+      let fetchCount = 0;
       generatedContent.sections.forEach(async (section: any, index: number) => {
-        if (section.image_prompt && !sectionImageUrls[index] && index < numFigures) {
-          try {
-            const response: any = await apiRequest("POST", "/api/images/random", {
-              query: section.image_prompt
-            });
-            if (response.image) {
-              const url = response.image.webformatURL || response.image.largeImageURL;
-              setSectionImageUrls(prev => ({ ...prev, [index]: url }));
-            }
-          } catch (error) {
-            console.error(`Failed to fetch image for section ${index}:`, error);
+        if (sectionImageUrls[index] || fetchCount >= numFigures) return;
+        const hasFigureRef = /figure\s*\d/i.test(section.content || "");
+        const imageQuery = section.image_prompt || (hasFigureRef ? (section.heading || section.title) : null);
+        if (!imageQuery) return;
+        fetchCount++;
+        try {
+          const response: any = await apiRequest("POST", "/api/images/random", {
+            query: imageQuery
+          });
+          if (response.image) {
+            const url = response.image.webformatURL || response.image.largeImageURL;
+            setSectionImageUrls(prev => ({ ...prev, [index]: url }));
           }
+        } catch (error) {
+          console.error(`Failed to fetch image for section ${index}:`, error);
         }
       });
     }
@@ -943,7 +949,10 @@ export default function GenerateCustomReport() {
               {isGenerating && progress > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{t("pages.customReport.generatingReport")}</span>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{t("pages.customReport.generatingReport")}</span>
+                    </div>
                     <span>{progress}%</span>
                   </div>
                   <Progress value={progress} className="w-full" />
@@ -961,7 +970,7 @@ export default function GenerateCustomReport() {
         </div>
 
         {/* Preview Panel - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className={`col-span-12 lg:col-span-8 ${fullscreenClass}`}>
           <Card className="h-full">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1073,6 +1082,9 @@ export default function GenerateCustomReport() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen preview"} className="shrink-0 h-8 w-8">
+                      {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1130,11 +1142,9 @@ export default function GenerateCustomReport() {
                               alt={section.image_caption || `Figure ${index + 1}`}
                               className="mx-auto rounded-lg border"
                             />
-                            {section.image_caption && (
-                              <figcaption className="text-center text-sm font-semibold mt-2">
-                                {section.image_caption}
-                              </figcaption>
-                            )}
+                            <figcaption className="text-center text-sm font-semibold mt-2">
+                              {section.image_caption || `Figure ${index + 1}`}
+                            </figcaption>
                           </figure>
                         )}
                       </div>

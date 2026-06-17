@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, Undo2, FileCode, Printer, Cloud, Loader2, FileText, Wand2, BookOpenCheck } from "lucide-react";
+import { BookOpen, Sparkles, Upload, Download, Save, X, FileIcon, Settings, UserPlus, Trash2, Undo2, FileCode, Printer, Cloud, Loader2, FileText, Wand2, BookOpenCheck, Maximize2, Minimize2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
 import { DocumentTTSControls } from "@/components/document-tts-controls";
 import { useLocation } from "wouter";
@@ -28,6 +28,7 @@ import { saveDocument } from "@/lib/firebase";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ToneType } from "@shared/schema";
 import { useTranslation } from "react-i18next";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface Author {
   name: string;
@@ -73,6 +74,7 @@ export default function GenerateConference() {
   const { user, isAuthenticated } = useAuth();
   const [location, navigate] = useLocation();
 
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   // TTS hook for reading document aloud (high-quality Gemini TTS)
   const tts = useGeminiTTS({ tone });
 
@@ -93,25 +95,27 @@ export default function GenerateConference() {
     }
   }, [location]);
 
-  // Fetch images for figures
+  // Fetch images for <figure> elements in the IEEE HTML output
   useEffect(() => {
-    if (generatedContent?.sections && generateImages) {
-      generatedContent.sections.forEach(async (section: any, index: number) => {
-        if (section.image_prompt && !sectionImageUrls[index]) {
-          try {
-            const response: any = await apiRequest("POST", "/api/images/random", {
-              query: section.image_prompt
-            });
-            if (response.image) {
-              const url = response.image.webformatURL || response.image.largeImageURL;
-              setSectionImageUrls(prev => ({ ...prev, [index]: url }));
-            }
-          } catch (error) {
-            console.error(`Failed to fetch image for section ${index}:`, error);
-          }
+    if (!generatedContent?.html || !generateImages) return;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(generatedContent.html, 'text/html');
+    const figures = Array.from(doc.querySelectorAll('figure'));
+    figures.forEach(async (figure, index) => {
+      if (sectionImageUrls[index]) return;
+      if (figure.querySelector('img[src]')) return; // already has real image
+      const caption = figure.querySelector('figcaption')?.textContent?.trim();
+      if (!caption) return;
+      try {
+        const response: any = await apiRequest("POST", "/api/images/random", { query: caption });
+        if (response.image) {
+          const url = response.image.webformatURL || response.image.largeImageURL;
+          setSectionImageUrls(prev => ({ ...prev, [index]: url }));
         }
-      });
-    }
+      } catch (error) {
+        console.error(`Failed to fetch image for figure ${index}:`, error);
+      }
+    });
   }, [generatedContent, generateImages]);
 
   const addAuthor = () => {
@@ -168,13 +172,28 @@ export default function GenerateConference() {
 
   const getHtmlContent = (): string => {
     if (!generatedContent) return '';
+    let rawHtml = '';
     if (generatedContent.type === 'html' && generatedContent.html) {
-      return sanitizeHtml(generatedContent.html);
+      rawHtml = generatedContent.html;
+    } else if (typeof generatedContent === 'string') {
+      rawHtml = generatedContent;
     }
-    if (typeof generatedContent === 'string') {
-      return sanitizeHtml(generatedContent);
+    if (!rawHtml) return '';
+
+    // Inject fetched Pixabay images into empty <figure> elements
+    if (Object.keys(sectionImageUrls).length > 0) {
+      let figureIndex = 0;
+      rawHtml = rawHtml.replace(/<figure([^>]*)>([\s\S]*?)<\/figure>/gi, (match, attrs, inner) => {
+        const idx = figureIndex++;
+        const imageUrl = sectionImageUrls[idx];
+        if (!imageUrl || /<img\s/i.test(inner)) return match;
+        const captionMatch = inner.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+        const caption = captionMatch ? captionMatch[1].replace(/<[^>]+>/g, '') : `Figure ${idx + 1}`;
+        return `<figure${attrs}><img src="${imageUrl}" alt="${caption}" style="max-width:100%;display:block;margin:0 auto 0.5em;" />${inner}</figure>`;
+      });
     }
-    return '';
+
+    return sanitizeHtml(rawHtml);
   };
 
   const handleExportPDF = async () => {
@@ -965,7 +984,7 @@ export default function GenerateConference() {
           </Card>
         </div>
 
-        <div className="lg:col-span-8 space-y-6">
+        <div className={`lg:col-span-8 space-y-6 ${fullscreenClass}`}>
           <Card className="h-full">
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1076,6 +1095,9 @@ export default function GenerateConference() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen preview"} className="shrink-0 h-8 w-8">
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1083,7 +1105,8 @@ export default function GenerateConference() {
               {isGenerating && (
                 <div className="space-y-4 mb-6" role="status" aria-live="polite" aria-label={`Generating conference paper: ${progress}% complete`}>
                   <Progress value={progress} className="w-full" />
-                  <div className="text-sm text-muted-foreground text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     {progress < 50 ? t("pages.conference.progressPhase1") :
                      progress < 90 ? t("pages.conference.progressPhase2") :
                      t("pages.conference.progressPhase3")}

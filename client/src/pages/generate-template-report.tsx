@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 import {
   Sparkles, Upload, Settings, Download, Save, X, FileIcon,
   FileDown, FileCode, Printer, Clipboard, RefreshCw, LayoutTemplate,
   Loader2, FileText, PenLine, Shuffle, Wand2, BookOpenCheck, Trash2, Undo2,
+  Maximize2, Minimize2,
 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +84,7 @@ export default function GenerateTemplateReport() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const tts = useGeminiTTS({ tone });
+  const { isFullscreen, toggle: toggleFullscreen, containerClassName: fullscreenClass } = useFullscreen();
   const { generateTopic, isLoading: isLoadingTopic } = useRandomTopic();
 
   // ── fetch images for every section ─────────────────────────────────────────
@@ -617,7 +620,11 @@ export default function GenerateTemplateReport() {
                     {isGenerating && progress > 0 && (
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{t("pages.templateReport.generatingEllipsis")}</span><span>{progress}%</span>
+                          <div className="flex items-center gap-1.5">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>{t("pages.templateReport.generatingEllipsis")}</span>
+                          </div>
+                          <span>{progress}%</span>
                         </div>
                         <Progress value={progress} className="h-1.5" />
                       </div>
@@ -627,7 +634,7 @@ export default function GenerateTemplateReport() {
               </div>
 
               {/* ── RIGHT PANEL ────────────────────────────────────────────── */}
-              <div className="col-span-12 lg:col-span-8">
+              <div className={`col-span-12 lg:col-span-8 ${fullscreenClass}`}>
                 <Card className="h-full">
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -748,6 +755,9 @@ export default function GenerateTemplateReport() {
                               {isSaved ? t("common.saved") : t("common.save")}
                             </Button>
                           </div>
+                          <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen preview"} className="shrink-0 h-8 w-8">
+                            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -808,11 +818,9 @@ export default function GenerateTemplateReport() {
                                     alt={section.image_caption || `Figure ${index + 1}`}
                                     className="mx-auto rounded-lg border max-w-full"
                                   />
-                                  {section.image_caption && (
-                                    <figcaption className="text-center text-sm font-semibold mt-2 text-muted-foreground">
-                                      {section.image_caption}
-                                    </figcaption>
-                                  )}
+                                  <figcaption className="text-center text-sm font-semibold mt-2 text-muted-foreground">
+                                    {section.image_caption || `Figure ${index + 1}`}
+                                  </figcaption>
                                 </figure>
                               )}
                             </div>
