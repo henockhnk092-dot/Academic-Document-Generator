@@ -1,39 +1,30 @@
 import puppeteer from "puppeteer-core";
-import { execSync } from "child_process";
+import chromiumPkg from "@sparticuz/chromium";
 import { parseMarkdownToHtml } from "./markdown-html";
 
 let _chromiumPathCache: string | undefined | null = null;
 
-function findChromiumPath(): string | undefined {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+async function findChromiumPath(): Promise<string | undefined> {
   if (_chromiumPathCache !== null) return _chromiumPathCache;
 
-  // Search nix store for actual chromium binary (not snap stubs)
-  try {
-    const found = execSync(
-      'find /nix/store -maxdepth 4 -name "chromium" -type f -executable 2>/dev/null | head -1'
-    ).toString().trim();
-    if (found) {
-      console.log("[PDF] Found chromium in nix store:", found);
-      _chromiumPathCache = found;
-      return found;
-    }
-  } catch { /* nix not available */ }
-
-  // Try known nix profile paths
-  for (const p of [
-    "/root/.nix-profile/bin/chromium",
-    "/nix/var/nix/profiles/default/bin/chromium",
-  ]) {
-    try {
-      execSync(`test -f "${p}" && test -x "${p}"`);
-      console.log("[PDF] Found chromium at:", p);
-      _chromiumPathCache = p;
-      return p;
-    } catch { /* not found */ }
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    _chromiumPathCache = process.env.PUPPETEER_EXECUTABLE_PATH;
+    return _chromiumPathCache;
   }
 
-  console.warn("[PDF] No real chromium binary found. Set PUPPETEER_EXECUTABLE_PATH env var.");
+  // @sparticuz/chromium — pre-compiled binary, works in any container
+  try {
+    const p = await chromiumPkg.executablePath();
+    if (p) {
+      console.log("[PDF] chromium path (@sparticuz):", p);
+      _chromiumPathCache = p;
+      return p;
+    }
+  } catch (e) {
+    console.warn("[PDF] @sparticuz/chromium unavailable:", e);
+  }
+
+  console.warn("[PDF] No chromium found. Set PUPPETEER_EXECUTABLE_PATH env var.");
   _chromiumPathCache = undefined;
   return undefined;
 }
@@ -138,12 +129,19 @@ export async function generatePdf(
     html = buildReportHtml(content, imageUrls);
   }
 
-  const executablePath = findChromiumPath();
+  const executablePath = await findChromiumPath();
   if (!executablePath) throw new Error("Chromium not found. Set PUPPETEER_EXECUTABLE_PATH.");
   const browser = await puppeteer.launch({
     headless: true,
     executablePath,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--single-process"],
+    args: [
+      ...chromiumPkg.args,
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--single-process",
+    ],
   });
 
   try {
