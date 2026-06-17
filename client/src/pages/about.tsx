@@ -25,7 +25,8 @@ import {
   Volume2,
   Cpu
 } from "lucide-react";
-import { SiGithub, SiYoutube, SiTiktok, SiLinkedin, SiInstagram } from "react-icons/si";
+import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 
 export default function About() {
@@ -192,7 +193,7 @@ export default function About() {
               {/* Profile photo */}
               <img
                 src="/images/author.jpg"
-                alt="Henock Hnk"
+                alt="HNK"
                 className="w-full sm:w-56 rounded-xl object-cover object-top border border-border shrink-0 aspect-square"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
@@ -200,7 +201,7 @@ export default function About() {
               {/* Content */}
               <div className="space-y-4 flex-1">
                 <div>
-                  <p className="font-semibold text-xl">Henock Hnk</p>
+                  <p className="font-semibold text-xl">HNK</p>
                   <p className="text-sm text-muted-foreground">{t("pages.about.authorRole")}</p>
                 </div>
 
@@ -237,7 +238,7 @@ export default function About() {
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
                     >
-                      <SiLinkedin className="h-4 w-4" />
+                      <FaLinkedin className="h-4 w-4" />
                       LinkedIn
                     </a>
                   </Button>
