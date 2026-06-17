@@ -4,8 +4,12 @@ import { parseMarkdownToHtml } from "./markdown-html";
 
 function findChromiumPath(): string | undefined {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
-  for (const p of ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/usr/bin/google-chrome"]) {
-    try { execSync(`test -x "${p}"`); return p; } catch { /* not found */ }
+  // Try which first — nix-installed chromium is in PATH but not at a fixed path
+  for (const cmd of ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"]) {
+    try {
+      const p = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
+      if (p) return p;
+    } catch { /* not found */ }
   }
   return undefined;
 }
