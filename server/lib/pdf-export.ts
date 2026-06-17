@@ -1,5 +1,14 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import { execSync } from "child_process";
 import { parseMarkdownToHtml } from "./markdown-html";
+
+function findChromiumPath(): string | undefined {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+  for (const p of ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/usr/bin/google-chrome"]) {
+    try { execSync(`test -x "${p}"`); return p; } catch { /* not found */ }
+  }
+  return undefined;
+}
 
 function buildReportHtml(content: any, imageUrls: Record<string, string> = {}): string {
   const sections = (content.sections ?? [])
@@ -101,9 +110,11 @@ export async function generatePdf(
     html = buildReportHtml(content, imageUrls);
   }
 
+  const executablePath = findChromiumPath();
+  if (!executablePath) throw new Error("Chromium not found. Set PUPPETEER_EXECUTABLE_PATH.");
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    executablePath,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--single-process"],
   });
 
