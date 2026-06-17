@@ -109,12 +109,16 @@ export async function generatePdf(
   // 1. Try @sparticuz/chromium (works on Railway, Lambda, etc.)
   try {
     const executablePath = await chromium.executablePath();
+    console.log("[PDF] sparticuz executablePath:", executablePath);
     browser = await puppeteer.launch({
       executablePath,
       headless: chromium.headless,
       args: chromium.args,
     });
-  } catch { /* fall through to system Chrome */ }
+    console.log("[PDF] sparticuz browser launched OK");
+  } catch (e) {
+    console.log("[PDF] sparticuz failed:", (e as Error).message);
+  }
 
   // 2. Fall back to system Chrome/Chromium
   if (!browser) {
