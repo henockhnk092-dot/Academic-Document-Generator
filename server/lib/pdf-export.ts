@@ -1,6 +1,4 @@
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
-import { execSync } from "node:child_process";
+import puppeteer from "puppeteer";
 import { parseMarkdownToHtml } from "./markdown-html";
 
 function buildReportHtml(content: any, imageUrls: Record<string, string> = {}): string {
@@ -103,57 +101,10 @@ export async function generatePdf(
     html = buildReportHtml(content, imageUrls);
   }
 
-  // Try to find a system Chrome/Chromium installation
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
-
-  // 1. Try @sparticuz/chromium (works on Railway, Lambda, etc.)
-  try {
-    const executablePath = await chromium.executablePath();
-    console.log("[PDF] sparticuz executablePath:", executablePath);
-    browser = await puppeteer.launch({
-      executablePath,
-      headless: chromium.headless,
-      args: chromium.args,
-    });
-    console.log("[PDF] sparticuz browser launched OK");
-  } catch (e) {
-    console.log("[PDF] sparticuz failed:", (e as Error).message);
-  }
-
-  // 2. Fall back to system Chrome/Chromium
-  if (!browser) {
-    let systemChrome: string | undefined;
-    try {
-      systemChrome = execSync(
-        "which chromium 2>/dev/null || which google-chrome 2>/dev/null || which chromium-browser 2>/dev/null"
-      ).toString().trim() || undefined;
-    } catch { /* not in PATH */ }
-
-    const candidates = [
-      process.env.PUPPETEER_EXECUTABLE_PATH,
-      systemChrome,
-      "/usr/bin/google-chrome",
-      "/usr/bin/chromium-browser",
-      "/usr/bin/chromium",
-      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    ].filter(Boolean) as string[];
-
-    for (const executablePath of candidates) {
-      try {
-        browser = await puppeteer.launch({
-          executablePath,
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
-        });
-        break;
-      } catch { /* try next */ }
-    }
-  }
-
-  if (!browser) {
-    throw new Error("Chrome/Chromium not found. Please install Google Chrome.");
-  }
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
+  });
 
   try {
     const page = await browser.newPage();
