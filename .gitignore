@@ -13,6 +13,9 @@ vite.config.ts.*
 .env.production
 .env*.local
 
+# Dev notes / pasted content that may contain secrets
+attached_assets/
+
 # Replit specific
 .replit
 replit.nix
