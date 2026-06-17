@@ -34,6 +34,7 @@ export default function GenerateImages() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const imageRef = useRef<HTMLImageElement>(null);
+  const stockFallbackRef = useRef(false);
   const [location] = useLocation();
 
   // Load template data from URL parameters
@@ -131,7 +132,7 @@ export default function GenerateImages() {
             if (resp.ok) {
               const data = await resp.json();
               const url = data.image?.webformatURL || data.image?.largeImageURL;
-              if (url) return url;
+              if (url) { stockFallbackRef.current = true; return url; }
             }
           } catch { /* ignore, fall through to error */ }
           throw new Error("Service temporarily unavailable. Please try again.");
@@ -158,15 +159,23 @@ export default function GenerateImages() {
     setIsGenerating(true);
     setGeneratedImage(null);
     setImageUrl(null);
+    stockFallbackRef.current = false;
 
     try {
       const imageUrl = await generateImageAPI();
       setImageUrl(imageUrl);
       setGeneratedImage(imageUrl);
-      toast({
-        title: t("pages.images.generated"),
-        description: t("pages.images.generatedDesc"),
-      });
+      if (stockFallbackRef.current) {
+        toast({
+          title: "AI generation unavailable",
+          description: "Showing a stock photo instead. Try again later for AI-generated images.",
+        });
+      } else {
+        toast({
+          title: t("pages.images.generated"),
+          description: t("pages.images.generatedDesc"),
+        });
+      }
     } catch (error: any) {
       console.error("Image generation error:", error);
       toast({

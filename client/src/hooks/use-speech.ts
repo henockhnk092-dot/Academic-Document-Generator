@@ -342,7 +342,17 @@ export function useSpeech() {
           audio.onerror = done;
           audio.play().catch(done);
         });
-      } catch { /* skip failed sentence, continue */ }
+      } catch {
+        // All server engines failed — fall back to browser TTS for this sentence
+        if (!cancelRef.current && browserSupported) {
+          await new Promise<void>((resolve) => {
+            const utt = new SpeechSynthesisUtterance(sentences[i]);
+            utt.onend = () => resolve();
+            utt.onerror = () => resolve();
+            window.speechSynthesis.speak(utt);
+          });
+        }
+      }
     }
 
     if (!cancelRef.current) {
