@@ -3,7 +3,6 @@ electron
 electron-dist
 android
 ios
-dist
 .git
 .DS_Store
 *.tar.gz
