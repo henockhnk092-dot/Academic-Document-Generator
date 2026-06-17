@@ -104,11 +104,12 @@ export async function generatePdf(
   // Try to find a system Chrome/Chromium installation
   const executablePaths = [
     process.env.PUPPETEER_EXECUTABLE_PATH,
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "/run/current-system/sw/bin/chromium",  // nixpacks/NixOS
     "/usr/bin/google-chrome",
     "/usr/bin/chromium-browser",
     "/usr/bin/chromium",
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
   ].filter(Boolean) as string[];
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
