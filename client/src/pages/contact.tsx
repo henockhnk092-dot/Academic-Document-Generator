@@ -13,8 +13,11 @@ import {
   ExternalLink,
   Cpu
 } from "lucide-react";
-import { SiGithub, SiYoutube, SiTiktok, SiInstagram, SiLinkedin } from "react-icons/si";
+import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+
+const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT;
 
 export default function Contact() {
   const { t } = useTranslation();
@@ -33,8 +36,10 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      // Submit to Formspree
-      const response = await fetch("https://formspree.io/f/mpwvllyg", {
+      if (!FORMSPREE_ENDPOINT) {
+        throw new Error("Contact form endpoint is not configured");
+      }
+      const response = await fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +76,7 @@ export default function Contact() {
   };
 
   const socialLinks = [
-    { icon: SiLinkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/henock-mukonkole-178b26258", username: "Henock Hnk" },
+    { icon: FaLinkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/henock-mukonkole-178b26258", username: "HNK" },
     { icon: SiGithub, label: "GitHub", href: "https://github.com/henockhnk092-dot/Academic-Document-Generator", username: "henockhnk092-dot" },
     { icon: SiYoutube, label: "YouTube", href: "https://youtube.com/@HNK2005", username: "@HNK2005" },
     { icon: SiTiktok, label: "TikTok", href: "https://tiktok.com/@codingfever", username: "@codingfever" },
@@ -198,10 +203,10 @@ export default function Contact() {
                   <div>
                     <p className="font-medium">{t("pages.contact.emailLabel")}</p>
                     <a
-                      href="mailto:hhnk3693@gmail.com"
+                      href="mailto:support@academicgen.com"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      hhnk3693@gmail.com
+                      support@academicgen.com
                     </a>
                   </div>
                 </div>
@@ -265,12 +270,12 @@ export default function Contact() {
                 <div className="flex items-center gap-3">
                   <img
                     src="/images/author.jpg"
-                    alt="Henock Hnk"
+                    alt="HNK"
                     className="h-14 w-14 rounded-full object-cover border-2 border-primary/20 shrink-0"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                   <div>
-                    <p className="font-semibold text-sm">Henock Hnk</p>
+                    <p className="font-semibold text-sm">HNK</p>
                     <p className="text-xs text-muted-foreground">{t("pages.contact.locationName")}</p>
                   </div>
                 </div>
