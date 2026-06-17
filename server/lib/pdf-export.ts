@@ -101,14 +101,11 @@ export async function generatePdf(
     html = buildReportHtml(content, imageUrls);
   }
 
-  const launchOptions: Parameters<typeof puppeteer.launch>[0] = {
+  const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
-  };
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-  const browser = await puppeteer.launch(launchOptions);
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--single-process"],
+  });
 
   try {
     const page = await browser.newPage();

@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index-dev.ts",
-    "build": "vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js",
+    "build": "vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js && npx puppeteer browsers install chrome --path .cache/puppeteer || true",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
