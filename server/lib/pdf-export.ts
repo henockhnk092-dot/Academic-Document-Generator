@@ -4,17 +4,30 @@ import { parseMarkdownToHtml } from "./markdown-html";
 
 function findChromiumPath(): string | undefined {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
-  // Nix-installed chromium (Railway nixpacks installs via nix, not apt)
-  for (const p of ["/root/.nix-profile/bin/chromium", "/root/.nix-profile/bin/chromium-browser"]) {
-    try { execSync(`test -x "${p}" 2>/dev/null`); return p; } catch { /* not found */ }
-  }
-  // which — skip snap stubs
+
+  // Diagnostic: log what's available
+  try {
+    const diagPath = execSync(
+      'echo "NIX_BIN=$(ls /root/.nix-profile/bin/ 2>/dev/null | grep -i chrom || echo NONE)"; ' +
+      'echo "WHICH_CHROM=$(PATH=/root/.nix-profile/bin:$PATH which chromium 2>/dev/null || echo NONE)"; ' +
+      'echo "WHICH_BROWSER=$(PATH=/root/.nix-profile/bin:$PATH which chromium-browser 2>/dev/null || echo NONE)"; ' +
+      'echo "ENV_PATH=$PATH"',
+      { shell: "/bin/sh" }
+    ).toString();
+    console.log("[PDF] Chromium diagnostic:", diagPath);
+  } catch { /* ignore */ }
+
+  // Try with extended nix PATH
   for (const cmd of ["chromium", "chromium-browser", "google-chrome"]) {
     try {
-      const p = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
-      if (p && !p.includes("snap") && !p.includes("/usr/bin/chromium-browser")) return p;
+      const p = execSync(
+        `PATH="/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH" which ${cmd} 2>/dev/null`,
+        { shell: "/bin/sh" }
+      ).toString().trim();
+      if (p && !p.includes("snap") && !p.endsWith("chromium-browser")) return p;
     } catch { /* not found */ }
   }
+
   return undefined;
 }
 
