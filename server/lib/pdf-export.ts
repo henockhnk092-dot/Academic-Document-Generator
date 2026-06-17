@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { execSync } from "node:child_process";
 import { parseMarkdownToHtml } from "./markdown-html";
 
 function buildReportHtml(content: any, imageUrls: Record<string, string> = {}): string {
@@ -102,9 +103,18 @@ export async function generatePdf(
   }
 
   // Try to find a system Chrome/Chromium installation
+  // Dynamically find chromium in PATH (works for nixpacks-installed chromium)
+  let dynamicChromium: string | undefined;
+  try {
+    dynamicChromium = execSync(
+      "which chromium 2>/dev/null || which google-chrome 2>/dev/null || which chromium-browser 2>/dev/null"
+    ).toString().trim() || undefined;
+  } catch { /* not found in PATH */ }
+
   const executablePaths = [
     process.env.PUPPETEER_EXECUTABLE_PATH,
-    "/run/current-system/sw/bin/chromium",  // nixpacks/NixOS
+    dynamicChromium,
+    "/run/current-system/sw/bin/chromium",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium-browser",
     "/usr/bin/chromium",
