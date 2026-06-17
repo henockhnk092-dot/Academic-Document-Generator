@@ -4,11 +4,15 @@ import { parseMarkdownToHtml } from "./markdown-html";
 
 function findChromiumPath(): string | undefined {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
-  // Try which first — nix-installed chromium is in PATH but not at a fixed path
-  for (const cmd of ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"]) {
+  // Nix-installed chromium (Railway nixpacks installs via nix, not apt)
+  for (const p of ["/root/.nix-profile/bin/chromium", "/root/.nix-profile/bin/chromium-browser"]) {
+    try { execSync(`test -x "${p}" 2>/dev/null`); return p; } catch { /* not found */ }
+  }
+  // which — skip snap stubs
+  for (const cmd of ["chromium", "chromium-browser", "google-chrome"]) {
     try {
       const p = execSync(`which ${cmd} 2>/dev/null`).toString().trim();
-      if (p) return p;
+      if (p && !p.includes("snap") && !p.includes("/usr/bin/chromium-browser")) return p;
     } catch { /* not found */ }
   }
   return undefined;
