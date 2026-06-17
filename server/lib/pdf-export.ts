@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { execSync } from "node:child_process";
 import { parseMarkdownToHtml } from "./markdown-html";
 
@@ -103,37 +104,46 @@ export async function generatePdf(
   }
 
   // Try to find a system Chrome/Chromium installation
-  // Dynamically find chromium in PATH (works for nixpacks-installed chromium)
-  let dynamicChromium: string | undefined;
-  try {
-    dynamicChromium = execSync(
-      "which chromium 2>/dev/null || which google-chrome 2>/dev/null || which chromium-browser 2>/dev/null"
-    ).toString().trim() || undefined;
-  } catch { /* not found in PATH */ }
-
-  const executablePaths = [
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    dynamicChromium,
-    "/run/current-system/sw/bin/chromium",
-    "/usr/bin/google-chrome",
-    "/usr/bin/chromium-browser",
-    "/usr/bin/chromium",
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-  ].filter(Boolean) as string[];
-
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
-  for (const executablePath of executablePaths) {
+  // 1. Try @sparticuz/chromium (works on Railway, Lambda, etc.)
+  try {
+    const executablePath = await chromium.executablePath();
+    browser = await puppeteer.launch({
+      executablePath,
+      headless: chromium.headless,
+      args: chromium.args,
+    });
+  } catch { /* fall through to system Chrome */ }
+
+  // 2. Fall back to system Chrome/Chromium
+  if (!browser) {
+    let systemChrome: string | undefined;
     try {
-      browser = await puppeteer.launch({
-        executablePath,
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
-      });
-      break;
-    } catch {
-      // try next path
+      systemChrome = execSync(
+        "which chromium 2>/dev/null || which google-chrome 2>/dev/null || which chromium-browser 2>/dev/null"
+      ).toString().trim() || undefined;
+    } catch { /* not in PATH */ }
+
+    const candidates = [
+      process.env.PUPPETEER_EXECUTABLE_PATH,
+      systemChrome,
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "/usr/bin/chromium",
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ].filter(Boolean) as string[];
+
+    for (const executablePath of candidates) {
+      try {
+        browser = await puppeteer.launch({
+          executablePath,
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
+        });
+        break;
+      } catch { /* try next */ }
     }
   }
 
