@@ -983,17 +983,12 @@ export default function Settings() {
               {
                 value: "auto",
                 label: "⚡ Auto: Best Available",
-                desc: "System picks best model automatically: Humanize AI Pro → Gemini (×4) → DeepSeek",
+                desc: "System picks best model automatically: Humanize AI Pro → Gemini",
               },
               {
                 value: "humanize_ai",
                 label: "🎯 Humanize AI Pro: Highest Quality",
                 desc: "Best humanization, uses your dedicated credits",
-              },
-              {
-                value: "deepseek",
-                label: "🇨🇳 DeepSeek: Fast & Efficient",
-                desc: "Chinese AI, very fast, nearly free to run",
               },
               {
                 value: "gemini",

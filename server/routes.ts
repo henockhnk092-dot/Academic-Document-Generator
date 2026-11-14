@@ -1498,52 +1498,6 @@ ${numbered}`;
       console.warn(`[Detection] All Gemini keys failed: ${e.message}`);
     }
 
-    // 3. DeepSeek (last resort)
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    if (deepseekKey) {
-      try {
-        const ctrl2 = new AbortController();
-        const tid2 = setTimeout(() => ctrl2.abort(), 30000);
-        const dsResp = await fetch("https://api.deepseek.com/chat/completions", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${deepseekKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "deepseek-chat",
-            messages: [
-              { role: "system", content: "Analyze text for AI-generated content. Return only valid JSON." },
-              { role: "user", content: `For each numbered sentence, estimate probability (0-100) it was AI-written.\nReturn ONLY JSON: {"aiPercentage": 65, "scores": [72, 15, 88]}\n\n${numbered}` },
-            ],
-            temperature: 0.3,
-            max_tokens: 1000,
-          }),
-          signal: ctrl2.signal,
-        });
-        clearTimeout(tid2);
-        if (dsResp.ok) {
-          const dsData = await dsResp.json();
-          const content = dsData.choices?.[0]?.message?.content ?? "";
-          const objM = content.match(/\{[\s\S]*?\}/);
-          if (objM) {
-            const parsed = JSON.parse(objM[0]);
-            const rawScores = Array.isArray(parsed.scores) ? parsed.scores : [];
-            const sentenceScores: SentenceScore[] = sentences.map((t, idx) => ({
-              idx,
-              text: t,
-              score: Math.max(0, Math.min(100, rawScores[idx] ?? 50)),
-              isAI: (rawScores[idx] ?? 50) >= 60,
-            }));
-            const overall = parsed.aiPercentage ?? Math.round(
-              sentenceScores.reduce((s, x) => s + x.score, 0) / Math.max(sentenceScores.length, 1)
-            );
-            console.log("[Detection] DeepSeek succeeded");
-            return { aiPercentage: Math.max(0, Math.min(100, overall)), sentenceScores };
-          }
-        }
-      } catch (e: any) {
-        console.warn(`[Detection] DeepSeek failed: ${e.message}`);
-      }
-    }
-
     // Final fallback: overall % only via Gemini
     const fallback = await generateChatResponse(
       `Estimate what % (0-100) of this text was written by AI. Return ONLY JSON: {"aiPercentage": 65}\n\n${text.substring(0, 2000)}`
@@ -1562,7 +1516,6 @@ ${numbered}`;
     modelPref = "auto"
   ): Promise<{ text: string; modelUsed: string }> {
     const humanizeKey = process.env.HUMANIZE_API_KEY || "";
-    const deepseekKey = process.env.DEEPSEEK_API_KEY || "";
 
     const modeHints: Record<string, string> = {
       academic: "maintaining academic vocabulary and formal scholarly tone",
@@ -1600,50 +1553,12 @@ ${numbered}`;
       } catch { console.log("[Paraphrase] All Gemini keys failed"); return null; }
     };
 
-    const tryDeepSeek = async (): Promise<string | null> => {
-      if (!deepseekKey) return null;
-      try {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 60000);
-        const resp = await fetch("https://api.deepseek.com/chat/completions", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${deepseekKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "deepseek-chat",
-            messages: [
-              {
-                role: "system",
-                content: "You are an expert text humanizer. Rewrite AI-generated text to sound completely natural and human-written. Rules: vary sentence length, use natural contractions, avoid robotic patterns, add natural transitions, preserve original meaning exactly, do not add new information, write as a human would naturally.",
-              },
-              { role: "user", content: `Humanize: ${text}` },
-            ],
-            temperature: 0.8,
-            max_tokens: 2000,
-          }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(tid);
-        if (resp.ok) {
-          const data = await resp.json();
-          return data.choices?.[0]?.message?.content || null;
-        }
-        return null;
-      } catch { console.log("[Paraphrase] DeepSeek unavailable"); return null; }
-    };
-
-    if (modelPref === "gemini") {
+    // "deepseek" was removed (no balance); old saved preferences fall back to Gemini
+    if (modelPref === "gemini" || modelPref === "deepseek") {
       const r = await tryGemini();
       if (r) return { text: r, modelUsed: "Gemini" };
-      const r2 = await tryDeepSeek();
-      if (r2) return { text: r2, modelUsed: "DeepSeek" };
-      throw new Error("All paraphrasing services failed.");
-    }
-
-    if (modelPref === "deepseek") {
-      const r = await tryDeepSeek();
-      if (r) return { text: r, modelUsed: "DeepSeek" };
-      const r2 = await tryGemini();
-      if (r2) return { text: r2, modelUsed: "Gemini (fallback)" };
+      const r2 = await tryHumanizeAIPro();
+      if (r2) return { text: r2, modelUsed: "Humanize AI Pro (fallback)" };
       throw new Error("All paraphrasing services failed.");
     }
 
@@ -1653,9 +1568,6 @@ ${numbered}`;
 
     const r2 = await tryGemini();
     if (r2) return { text: r2, modelUsed: "Gemini" };
-
-    const r3 = await tryDeepSeek();
-    if (r3) return { text: r3, modelUsed: "DeepSeek" };
 
     throw new Error("All paraphrasing services failed. Please try again.");
   }
@@ -1886,7 +1798,6 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
     { key: "GEMINI_API_KEY_4",              label: "Gemini Key 4",               group: "AI Services" },
     { key: "GEMINI_API_KEY",                label: "Gemini Key (Legacy)",        group: "AI Services" },
     { key: "GPTZERO_API_KEY",               label: "GPTZero Detection Key",      group: "AI Services" },
-    { key: "DEEPSEEK_API_KEY",              label: "DeepSeek API Key",           group: "AI Services" },
     { key: "HUMANIZE_API_KEY",              label: "HumanizeAI Pro Key",         group: "AI Services" },
     // ── Voice & Images ──
     { key: "AZURE_TTS_KEY",                 label: "Azure TTS Key 1",            group: "Voice & Images" },
