@@ -697,7 +697,7 @@ export default function MyProjects() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl" data-testid="page-my-projects">
+    <div className="container mx-auto px-4 py-8 max-w-7xl 3xl:max-w-[1760px]" data-testid="page-my-projects">
       <div className="mb-8 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>

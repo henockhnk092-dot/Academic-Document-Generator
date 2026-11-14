@@ -112,7 +112,7 @@ export default function Legal() {
   const { t } = useTranslation();
   const faqs = getFaqs(t);
   return (
-    <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-legal">
+    <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-legal">
       <div className="space-y-8">
 
         {/* Page header */}

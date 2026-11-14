@@ -404,7 +404,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-settings">
+    <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-settings">
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">

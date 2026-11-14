@@ -133,7 +133,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-pricing">
+    <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-pricing">
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">

@@ -79,7 +79,7 @@ export default function Contact() {
   const socialLinks = SOCIAL_LINKS.map((s) => ({ icon: s.icon, label: s.name, href: s.url, username: s.handle }));
 
   return (
-    <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-contact">
+    <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-contact">
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">{t("pages.contact.title")}</h1>

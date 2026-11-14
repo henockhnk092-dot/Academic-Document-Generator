@@ -91,7 +91,7 @@ export default function About() {
   ];
 
   return (
-    <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-about">
+    <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-about">
       <div className="space-y-8">
         <div className="text-center space-y-4">
           <div className="flex justify-center">

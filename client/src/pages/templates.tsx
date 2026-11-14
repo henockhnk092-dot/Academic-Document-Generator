@@ -311,7 +311,7 @@ export default function Templates() {
   const categories = ["all", "report", "presentation", "paper", "thesis", "essay", "image"];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl" data-testid="page-templates">
+    <div className="container mx-auto px-4 py-8 max-w-7xl 3xl:max-w-[1760px]" data-testid="page-templates">
       <div className="mb-8 space-y-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">{t("pages.templates.title")}</h1>

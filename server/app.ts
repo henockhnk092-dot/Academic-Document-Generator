@@ -30,7 +30,30 @@ export const app = express();
 app.use(helmet({
   contentSecurityPolicy: false, // disabled - Vite/React inline scripts would break
   crossOriginEmbedderPolicy: false, // disabled - needed for Google Fonts iframes
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // the Cloudflare Pages front end calls this API
 }));
+
+// CORS for the Cloudflare Pages front end (academicgen.com / academicgen.pages.dev). Auth uses Bearer tokens,
+// not cookies, so credentials are not needed. Extra origins: comma-separated CORS_ORIGINS env var.
+const CORS_ORIGINS = new Set([
+  "https://academicgen.com",
+  "https://www.academicgen.com",
+  "https://academicgen.pages.dev",
+  "http://localhost:5000",
+  ...(process.env.CORS_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean),
+]);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (CORS_ORIGINS.has(origin) || /^https:\/\/[a-z0-9-]+\.academicgen\.pages\.dev$/.test(origin))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", req.headers["access-control-request-headers"] || "Content-Type, Authorization");
+    res.setHeader("Access-Control-Max-Age", "86400");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+  }
+  next();
+});
 
 // Gzip compression for all responses
 app.use(compression());
