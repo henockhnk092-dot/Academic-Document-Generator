@@ -606,7 +606,7 @@
       "docType7Desc": "Gerencie citações com importação inteligente de URLs, DOIs e BibTeX. Exporte em vários estilos de citação.",
       "docType7Exports": "BibTeX, RIS, CSV, Palavra, HTML",
       "docType8Title": "Humanizador de IA",
-      "docType8Desc": "Humanize o texto gerado por IA para contornar as ferramentas de detecção (GPTZero, Turnitin, Originality.ai) com pontuação de IA por frase.",
+      "docType8Desc": "Reescreva o texto num estilo académico claro e natural, com pontuação por frase.",
       "docType8Exports": "TXT, HTML, Relatório de detecção",
       "docType9Title": "Verificador de citações",
       "docType9Desc": "Digitalize documentos em busca de citações falsas, incorretas ou mal formatadas. Suporta IEEE, APA, Harvard, MLA, Chicago e Vancouver.",

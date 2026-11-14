@@ -606,7 +606,7 @@
       "docType7Desc": "ከዩአርኤሎች፣ DOIs እና BibTeX ብልጥ በማስመጣት ጥቅሶችን አስተዳድሩ። በበርካታ የጥቅስ ቅጦች ወደ ውጭ ላክ።",
       "docType7Exports": "BibTeX፣ RIS፣ CSV፣ ቃል፣ HTML",
       "docType8Title": "የAI ጽሑፍ ሰውኛ አድራጊ",
-      "docType8Desc": "በ AI የመነጨ ጽሑፍን ለማለፍ የፍተሻ መሳሪያዎችን (GPTZero, Turnitin, Originality.ai) በየዓረፍተ ነገር AI ነጥብ ማስመዝገብ።",
+      "docType8Desc": "ጽሑፍን ግልጽ እና ተፈጥሯዊ በሆነ የአካዳሚክ ዘይቤ እንደገና ይጻፉ፣ በየዓረፍተ ነገሩ ነጥብ።",
       "docType8Exports": "TXT፣ HTML፣የማወቂያ ሪፖርት",
       "docType9Title": "ዋቢ አመልካች",
       "docType9Desc": "የውሸት፣ የተሳሳቱ ወይም የተሳሳቱ ጥቅሶች ካሉ ሰነዶችን ይቃኙ። IEEE፣ APA፣ Harvard፣ MLA፣ Chicago እና Vancouver ይደግፋል።",

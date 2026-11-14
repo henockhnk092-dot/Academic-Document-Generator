@@ -1052,6 +1052,7 @@ OUTPUT: return ONLY valid JSON, no markdown wrapper:
   app.post("/api/citations/format", async (req, res) => {
     try {
       const { referenceId, userId, style } = req.body;
+      const rawText: string = Array.isArray(req.body.citations) ? req.body.citations.join("\n") : (req.body.text || "");
       
       if (!userId || !style) {
         return res.status(400).json({ error: "User ID and style are required" });
@@ -1066,13 +1067,21 @@ OUTPUT: return ONLY valid JSON, no markdown wrapper:
       // Format citation using AI
       const citationPrompt = reference 
         ? `Format this reference in ${style.toUpperCase()} style: Title: "${reference.title}", Authors: "${reference.authors || 'Unknown'}", Year: "${reference.year || 'n.d.'}", Source: "${reference.source || ''}", URL: "${reference.url || ''}", DOI: "${reference.doi || ''}". Return JSON with "formatted" (full citation) and "inText" (in-text citation) fields.`
+        : rawText.trim()
+        ? `Reformat this reference in ${style.toUpperCase()} style. Keep every fact (authors, year, title, source, volume, pages); do not invent missing data. Reference: ${rawText.slice(0, 3000)}
+Return JSON with "formatted" (full reference list entry) and "inText" (in-text citation) fields.`
         : `Provide an example ${style.toUpperCase()} citation format. Return JSON with "formatted" (full citation example) and "inText" (in-text citation example) fields.`;
 
-      const response = await generateChatResponse(citationPrompt);
-      
+      const response = await generateContent(citationPrompt, {
+        systemInstruction: "You are a precise academic citation formatter. Reply only with the requested JSON object.",
+        temperature: 0.2,
+        maxTokens: 1024,
+        responseFormat: "json",
+      });
+
       let parsed;
       try {
-        parsed = JSON.parse(response);
+        parsed = JSON.parse(response.replace(/^```(?:json)?\s*|\s*```$/g, ""));
       } catch {
         parsed = { formatted: response, inText: "" };
       }

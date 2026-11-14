@@ -109,7 +109,7 @@
       },
       "humanize": {
         "title": "AI Humanizer",
-        "desc": "Refine AI-generated text to ensure an authentic scholarly tone that bypasses generic detection.",
+        "desc": "Refine AI-assisted drafts into a clear, authentic scholarly tone in your own voice.",
         "exports": "Text Editor",
         "action": "Refine"
       },
@@ -1707,7 +1707,7 @@
     },
     "about": {
       "title": "About AcademicGen",
-      "tagline": "A unified platform for academic AI tools, generate reports, presentations, conference papers, and theses; humanize AI text with bypass detection scoring; validate citations for fake references; generate images; and read everything aloud with premium AI voices (ElevenLabs, Azure, StreamElements & VoiceRSS).",
+      "tagline": "A unified platform for academic AI tools, generate reports, presentations, conference papers, and theses; rewrite drafts in a natural academic style with AI-likeness scoring; validate citations for fake references; generate images; and read everything aloud with premium AI voices (ElevenLabs, Azure, StreamElements & VoiceRSS).",
       "docGenerators": "Document Generators",
       "platformFeatures": "Platform Features",
       "techStack": "Technology Stack",
@@ -1747,7 +1747,7 @@
       "docType7Desc": "Manage citations with smart import from URLs, DOIs, and BibTeX. Export in multiple citation styles.",
       "docType7Exports": "BibTeX, RIS, CSV, Word, HTML",
       "docType8Title": "AI Humanizer",
-      "docType8Desc": "Humanize AI-generated text to bypass detection tools (GPTZero, Turnitin, Originality.ai) with per-sentence AI scoring.",
+      "docType8Desc": "Rewrite text in a clear, natural academic style, with per-sentence readability and AI-likeness scoring.",
       "docType8Exports": "TXT, HTML, Detection Report",
       "docType9Title": "Citation Checker",
       "docType9Desc": "Scan documents for fake, incorrect, or misformatted citations. Supports IEEE, APA, Harvard, MLA, Chicago, and Vancouver.",

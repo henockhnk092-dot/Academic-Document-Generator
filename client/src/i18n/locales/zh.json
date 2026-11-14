@@ -606,7 +606,7 @@
       "docType7Desc": "通过从 URL、DOI 和 BibTeX 智能导入来管理引文。以多种引用样式导出。",
       "docType7Exports": "BibTeX、RIS、CSV、Word、HTML",
       "docType8Title": "AI 人性化",
-      "docType8Desc": "通过按句子进行 AI 评分，人性化 AI 生成的文本以绕过检测工具（GPTZero、Turnitin、Originality.ai）。",
+      "docType8Desc": "以清晰自然的学术风格改写文本，并提供逐句评分。",
       "docType8Exports": "TXT、HTML、检测报告",
       "docType9Title": "引文检查器",
       "docType9Desc": "扫描文档中是否存在虚假、不正确或格式错误的引文。支持 IEEE、APA、Harvard、MLA、Chicago 和 Vancouver。",

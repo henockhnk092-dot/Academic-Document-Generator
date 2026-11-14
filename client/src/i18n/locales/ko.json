@@ -606,7 +606,7 @@
       "docType7Desc": "URL, DOI 및 BibTeX에서 스마트 가져오기를 통해 인용을 관리합니다. 여러 인용 스타일로 내보냅니다.",
       "docType7Exports": "BibTeX, RIS, CSV, 워드, HTML",
       "docType8Title": "AI 휴머나이저",
-      "docType8Desc": "문장별 AI 채점을 통해 AI 생성 텍스트를 인간화하여 감지 도구(GPTZero, Turnitin, Originality.ai)를 우회합니다.",
+      "docType8Desc": "명확하고 자연스러운 학술 문체로 글을 다시 쓰고 문장별 점수를 제공합니다.",
       "docType8Exports": "TXT, HTML, 감지 보고서",
       "docType9Title": "인용 검사기",
       "docType9Desc": "문서에서 허위, 부정확 또는 형식이 잘못된 인용을 스캔합니다. IEEE, APA, Harvard, MLA, Chicago 및 Vancouver를 지원합니다.",

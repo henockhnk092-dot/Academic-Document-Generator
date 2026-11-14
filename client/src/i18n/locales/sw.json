@@ -606,7 +606,7 @@
       "docType7Desc": "Dhibiti manukuu kwa kuingiza mahiri kutoka URL, DOI na BibTeX. Hamisha kwa mitindo mingi ya manukuu.",
       "docType7Exports": "BibTeX, RIS, CSV, Word, HTML",
       "docType8Title": "Kibinadamu cha AI",
-      "docType8Desc": "Binadamu maandishi yanayozalishwa na AI ili kuepuka zana za kutambua (GPTZero, Turnitin, Originality.ai) kwa alama za AI kwa kila sentensi.",
+      "docType8Desc": "Andika upya maandishi kwa mtindo wa kitaaluma ulio wazi na wa asili, kwa alama za kila sentensi.",
       "docType8Exports": "TXT, HTML, Ripoti ya Ugunduzi",
       "docType9Title": "Kikagua Manukuu",
       "docType9Desc": "Changanua hati ili uone manukuu ya bandia, yasiyo sahihi au yenye muundo usio sahihi. Inaauni IEEE, APA, Harvard, MLA, Chicago, na Vancouver.",

@@ -1092,7 +1092,7 @@ WEBSITE KNOWLEDGE - MEMORIZE THESE PAGES AND PATHS:
 • Thesis → /generate/thesis - Harvard-style thesis with chapters, bibliography
 • AI Images → /generate/images - FREE AI image generation from text prompts
 • Reference Library → /references - Citation manager, URL/DOI import, BibTeX export
-• AI Humanizer → /humanize - Bypass AI detection (GPTZero, Turnitin), per-sentence scoring, Azure HD voice
+• AI Humanizer → /humanize - Rewrite drafts in a natural academic style, per-sentence AI-likeness scoring, Azure HD voice
 • Citation Checker → /citations - Detect fake/incorrect citations, auto-correct, IEEE/APA/Harvard/MLA support
 
 **Other Pages:**

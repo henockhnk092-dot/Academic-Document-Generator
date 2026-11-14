@@ -606,7 +606,7 @@
       "docType7Desc": "Verwalten Sie Zitate mit intelligentem Import aus URLs, DOIs und BibTeX. Exportieren Sie in mehrere Zitationsstile.",
       "docType7Exports": "BibTeX, RIS, CSV, Wort, HTML",
       "docType8Title": "KI-Humanisierer",
-      "docType8Desc": "Humanisieren Sie KI-generierten Text, um Erkennungstools (GPTZero, Turnitin, Originality.ai) mit satzweiser KI-Bewertung zu umgehen.",
+      "docType8Desc": "Text in einem klaren, natürlichen akademischen Stil umschreiben, mit satzweiser Bewertung.",
       "docType8Exports": "TXT, HTML, Erkennungsbericht",
       "docType9Title": "Zitierprüfung",
       "docType9Desc": "Scannen Sie Dokumente auf gefälschte, falsche oder falsch formatierte Zitate. Unterstützt IEEE, APA, Harvard, MLA, Chicago und Vancouver.",

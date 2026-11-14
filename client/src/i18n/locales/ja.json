@@ -606,7 +606,7 @@
       "docType7Desc": "URL、DOI、BibTeX からのスマート インポートを使用して引用を管理します。複数の引用スタイルでエクスポートします。",
       "docType7Exports": "BibTeX、RIS、CSV、Word、HTML",
       "docType8Title": "AI ヒューマナイザー",
-      "docType8Desc": "AI で生成されたテキストをヒューマナイズし、文ごとの AI スコアリングにより検出ツール (GPTZero、Turnitin、Originality.ai) をバイパスします。",
+      "docType8Desc": "明確で自然な学術スタイルで文章を書き直し、文ごとにスコアを表示します。",
       "docType8Exports": "TXT、HTML、検出レポート",
       "docType9Title": "引用チェッカー",
       "docType9Desc": "文書をスキャンして、偽の引用、間違った引用、または形式が間違っている引用がないか確認します。 IEEE、APA、Harvard、MLA、Chicago、および Vancouver をサポートします。",

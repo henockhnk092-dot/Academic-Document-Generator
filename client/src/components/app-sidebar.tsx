@@ -48,7 +48,7 @@ export function AppSidebar() {
     { titleKey: "generators.thesis",           url: "/generate/thesis",        icon: GraduationCap, descKey: "Complete thesis" },
     { titleKey: "generators.aiImages",         url: "/generate/images",        icon: Image,         descKey: "Text-to-image" },
     { titleKey: "generators.references",       url: "/references",             icon: Library,       descKey: "Reference library" },
-    { titleKey: "generators.aiHumanizer",      url: "/humanize",               icon: Wand2,         descKey: "Bypass AI detection" },
+    { titleKey: "generators.aiHumanizer",      url: "/humanize",               icon: Wand2,         descKey: "Natural academic rewriting" },
     { titleKey: "generators.citationChecker",  url: "/citations",              icon: BookMarked,    descKey: "Detect fake references" },
     { titleKey: "generators.grammarCheck",     url: "/grammar-check",          icon: Languages,     descKey: "Grammar & style check" },
   ];

@@ -606,7 +606,7 @@
       "docType7Desc": "Gérez les citations avec importation depuis URL, DOI et BibTeX.",
       "docType7Exports": "BibTeX, RIS, CSV, Mot, HTML",
       "docType8Title": "Humaniseur IA",
-      "docType8Desc": "Humanisez le texte généré par IA avec score IA par phrase.",
+      "docType8Desc": "Réécrivez le texte dans un style académique clair et naturel, avec un score par phrase.",
       "docType8Exports": "TXT, HTML, Rapport de Détection",
       "docType9Title": "Vérificateur de Citations",
       "docType9Desc": "Analysez les documents pour détecter les citations fausses ou incorrectes.",
