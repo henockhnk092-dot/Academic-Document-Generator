@@ -45,6 +45,33 @@ export default function Pricing() {
 
   const usageStatus = getUsageStatus();
 
+  // Rand prices charged through Payfast (keep in sync with server/payfast.ts PAYFAST_PRICES_ZAR)
+  const PRICES_ZAR: Record<string, number> = { day_pass: 19, weekly: 49, monthly: 149, yearly: 1499 };
+
+  const startPayfast = async (plan: string): Promise<boolean> => {
+    const token = await user?.getIdToken?.();
+    const res = await fetch("/api/payfast/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ tier: plan }),
+    });
+    if (!res.ok) return false;
+    const { action, fields } = await res.json();
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    for (const [k, v] of Object.entries(fields as Record<string, string>)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = k;
+      input.value = v;
+      form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    return true;
+  };
+
   const handleSelectPlan = async (plan: keyof typeof PRICING_TIERS) => {
     if (!isAuthenticated || !user) {
       toast({
@@ -59,6 +86,7 @@ export default function Pricing() {
     setIsCheckoutLoading(true);
 
     try {
+      if (await startPayfast(plan).catch(() => false)) return; // redirects to Payfast checkout
       const response = await fetch(`/api/bmc/checkout-url?tier=${encodeURIComponent(plan)}`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.url) {
@@ -225,7 +253,7 @@ export default function Pricing() {
                 <CardContent className="flex-1">
                   <div className="mb-4">
                     <span className="text-4xl font-bold">
-                      ${tierInfo.price.toFixed(2)}
+                      R{PRICES_ZAR[tier].toLocaleString("en-ZA")}
                     </span>
                     <span className="text-muted-foreground ml-1">
                       {tier === 'day_pass' ? t("pages.pricing.oneTime") : t("pages.pricing.perInterval", { interval: tier.replace('_', ' ') })}
@@ -429,7 +457,7 @@ export default function Pricing() {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground">
-          Payments via Buy Me a Coffee ☕ &nbsp;Cancel anytime &bull; No hidden fees &nbsp;&bull;&nbsp; support@hnkiot.com
+          Secure payments by Payfast (card, Instant EFT, SnapScan) &nbsp;&bull;&nbsp; Cancel anytime &bull; No hidden fees &nbsp;&bull;&nbsp; support@hnkiot.com
         </p>
       </div>
     </div>

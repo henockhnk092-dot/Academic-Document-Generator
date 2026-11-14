@@ -14,6 +14,7 @@ import { generatePdf } from "./lib/pdf-export";
 import { firebaseSubscriptionStorage } from "./firebaseSubscriptionStorage";
 import { USAGE_LIMITS, PRICING_TIERS } from "@shared/schema";
 import { getBMCCheckoutUrl, getBMCProducts, isBMCConfigured } from "./bmcClient";
+import { registerPayfastRoutes } from "./payfast";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const PAYMENT_PROVIDERS = ["bmc", "yoco", "stripe", "none"] as const;
@@ -138,6 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiters to AI and export routes
   app.use("/api/generate", generateLimiter);
   app.use("/api/export", exportLimiter);
+  registerPayfastRoutes(app);
   // ── PDF Export ────────────────────────────────────────────────────────────
   app.post("/api/export/pdf", async (req, res) => {
     try {
