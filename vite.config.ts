@@ -97,7 +97,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,svg,woff,woff2}"],
         globIgnores: ["**/og-image.png"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MB
-        navigateFallback: "/offline.html",
+        navigateFallback: "/index.html", // SPA shell for every route (offline.html here showed "You are offline" on all deep links)
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
