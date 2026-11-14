@@ -99,7 +99,7 @@ export default function GenerateTemplateReport() {
         const url = res?.image?.webformatURL || res?.image?.largeImageURL;
         if (url) setSectionImageUrls(prev => ({ ...prev, [index]: url }));
       } catch {
-        // image not critical — fail silently
+        // image not critical - fail silently
       }
     });
   }, [generatedContent]);

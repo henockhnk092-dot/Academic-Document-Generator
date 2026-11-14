@@ -32,122 +32,122 @@ export const azureAvailable = true;
 
 export const AZURE_VOICES = [
   // English
-  { name: "en-US-JennyNeural",     label: "Jenny — US Female (Friendly)",      language: "English",    flag: "🇺🇸" },
-  { name: "en-US-GuyNeural",       label: "Guy — US Male (Professional)",       language: "English",    flag: "🇺🇸" },
-  { name: "en-US-AriaNeural",      label: "Aria — US Female (Natural)",         language: "English",    flag: "🇺🇸" },
-  { name: "en-US-DavisNeural",     label: "Davis — US Male (Casual)",           language: "English",    flag: "🇺🇸" },
-  { name: "en-US-JasonNeural",     label: "Jason — US Male (Calm)",             language: "English",    flag: "🇺🇸" },
-  { name: "en-GB-SoniaNeural",     label: "Sonia — British Female",             language: "English",    flag: "🇬🇧" },
-  { name: "en-GB-RyanNeural",      label: "Ryan — British Male",                language: "English",    flag: "🇬🇧" },
-  { name: "en-AU-NatashaNeural",   label: "Natasha — Australian Female",        language: "English",    flag: "🇦🇺" },
-  { name: "en-AU-WilliamNeural",   label: "William — Australian Male",          language: "English",    flag: "🇦🇺" },
-  { name: "en-IN-NeerjaNeural",    label: "Neerja — Indian Female",             language: "English",    flag: "🇮🇳" },
-  { name: "en-CA-ClaraNeural",     label: "Clara — Canadian Female",            language: "English",    flag: "🇨🇦" },
+  { name: "en-US-JennyNeural",     label: "Jenny · US Female (Friendly)",      language: "English",    flag: "🇺🇸" },
+  { name: "en-US-GuyNeural",       label: "Guy · US Male (Professional)",       language: "English",    flag: "🇺🇸" },
+  { name: "en-US-AriaNeural",      label: "Aria · US Female (Natural)",         language: "English",    flag: "🇺🇸" },
+  { name: "en-US-DavisNeural",     label: "Davis · US Male (Casual)",           language: "English",    flag: "🇺🇸" },
+  { name: "en-US-JasonNeural",     label: "Jason · US Male (Calm)",             language: "English",    flag: "🇺🇸" },
+  { name: "en-GB-SoniaNeural",     label: "Sonia · British Female",             language: "English",    flag: "🇬🇧" },
+  { name: "en-GB-RyanNeural",      label: "Ryan · British Male",                language: "English",    flag: "🇬🇧" },
+  { name: "en-AU-NatashaNeural",   label: "Natasha · Australian Female",        language: "English",    flag: "🇦🇺" },
+  { name: "en-AU-WilliamNeural",   label: "William · Australian Male",          language: "English",    flag: "🇦🇺" },
+  { name: "en-IN-NeerjaNeural",    label: "Neerja · Indian Female",             language: "English",    flag: "🇮🇳" },
+  { name: "en-CA-ClaraNeural",     label: "Clara · Canadian Female",            language: "English",    flag: "🇨🇦" },
   // French
-  { name: "fr-FR-DeniseNeural",    label: "Denise — French Female",             language: "French",     flag: "🇫🇷" },
-  { name: "fr-FR-HenriNeural",     label: "Henri — French Male",                language: "French",     flag: "🇫🇷" },
-  { name: "fr-CA-SylvieNeural",    label: "Sylvie — Canadian French Female",    language: "French",     flag: "🇨🇦" },
-  { name: "fr-CA-JeanNeural",      label: "Jean — Canadian French Male",        language: "French",     flag: "🇨🇦" },
+  { name: "fr-FR-DeniseNeural",    label: "Denise · French Female",             language: "French",     flag: "🇫🇷" },
+  { name: "fr-FR-HenriNeural",     label: "Henri · French Male",                language: "French",     flag: "🇫🇷" },
+  { name: "fr-CA-SylvieNeural",    label: "Sylvie · Canadian French Female",    language: "French",     flag: "🇨🇦" },
+  { name: "fr-CA-JeanNeural",      label: "Jean · Canadian French Male",        language: "French",     flag: "🇨🇦" },
   // Spanish
-  { name: "es-ES-ElviraNeural",    label: "Elvira — Spain Female",              language: "Spanish",    flag: "🇪🇸" },
-  { name: "es-ES-AlvaroNeural",    label: "Alvaro — Spain Male",                language: "Spanish",    flag: "🇪🇸" },
-  { name: "es-MX-DaliaNeural",     label: "Dalia — Mexican Female",             language: "Spanish",    flag: "🇲🇽" },
-  { name: "es-MX-JorgeNeural",     label: "Jorge — Mexican Male",               language: "Spanish",    flag: "🇲🇽" },
-  { name: "es-AR-ElenaNeural",     label: "Elena — Argentine Female",           language: "Spanish",    flag: "🇦🇷" },
+  { name: "es-ES-ElviraNeural",    label: "Elvira · Spain Female",              language: "Spanish",    flag: "🇪🇸" },
+  { name: "es-ES-AlvaroNeural",    label: "Alvaro · Spain Male",                language: "Spanish",    flag: "🇪🇸" },
+  { name: "es-MX-DaliaNeural",     label: "Dalia · Mexican Female",             language: "Spanish",    flag: "🇲🇽" },
+  { name: "es-MX-JorgeNeural",     label: "Jorge · Mexican Male",               language: "Spanish",    flag: "🇲🇽" },
+  { name: "es-AR-ElenaNeural",     label: "Elena · Argentine Female",           language: "Spanish",    flag: "🇦🇷" },
   // Portuguese
-  { name: "pt-BR-FranciscaNeural", label: "Francisca — Brazilian Female",       language: "Portuguese", flag: "🇧🇷" },
-  { name: "pt-BR-AntonioNeural",   label: "Antonio — Brazilian Male",           language: "Portuguese", flag: "🇧🇷" },
-  { name: "pt-PT-RaquelNeural",    label: "Raquel — Portugal Female",           language: "Portuguese", flag: "🇵🇹" },
-  { name: "pt-PT-DuarteNeural",    label: "Duarte — Portugal Male",             language: "Portuguese", flag: "🇵🇹" },
+  { name: "pt-BR-FranciscaNeural", label: "Francisca · Brazilian Female",       language: "Portuguese", flag: "🇧🇷" },
+  { name: "pt-BR-AntonioNeural",   label: "Antonio · Brazilian Male",           language: "Portuguese", flag: "🇧🇷" },
+  { name: "pt-PT-RaquelNeural",    label: "Raquel · Portugal Female",           language: "Portuguese", flag: "🇵🇹" },
+  { name: "pt-PT-DuarteNeural",    label: "Duarte · Portugal Male",             language: "Portuguese", flag: "🇵🇹" },
   // German
-  { name: "de-DE-KatjaNeural",     label: "Katja — German Female",              language: "German",     flag: "🇩🇪" },
-  { name: "de-DE-ConradNeural",    label: "Conrad — German Male",               language: "German",     flag: "🇩🇪" },
-  { name: "de-AT-IngridNeural",    label: "Ingrid — Austrian Female",           language: "German",     flag: "🇦🇹" },
+  { name: "de-DE-KatjaNeural",     label: "Katja · German Female",              language: "German",     flag: "🇩🇪" },
+  { name: "de-DE-ConradNeural",    label: "Conrad · German Male",               language: "German",     flag: "🇩🇪" },
+  { name: "de-AT-IngridNeural",    label: "Ingrid · Austrian Female",           language: "German",     flag: "🇦🇹" },
   // Italian
-  { name: "it-IT-ElsaNeural",      label: "Elsa — Italian Female",              language: "Italian",    flag: "🇮🇹" },
-  { name: "it-IT-DiegoNeural",     label: "Diego — Italian Male",               language: "Italian",    flag: "🇮🇹" },
+  { name: "it-IT-ElsaNeural",      label: "Elsa · Italian Female",              language: "Italian",    flag: "🇮🇹" },
+  { name: "it-IT-DiegoNeural",     label: "Diego · Italian Male",               language: "Italian",    flag: "🇮🇹" },
   // Arabic
-  { name: "ar-SA-ZariyahNeural",   label: "Zariyah — Saudi Female",             language: "Arabic",     flag: "🇸🇦" },
-  { name: "ar-SA-HamedNeural",     label: "Hamed — Saudi Male",                 language: "Arabic",     flag: "🇸🇦" },
-  { name: "ar-EG-SalmaNeural",     label: "Salma — Egyptian Female",            language: "Arabic",     flag: "🇪🇬" },
-  { name: "ar-MA-JamalNeural",     label: "Jamal — Moroccan Male",              language: "Arabic",     flag: "🇲🇦" },
+  { name: "ar-SA-ZariyahNeural",   label: "Zariyah · Saudi Female",             language: "Arabic",     flag: "🇸🇦" },
+  { name: "ar-SA-HamedNeural",     label: "Hamed · Saudi Male",                 language: "Arabic",     flag: "🇸🇦" },
+  { name: "ar-EG-SalmaNeural",     label: "Salma · Egyptian Female",            language: "Arabic",     flag: "🇪🇬" },
+  { name: "ar-MA-JamalNeural",     label: "Jamal · Moroccan Male",              language: "Arabic",     flag: "🇲🇦" },
   // Chinese
-  { name: "zh-CN-XiaoxiaoNeural",  label: "Xiaoxiao — Mandarin Female",         language: "Chinese",    flag: "🇨🇳" },
-  { name: "zh-CN-YunxiNeural",     label: "Yunxi — Mandarin Male",              language: "Chinese",    flag: "🇨🇳" },
-  { name: "zh-TW-HsiaoChenNeural", label: "HsiaoChen — Taiwan Female",          language: "Chinese",    flag: "🇹🇼" },
-  { name: "zh-HK-HiuGaaiNeural",   label: "HiuGaai — Hong Kong Female",         language: "Chinese",    flag: "🇭🇰" },
+  { name: "zh-CN-XiaoxiaoNeural",  label: "Xiaoxiao · Mandarin Female",         language: "Chinese",    flag: "🇨🇳" },
+  { name: "zh-CN-YunxiNeural",     label: "Yunxi · Mandarin Male",              language: "Chinese",    flag: "🇨🇳" },
+  { name: "zh-TW-HsiaoChenNeural", label: "HsiaoChen · Taiwan Female",          language: "Chinese",    flag: "🇹🇼" },
+  { name: "zh-HK-HiuGaaiNeural",   label: "HiuGaai · Hong Kong Female",         language: "Chinese",    flag: "🇭🇰" },
   // Japanese
-  { name: "ja-JP-NanamiNeural",    label: "Nanami — Japanese Female",           language: "Japanese",   flag: "🇯🇵" },
-  { name: "ja-JP-KeitaNeural",     label: "Keita — Japanese Male",              language: "Japanese",   flag: "🇯🇵" },
+  { name: "ja-JP-NanamiNeural",    label: "Nanami · Japanese Female",           language: "Japanese",   flag: "🇯🇵" },
+  { name: "ja-JP-KeitaNeural",     label: "Keita · Japanese Male",              language: "Japanese",   flag: "🇯🇵" },
   // Korean
-  { name: "ko-KR-SunHiNeural",     label: "SunHi — Korean Female",              language: "Korean",     flag: "🇰🇷" },
-  { name: "ko-KR-InJoonNeural",    label: "InJoon — Korean Male",               language: "Korean",     flag: "🇰🇷" },
+  { name: "ko-KR-SunHiNeural",     label: "SunHi · Korean Female",              language: "Korean",     flag: "🇰🇷" },
+  { name: "ko-KR-InJoonNeural",    label: "InJoon · Korean Male",               language: "Korean",     flag: "🇰🇷" },
   // Hindi
-  { name: "hi-IN-SwaraNeural",     label: "Swara — Hindi Female",               language: "Hindi",      flag: "🇮🇳" },
-  { name: "hi-IN-MadhurNeural",    label: "Madhur — Hindi Male",                language: "Hindi",      flag: "🇮🇳" },
+  { name: "hi-IN-SwaraNeural",     label: "Swara · Hindi Female",               language: "Hindi",      flag: "🇮🇳" },
+  { name: "hi-IN-MadhurNeural",    label: "Madhur · Hindi Male",                language: "Hindi",      flag: "🇮🇳" },
   // Russian
-  { name: "ru-RU-SvetlanaNeural",  label: "Svetlana — Russian Female",          language: "Russian",    flag: "🇷🇺" },
-  { name: "ru-RU-DmitryNeural",    label: "Dmitry — Russian Male",              language: "Russian",    flag: "🇷🇺" },
+  { name: "ru-RU-SvetlanaNeural",  label: "Svetlana · Russian Female",          language: "Russian",    flag: "🇷🇺" },
+  { name: "ru-RU-DmitryNeural",    label: "Dmitry · Russian Male",              language: "Russian",    flag: "🇷🇺" },
   // Dutch
-  { name: "nl-NL-ColetteNeural",   label: "Colette — Dutch Female",             language: "Dutch",      flag: "🇳🇱" },
-  { name: "nl-NL-MaartenNeural",   label: "Maarten — Dutch Male",               language: "Dutch",      flag: "🇳🇱" },
+  { name: "nl-NL-ColetteNeural",   label: "Colette · Dutch Female",             language: "Dutch",      flag: "🇳🇱" },
+  { name: "nl-NL-MaartenNeural",   label: "Maarten · Dutch Male",               language: "Dutch",      flag: "🇳🇱" },
   // Turkish
-  { name: "tr-TR-EmelNeural",      label: "Emel — Turkish Female",              language: "Turkish",    flag: "🇹🇷" },
-  { name: "tr-TR-AhmetNeural",     label: "Ahmet — Turkish Male",               language: "Turkish",    flag: "🇹🇷" },
+  { name: "tr-TR-EmelNeural",      label: "Emel · Turkish Female",              language: "Turkish",    flag: "🇹🇷" },
+  { name: "tr-TR-AhmetNeural",     label: "Ahmet · Turkish Male",               language: "Turkish",    flag: "🇹🇷" },
   // Polish
-  { name: "pl-PL-ZofiaNeural",     label: "Zofia — Polish Female",              language: "Polish",     flag: "🇵🇱" },
-  { name: "pl-PL-MarekNeural",     label: "Marek — Polish Male",                language: "Polish",     flag: "🇵🇱" },
+  { name: "pl-PL-ZofiaNeural",     label: "Zofia · Polish Female",              language: "Polish",     flag: "🇵🇱" },
+  { name: "pl-PL-MarekNeural",     label: "Marek · Polish Male",                language: "Polish",     flag: "🇵🇱" },
   // Swedish
-  { name: "sv-SE-SofieNeural",     label: "Sofie — Swedish Female",             language: "Swedish",    flag: "🇸🇪" },
-  { name: "sv-SE-MattiasNeural",   label: "Mattias — Swedish Male",             language: "Swedish",    flag: "🇸🇪" },
+  { name: "sv-SE-SofieNeural",     label: "Sofie · Swedish Female",             language: "Swedish",    flag: "🇸🇪" },
+  { name: "sv-SE-MattiasNeural",   label: "Mattias · Swedish Male",             language: "Swedish",    flag: "🇸🇪" },
   // Norwegian
-  { name: "nb-NO-PernilleNeural",  label: "Pernille — Norwegian Female",        language: "Norwegian",  flag: "🇳🇴" },
-  { name: "nb-NO-FinnNeural",      label: "Finn — Norwegian Male",              language: "Norwegian",  flag: "🇳🇴" },
+  { name: "nb-NO-PernilleNeural",  label: "Pernille · Norwegian Female",        language: "Norwegian",  flag: "🇳🇴" },
+  { name: "nb-NO-FinnNeural",      label: "Finn · Norwegian Male",              language: "Norwegian",  flag: "🇳🇴" },
   // Danish
-  { name: "da-DK-ChristelNeural",  label: "Christel — Danish Female",           language: "Danish",     flag: "🇩🇰" },
-  { name: "da-DK-JeppeNeural",     label: "Jeppe — Danish Male",                language: "Danish",     flag: "🇩🇰" },
+  { name: "da-DK-ChristelNeural",  label: "Christel · Danish Female",           language: "Danish",     flag: "🇩🇰" },
+  { name: "da-DK-JeppeNeural",     label: "Jeppe · Danish Male",                language: "Danish",     flag: "🇩🇰" },
   // Finnish
-  { name: "fi-FI-NooraNeural",     label: "Noora — Finnish Female",             language: "Finnish",    flag: "🇫🇮" },
-  { name: "fi-FI-HarriNeural",     label: "Harri — Finnish Male",               language: "Finnish",    flag: "🇫🇮" },
+  { name: "fi-FI-NooraNeural",     label: "Noora · Finnish Female",             language: "Finnish",    flag: "🇫🇮" },
+  { name: "fi-FI-HarriNeural",     label: "Harri · Finnish Male",               language: "Finnish",    flag: "🇫🇮" },
   // Greek
-  { name: "el-GR-AthinaNeural",    label: "Athina — Greek Female",              language: "Greek",      flag: "🇬🇷" },
-  { name: "el-GR-NestorasNeural",  label: "Nestoras — Greek Male",              language: "Greek",      flag: "🇬🇷" },
+  { name: "el-GR-AthinaNeural",    label: "Athina · Greek Female",              language: "Greek",      flag: "🇬🇷" },
+  { name: "el-GR-NestorasNeural",  label: "Nestoras · Greek Male",              language: "Greek",      flag: "🇬🇷" },
   // Romanian
-  { name: "ro-RO-AlinaNeural",     label: "Alina — Romanian Female",            language: "Romanian",   flag: "🇷🇴" },
-  { name: "ro-RO-EmilNeural",      label: "Emil — Romanian Male",               language: "Romanian",   flag: "🇷🇴" },
+  { name: "ro-RO-AlinaNeural",     label: "Alina · Romanian Female",            language: "Romanian",   flag: "🇷🇴" },
+  { name: "ro-RO-EmilNeural",      label: "Emil · Romanian Male",               language: "Romanian",   flag: "🇷🇴" },
   // Ukrainian
-  { name: "uk-UA-PolinaNeural",    label: "Polina — Ukrainian Female",          language: "Ukrainian",  flag: "🇺🇦" },
-  { name: "uk-UA-OstapNeural",     label: "Ostap — Ukrainian Male",             language: "Ukrainian",  flag: "🇺🇦" },
+  { name: "uk-UA-PolinaNeural",    label: "Polina · Ukrainian Female",          language: "Ukrainian",  flag: "🇺🇦" },
+  { name: "uk-UA-OstapNeural",     label: "Ostap · Ukrainian Male",             language: "Ukrainian",  flag: "🇺🇦" },
   // Czech
-  { name: "cs-CZ-VlastaNeural",    label: "Vlasta — Czech Female",              language: "Czech",      flag: "🇨🇿" },
-  { name: "cs-CZ-AntoninNeural",   label: "Antonin — Czech Male",               language: "Czech",      flag: "🇨🇿" },
+  { name: "cs-CZ-VlastaNeural",    label: "Vlasta · Czech Female",              language: "Czech",      flag: "🇨🇿" },
+  { name: "cs-CZ-AntoninNeural",   label: "Antonin · Czech Male",               language: "Czech",      flag: "🇨🇿" },
   // Hungarian
-  { name: "hu-HU-NoemiNeural",     label: "Noemi — Hungarian Female",           language: "Hungarian",  flag: "🇭🇺" },
-  { name: "hu-HU-TamasNeural",     label: "Tamas — Hungarian Male",             language: "Hungarian",  flag: "🇭🇺" },
+  { name: "hu-HU-NoemiNeural",     label: "Noemi · Hungarian Female",           language: "Hungarian",  flag: "🇭🇺" },
+  { name: "hu-HU-TamasNeural",     label: "Tamas · Hungarian Male",             language: "Hungarian",  flag: "🇭🇺" },
   // Vietnamese
-  { name: "vi-VN-HoaiMyNeural",    label: "HoaiMy — Vietnamese Female",         language: "Vietnamese", flag: "🇻🇳" },
-  { name: "vi-VN-NamMinhNeural",   label: "NamMinh — Vietnamese Male",          language: "Vietnamese", flag: "🇻🇳" },
+  { name: "vi-VN-HoaiMyNeural",    label: "HoaiMy · Vietnamese Female",         language: "Vietnamese", flag: "🇻🇳" },
+  { name: "vi-VN-NamMinhNeural",   label: "NamMinh · Vietnamese Male",          language: "Vietnamese", flag: "🇻🇳" },
   // Thai
-  { name: "th-TH-PremwadeeNeural", label: "Premwadee — Thai Female",            language: "Thai",       flag: "🇹🇭" },
-  { name: "th-TH-NiwatNeural",     label: "Niwat — Thai Male",                  language: "Thai",       flag: "🇹🇭" },
+  { name: "th-TH-PremwadeeNeural", label: "Premwadee · Thai Female",            language: "Thai",       flag: "🇹🇭" },
+  { name: "th-TH-NiwatNeural",     label: "Niwat · Thai Male",                  language: "Thai",       flag: "🇹🇭" },
   // Indonesian
-  { name: "id-ID-GadisNeural",     label: "Gadis — Indonesian Female",          language: "Indonesian", flag: "🇮🇩" },
-  { name: "id-ID-ArdiNeural",      label: "Ardi — Indonesian Male",             language: "Indonesian", flag: "🇮🇩" },
+  { name: "id-ID-GadisNeural",     label: "Gadis · Indonesian Female",          language: "Indonesian", flag: "🇮🇩" },
+  { name: "id-ID-ArdiNeural",      label: "Ardi · Indonesian Male",             language: "Indonesian", flag: "🇮🇩" },
   // Malay
-  { name: "ms-MY-YasminNeural",    label: "Yasmin — Malay Female",              language: "Malay",      flag: "🇲🇾" },
-  { name: "ms-MY-OsmanNeural",     label: "Osman — Malay Male",                 language: "Malay",      flag: "🇲🇾" },
+  { name: "ms-MY-YasminNeural",    label: "Yasmin · Malay Female",              language: "Malay",      flag: "🇲🇾" },
+  { name: "ms-MY-OsmanNeural",     label: "Osman · Malay Male",                 language: "Malay",      flag: "🇲🇾" },
   // Hebrew
-  { name: "he-IL-HilaNeural",      label: "Hila — Hebrew Female",               language: "Hebrew",     flag: "🇮🇱" },
-  { name: "he-IL-AvriNeural",      label: "Avri — Hebrew Male",                 language: "Hebrew",     flag: "🇮🇱" },
+  { name: "he-IL-HilaNeural",      label: "Hila · Hebrew Female",               language: "Hebrew",     flag: "🇮🇱" },
+  { name: "he-IL-AvriNeural",      label: "Avri · Hebrew Male",                 language: "Hebrew",     flag: "🇮🇱" },
   // Swahili
-  { name: "sw-KE-ZuriNeural",      label: "Zuri — Swahili Female",              language: "Swahili",    flag: "🇰🇪" },
-  { name: "sw-KE-RafikiNeural",    label: "Rafiki — Swahili Male",              language: "Swahili",    flag: "🇰🇪" },
+  { name: "sw-KE-ZuriNeural",      label: "Zuri · Swahili Female",              language: "Swahili",    flag: "🇰🇪" },
+  { name: "sw-KE-RafikiNeural",    label: "Rafiki · Swahili Male",              language: "Swahili",    flag: "🇰🇪" },
   // Afrikaans
-  { name: "af-ZA-AdriNeural",      label: "Adri — Afrikaans Female",            language: "Afrikaans",  flag: "🇿🇦" },
-  { name: "af-ZA-WillemNeural",    label: "Willem — Afrikaans Male",            language: "Afrikaans",  flag: "🇿🇦" },
+  { name: "af-ZA-AdriNeural",      label: "Adri · Afrikaans Female",            language: "Afrikaans",  flag: "🇿🇦" },
+  { name: "af-ZA-WillemNeural",    label: "Willem · Afrikaans Male",            language: "Afrikaans",  flag: "🇿🇦" },
   // Amharic
-  { name: "am-ET-MekdesNeural",    label: "Mekdes — Amharic Female",            language: "Amharic",    flag: "🇪🇹" },
-  { name: "am-ET-AmehaNeural",     label: "Ameha — Amharic Male",               language: "Amharic",    flag: "🇪🇹" },
+  { name: "am-ET-MekdesNeural",    label: "Mekdes · Amharic Female",            language: "Amharic",    flag: "🇪🇹" },
+  { name: "am-ET-AmehaNeural",     label: "Ameha · Amharic Male",               language: "Amharic",    flag: "🇪🇹" },
 ];
 
 export const AZURE_LANGUAGES: string[] = Array.from(
@@ -228,7 +228,7 @@ export function useSpeech() {
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
-  // Chrome bug: browser TTS silently stops after ~15 s — keep it alive (server engines use Audio, not SpeechSynthesis)
+  // Chrome bug: browser TTS silently stops after ~15 s - keep it alive (server engines use Audio, not SpeechSynthesis)
   useEffect(() => {
     if (!speaking || paused) return;
     const e = getSpeechPrefs().engineMode ?? "browser";
@@ -343,7 +343,7 @@ export function useSpeech() {
           audio.play().catch(done);
         });
       } catch {
-        // All server engines failed — fall back to browser TTS for this sentence
+        // All server engines failed - fall back to browser TTS for this sentence
         if (!cancelRef.current && browserSupported) {
           await new Promise<void>((resolve) => {
             const utt = new SpeechSynthesisUtterance(sentences[i]);
@@ -364,8 +364,7 @@ export function useSpeech() {
 
   // ── Server engine fetch with automatic cross-provider fallback ────────────────
   // TEMPORARY order: Azure → ElevenLabs → VoiceRSS → StreamElements. Azure moved
-  // first since the ElevenLabs account is out of quota (402 on every request) —
-  // revert this `order` array to ElevenLabs-first once that's fixed. StreamElements
+  // first since the ElevenLabs account is out of quota (402 on every request) -   // revert this `order` array to ElevenLabs-first once that's fixed. StreamElements
   // stays last: its public API has had a platform-wide outage affecting every
   // third-party tool that depends on it, not just this app. The user's chosen
   // engine is always tried first; fallbacks use sensible default voices, not the
@@ -412,7 +411,7 @@ export function useSpeech() {
       stop();
       const prefs = getSpeechPrefs();
       // TEMPORARY: default "azure" instead of "elevenlabs" while the ElevenLabs
-      // account is out of quota — revert once billing is fixed there.
+      // account is out of quota - revert once billing is fixed there.
       const engine = prefs.engineMode ?? "azure";
       setTimeout(() => {
         if (engine === "elevenlabs" || engine === "azure" || engine === "voicerss" || engine === "streamelements" || engine === "gemini") {

@@ -56,7 +56,7 @@ export function SpeechPlayer({
   let displayVoice = t("components.tts.defaultVoice");
   if (isAzure) {
     const av = AZURE_VOICES.find(v => v.name === voiceName);
-    displayVoice = av ? av.label.split("—")[0].trim() : (azureLangVoices[0]?.label.split("—")[0].trim() || "Jenny");
+    displayVoice = av ? av.label.split("·")[0].trim() : (azureLangVoices[0]?.label.split("·")[0].trim() || "Jenny");
   } else {
     const bv = voices.find(v => v.name === voiceName);
     displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || t("components.tts.defaultShort"));
@@ -93,7 +93,7 @@ export function SpeechPlayer({
 
   return (
     <div className="mt-4 border rounded-xl p-3 bg-muted/20">
-      {/* Engine toggle — only when Azure key is configured */}
+      {/* Engine toggle - only when Azure key is configured */}
       {azureAvailable && (
         <div className="flex items-center gap-2 mb-3 pb-2 border-b">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("components.tts.voiceQuality")}</span>

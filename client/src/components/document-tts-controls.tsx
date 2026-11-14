@@ -87,7 +87,7 @@ export function DocumentTTSControls({
   let displayVoice = "Default";
   if (isAzure) {
     const av = azureVoices.find(v => v.name === voiceName);
-    displayVoice = av ? av.label.split("—")[0].trim() : (azureLangVoices[0]?.label.split("—")[0].trim() || "Jenny");
+    displayVoice = av ? av.label.split("·")[0].trim() : (azureLangVoices[0]?.label.split("·")[0].trim() || "Jenny");
   } else {
     const bv = voices.find(v => v.name === voiceName);
     displayVoice = bv ? bv.name.split("(")[0].trim() : (browserLangVoices[0]?.name.split("(")[0].trim() || t("components.tts.defaultShort"));

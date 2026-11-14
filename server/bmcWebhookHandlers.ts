@@ -265,7 +265,7 @@ export class BMCWebhookHandlers {
    */
   private static async findOrCreateUserByEmail(email: string, name?: string): Promise<string | null> {
     try {
-      // 1. Try Firebase Admin Auth — this returns the real UID for any signed-up user
+      // 1. Try Firebase Admin Auth - this returns the real UID for any signed-up user
       try {
         const { getApps, getApp } = await import('firebase-admin/app');
         const { getAuth } = await import('firebase-admin/auth');
@@ -275,7 +275,7 @@ export class BMCWebhookHandlers {
           return userRecord.uid;
         }
       } catch (authErr: any) {
-        // User not found in Firebase Auth — fall through to next method
+        // User not found in Firebase Auth - fall through to next method
         if (authErr.code !== 'auth/user-not-found') {
           log(`Firebase Auth lookup error for ${email}: ${authErr.message}`, 'bmc');
         }
@@ -287,7 +287,7 @@ export class BMCWebhookHandlers {
         return subscription.userId;
       }
 
-      // 3. Create a placeholder — linked when user later signs up with same email
+      // 3. Create a placeholder - linked when user later signs up with same email
       const userId = `bmc_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
       await firebaseSubscriptionStorage.createUserSubscription(userId, {
         subscriptionStatus: 'pending',

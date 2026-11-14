@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
 import { useAuth } from "@/components/auth-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { BUSINESS } from "@/lib/business";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -207,6 +208,15 @@ export function AppSidebar() {
             {t("auth.signIn")}
           </Button>
         )}
+        <a
+          href={BUSINESS.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-center text-[11px] leading-tight text-muted-foreground hover:text-primary transition-colors"
+          data-testid="link-company"
+        >
+          © {new Date().getFullYear()} {BUSINESS.legalName}
+        </a>
       </SidebarFooter>
 
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />

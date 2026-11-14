@@ -41,7 +41,7 @@
     "heroBadge": "Powered by Google Gemini 2.5 Flash",
     "heroTitle1": "KI-gestützte akademische",
     "heroTitle2": "Dokumentenerstellung",
-    "heroSubtitle": "Erstellen Sie professionelle Berichte, Präsentationen, Konferenzbeiträge und Dissertationen. Humanisieren Sie KI-Text, überprüfen Sie Zitate und generieren Sie Bilder — alles an einem Ort.",
+    "heroSubtitle": "Erstellen Sie professionelle Berichte, Präsentationen, Konferenzbeiträge und Dissertationen. Humanisieren Sie KI-Text, überprüfen Sie Zitate und generieren Sie Bilder, alles an einem Ort.",
     "getStarted": "Loslegen",
     "viewSavedProjects": "Meine Projekte",
     "stats": {
@@ -53,7 +53,7 @@
     "howItWorksTitle": "So funktioniert es",
     "howItWorksSubtitle": "Erstellen Sie ein vollständiges akademisches Dokument in drei einfachen Schritten",
     "step1Title": "Thema eingeben",
-    "step1Desc": "Geben Sie Ihr Thema ein — eine Thesis über erneuerbare Energien, ein IEEE-Paper oder ein beliebiges akademisches Thema.",
+    "step1Desc": "Geben Sie Ihr Thema ein, eine Thesis über erneuerbare Energien, ein IEEE-Paper oder ein beliebiges akademisches Thema.",
     "step2Title": "KI generiert sofort",
     "step2Desc": "Gemini KI schreibt strukturierte Abschnitte, Zitate und Bildvorschläge in Sekunden.",
     "step3Title": "Herunterladen und nutzen",
@@ -566,7 +566,7 @@
     },
     "about": {
       "title": "Über AcademicGen",
-      "tagline": "Eine einheitliche Plattform für akademische KI-Tools — erstellen Sie Berichte, Präsentationen, Konferenzbeiträge und Dissertationen; humanisieren Sie KI-Text mit Bypass-Erkennungsbewertung; validieren Sie Zitate auf gefälschte Referenzen; generieren Sie Bilder; und lesen Sie alles mit Premium-KI-Stimmen laut vor (ElevenLabs, Azure, StreamElements & VoiceRSS).",
+      "tagline": "Eine einheitliche Plattform für akademische KI-Tools, erstellen Sie Berichte, Präsentationen, Konferenzbeiträge und Dissertationen; humanisieren Sie KI-Text mit Bypass-Erkennungsbewertung; validieren Sie Zitate auf gefälschte Referenzen; generieren Sie Bilder; und lesen Sie alles mit Premium-KI-Stimmen laut vor (ElevenLabs, Azure, StreamElements & VoiceRSS).",
       "docGenerators": "Dokumentgeneratoren",
       "platformFeatures": "Plattformfunktionen",
       "techStack": "Technologie-Stack",
@@ -1081,7 +1081,7 @@
           "q4": "Welche Zitierstile werden unterstützt?",
           "a4": "APA, MLA, Chicago, Harvard, IEEE und Vancouver. Das System kann auch automatisch den passenden Stil für Ihren Dokumenttyp erkennen.",
           "q5": "Kann die KI mein Dokument vorlesen?",
-          "a5": "Ja. Jeder Generator und jedes Tool umfasst einen Text-to-Speech-Reader mit mehreren Sprach-Engines — ElevenLabs, Azure Neural HD, StreamElements und VoiceRSS — sowie einem browserbasierten Fallback. Sie können Ihre bevorzugte Stimme, Geschwindigkeit und Engine in den Einstellungen wählen."
+          "a5": "Ja. Jeder Generator und jedes Tool umfasst einen Text-to-Speech-Reader mit mehreren Sprach-Engines, ElevenLabs, Azure Neural HD, StreamElements und VoiceRSS, sowie einem browserbasierten Fallback. Sie können Ihre bevorzugte Stimme, Geschwindigkeit und Engine in den Einstellungen wählen."
         },
         "account": {
           "q1": "Werden meine Dokumente auf Ihren Servern gespeichert?",

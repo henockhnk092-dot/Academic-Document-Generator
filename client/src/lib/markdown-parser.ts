@@ -1,3 +1,52 @@
+import hljs from 'highlight.js/lib/core';
+import python from 'highlight.js/lib/languages/python';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import java from 'highlight.js/lib/languages/java';
+import cpp from 'highlight.js/lib/languages/cpp';
+import c from 'highlight.js/lib/languages/c';
+import bash from 'highlight.js/lib/languages/bash';
+import sql from 'highlight.js/lib/languages/sql';
+import json from 'highlight.js/lib/languages/json';
+import xml from 'highlight.js/lib/languages/xml';
+import css from 'highlight.js/lib/languages/css';
+import matlab from 'highlight.js/lib/languages/matlab';
+import r from 'highlight.js/lib/languages/r';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('ts', typescript);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('cpp', cpp);
+hljs.registerLanguage('c', c);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('sh', bash);
+hljs.registerLanguage('shell', bash);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('matlab', matlab);
+hljs.registerLanguage('r', r);
+hljs.registerLanguage('plaintext', plaintext);
+hljs.registerLanguage('pseudocode', plaintext);
+hljs.registerLanguage('text', plaintext);
+
+function highlightCode(code: string, lang: string): string {
+  try {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+    }
+    return hljs.highlightAuto(code, ['python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'bash', 'sql', 'json', 'xml', 'css']).value;
+  } catch {
+    return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+}
+
 export function parseMarkdownToHtml(markdown: string): string {
   if (!markdown) return "";
   
@@ -98,7 +147,9 @@ export function parseMarkdownToHtml(markdown: string): string {
         codeBlockLang = trimmedLine.slice(3).trim();
         codeBlockContent = [];
       } else {
-        processedLines.push(`<pre class="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 p-4 rounded-lg overflow-x-auto my-4 border"><code class="text-sm font-mono">${codeBlockContent.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`);
+        const highlighted = highlightCode(codeBlockContent.join('\n'), codeBlockLang);
+        const langLabel = codeBlockLang ? `<span class="code-lang-label">${codeBlockLang}</span>` : '';
+        processedLines.push(`<pre class="hljs code-block rounded-lg overflow-x-auto my-4 border border-zinc-700 relative">${langLabel}<code class="text-sm font-mono">${highlighted}</code></pre>`);
         inCodeBlock = false;
         codeBlockContent = [];
         codeBlockLang = '';

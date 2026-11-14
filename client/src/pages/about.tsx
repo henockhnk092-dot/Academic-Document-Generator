@@ -25,8 +25,9 @@ import {
   Volume2,
   Cpu
 } from "lucide-react";
-import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
-import { FaLinkedin } from "react-icons/fa";
+import { SiGithub } from "react-icons/si";
+import { BUSINESS, SOCIAL_LINKS, SOURCE_REPO, HNK_PROJECTS } from "@/lib/business";
+import { SiGoogle } from "react-icons/si";
 import { useTranslation } from "react-i18next";
 
 export default function About() {
@@ -193,7 +194,7 @@ export default function About() {
               {/* Profile photo */}
               <img
                 src="/images/author.jpg"
-                alt="HNK"
+                alt={BUSINESS.founder}
                 className="w-full sm:w-56 rounded-xl object-cover object-top border border-border shrink-0 aspect-square"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
@@ -201,8 +202,13 @@ export default function About() {
               {/* Content */}
               <div className="space-y-4 flex-1">
                 <div>
-                  <p className="font-semibold text-xl">HNK</p>
-                  <p className="text-sm text-muted-foreground">{t("pages.about.authorRole")}</p>
+                  <p className="font-semibold text-xl">{BUSINESS.legalName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {BUSINESS.founder} · {t("pages.about.authorRole")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Reg. {BUSINESS.registration} · {BUSINESS.location}
+                  </p>
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed">
@@ -219,7 +225,7 @@ export default function About() {
                   </p>
                   <Button variant="default" asChild data-testid="link-book-services">
                     <a
-                      href="https://hnk-your-tech-solutions.hnk-tech.workers.dev/"
+                      href={BUSINESS.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
@@ -231,64 +237,63 @@ export default function About() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap pt-2">
-                  <Button variant="outline" asChild data-testid="link-linkedin">
-                    <a
-                      href="https://www.linkedin.com/in/henock-mukonkole-178b26258"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <FaLinkedin className="h-4 w-4" />
-                      LinkedIn
-                    </a>
-                  </Button>
+                  {SOCIAL_LINKS.map((link) => (
+                    <Button key={link.name} variant="outline" asChild data-testid={`link-${link.name.toLowerCase()}`}>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2" title={link.handle}>
+                        <link.icon className="h-4 w-4" />
+                        {link.name}
+                      </a>
+                    </Button>
+                  ))}
                   <Button variant="outline" asChild data-testid="link-github-repo">
-                    <a
-                      href="https://github.com/henockhnk092-dot/Academic-Document-Generator"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
+                    <a href={SOURCE_REPO} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <SiGithub className="h-4 w-4" />
                       {t("pages.about.viewOnGitHub")}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
-                  <Button variant="outline" asChild data-testid="link-youtube">
-                    <a
-                      href="https://youtube.com/@HNK2005"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <SiYoutube className="h-4 w-4" />
-                      @HNK2005
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild data-testid="link-tiktok">
-                    <a
-                      href="https://tiktok.com/@codingfever"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <SiTiktok className="h-4 w-4" />
-                      @codingfever
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild data-testid="link-instagram">
-                    <a
-                      href="https://instagram.com/hhnk.3693"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <SiInstagram className="h-4 w-4" />
-                      @hhnk.3693
-                    </a>
-                  </Button>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-hnk-projects">
+          <CardHeader>
+            <CardTitle>More from {BUSINESS.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {HNK_PROJECTS.map((p) => (
+                <a
+                  key={p.url}
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 border rounded-lg hover-elevate transition-colors"
+                  data-testid={`link-project-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                >
+                  <p className="font-medium flex items-center gap-2">
+                    {p.name}
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{p.desc}</p>
+                </a>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3 mt-4">
+              <Button variant="outline" asChild data-testid="link-hnkiot-website">
+                <a href={BUSINESS.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  hnkiot.com
+                </a>
+              </Button>
+              <Button variant="outline" asChild data-testid="link-google-profile">
+                <a href={BUSINESS.googleProfile} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <SiGoogle className="h-4 w-4" />
+                  Google Business Profile
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>

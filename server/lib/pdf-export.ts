@@ -12,7 +12,7 @@ async function findChromiumPath(): Promise<string | undefined> {
     return _chromiumPathCache;
   }
 
-  // @sparticuz/chromium — pre-compiled binary, works in any container
+  // @sparticuz/chromium - pre-compiled binary, works in any container
   try {
     const p = await chromiumPkg.executablePath();
     if (p) {

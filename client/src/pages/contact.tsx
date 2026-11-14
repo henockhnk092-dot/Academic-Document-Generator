@@ -13,8 +13,9 @@ import {
   ExternalLink,
   Cpu
 } from "lucide-react";
-import { SiGithub, SiYoutube, SiTiktok, SiInstagram } from "react-icons/si";
-import { FaLinkedin } from "react-icons/fa";
+import { SiGithub } from "react-icons/si";
+import { FaWhatsapp } from "react-icons/fa";
+import { BUSINESS, SOCIAL_LINKS, SOURCE_REPO } from "@/lib/business";
 import { useTranslation } from "react-i18next";
 
 const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT;
@@ -75,13 +76,7 @@ export default function Contact() {
     }
   };
 
-  const socialLinks = [
-    { icon: FaLinkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/henock-mukonkole-178b26258", username: "HNK" },
-    { icon: SiGithub, label: "GitHub", href: "https://github.com/henockhnk092-dot/Academic-Document-Generator", username: "henockhnk092-dot" },
-    { icon: SiYoutube, label: "YouTube", href: "https://youtube.com/@HNK2005", username: "@HNK2005" },
-    { icon: SiTiktok, label: "TikTok", href: "https://tiktok.com/@codingfever", username: "@codingfever" },
-    { icon: SiInstagram, label: "Instagram", href: "https://instagram.com/hhnk.3693", username: "@hhnk.3693" },
-  ];
+  const socialLinks = SOCIAL_LINKS.map((s) => ({ icon: s.icon, label: s.name, href: s.url, username: s.handle }));
 
   return (
     <div className="container max-w-6xl py-8 px-4 mx-auto" data-testid="page-contact">
@@ -203,10 +198,27 @@ export default function Contact() {
                   <div>
                     <p className="font-medium">{t("pages.contact.emailLabel")}</p>
                     <a
-                      href="mailto:support@academicgen.com"
+                      href={`mailto:${BUSINESS.supportEmail}`}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      support@academicgen.com
+                      {BUSINESS.supportEmail}
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <FaWhatsapp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">WhatsApp</p>
+                    <a
+                      href={BUSINESS.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      data-testid="link-whatsapp"
+                    >
+                      {BUSINESS.phone}
                     </a>
                   </div>
                 </div>
@@ -217,7 +229,7 @@ export default function Contact() {
                   <div>
                     <p className="font-medium">{t("pages.contact.sourceCode")}</p>
                     <a
-                      href="https://github.com/henockhnk092-dot/Academic-Document-Generator"
+                      href={SOURCE_REPO}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -270,20 +282,23 @@ export default function Contact() {
                 <div className="flex items-center gap-3">
                   <img
                     src="/images/author.jpg"
-                    alt="HNK"
+                    alt={BUSINESS.founder}
                     className="h-14 w-14 rounded-full object-cover border-2 border-primary/20 shrink-0"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                   <div>
-                    <p className="font-semibold text-sm">HNK</p>
-                    <p className="text-xs text-muted-foreground">{t("pages.contact.locationName")}</p>
+                    <p className="font-semibold text-sm">{BUSINESS.legalName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {BUSINESS.founder} · {t("pages.contact.locationName")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Reg. {BUSINESS.registration}</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {t("pages.contact.authorDesc")}
                 </p>
                 <a
-                  href="https://hnk-your-tech-solutions.hnk-tech.workers.dev/"
+                  href={BUSINESS.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 w-full justify-center"

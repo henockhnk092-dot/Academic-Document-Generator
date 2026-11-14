@@ -29,7 +29,7 @@ export function setGoogleTranslateLang(langCode: string): void {
   if (window.doGTranslate) {
     window.doGTranslate(pair);
   } else {
-    // GT not loaded yet — retry until the widget is ready
+    // GT not loaded yet - retry until the widget is ready
     retrySelect(gtCode, 0);
   }
 }

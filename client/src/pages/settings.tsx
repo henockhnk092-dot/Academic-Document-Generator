@@ -756,7 +756,7 @@ export default function Settings() {
                 {voiceEngine === "azure" && "High-quality Neural voices. 500K chars/month free. Falls back to ElevenLabs → VoiceRSS → StreamElements → Gemini → Browser."}
                 {voiceEngine === "elevenlabs" && "Most realistic AI voices. Select a voice below. Falls back to Azure → VoiceRSS → StreamElements → Gemini → Browser."}
                 {voiceEngine === "voicerss" && "Reliable TTS in 50+ languages. Select language below. Falls back to Azure → ElevenLabs → StreamElements → Gemini → Browser."}
-                {voiceEngine === "streamelements" && "Amazon Polly voices. Currently unreliable (provider outage) — falls back to Azure → ElevenLabs → VoiceRSS → Gemini → Browser automatically."}
+                {voiceEngine === "streamelements" && "Amazon Polly voices. Currently unreliable (provider outage), falls back to Azure → ElevenLabs → VoiceRSS → Gemini → Browser automatically."}
                 {voiceEngine === "gemini" && "Google Gemini TTS. Falls back to Azure → ElevenLabs → VoiceRSS → StreamElements → Browser."}
                 {voiceEngine === "browser" && "Uses your device's built-in voices. No server needed."}
               </p>
@@ -764,7 +764,7 @@ export default function Settings() {
 
             <Separator />
 
-            {/* Voice selection — changes based on active engine */}
+            {/* Voice selection - changes based on active engine */}
             {(voiceEngine === "azure" || voiceEngine === "browser") && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -841,7 +841,7 @@ export default function Settings() {
                   <SelectContent>
                     {ELEVENLABS_VOICES.map(v => (
                       <SelectItem key={v.id} value={v.id}>
-                        {v.name} — {v.desc}
+                        {v.name}: {v.desc}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -863,7 +863,7 @@ export default function Settings() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Amazon Polly voices. Currently experiencing a provider-side outage — other engines are recommended for now.</p>
+                <p className="text-xs text-muted-foreground">Amazon Polly voices. Currently experiencing a provider-side outage, other engines are recommended for now.</p>
               </div>
             )}
 
@@ -895,7 +895,7 @@ export default function Settings() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">VoiceRSS — 350 requests/day on free tier.</p>
+                <p className="text-xs text-muted-foreground">VoiceRSS: 350 requests/day on free tier.</p>
               </div>
             )}
 
@@ -925,7 +925,7 @@ export default function Settings() {
               <div className="rounded-lg bg-muted/40 px-4 py-3 text-sm space-y-1">
                 <p className="font-medium">Provider: Pollinations.ai</p>
                 <p className="text-xs text-muted-foreground">
-                  Free AI image generation — no API key required. Generates images from text prompts at{" "}
+                  Free AI image generation: no API key required. Generates images from text prompts at{" "}
                   <span className="font-mono">/generate/images</span>. Supports Standard and HD quality (with AI prompt enhancement), plus Vivid and Natural styles.
                 </p>
               </div>
@@ -982,22 +982,22 @@ export default function Settings() {
             {[
               {
                 value: "auto",
-                label: "⚡ Auto — Best Available",
+                label: "⚡ Auto: Best Available",
                 desc: "System picks best model automatically: Humanize AI Pro → Gemini (×4) → DeepSeek",
               },
               {
                 value: "humanize_ai",
-                label: "🎯 Humanize AI Pro — Highest Quality",
+                label: "🎯 Humanize AI Pro: Highest Quality",
                 desc: "Best humanization, uses your dedicated credits",
               },
               {
                 value: "deepseek",
-                label: "🇨🇳 DeepSeek — Fast & Efficient",
+                label: "🇨🇳 DeepSeek: Fast & Efficient",
                 desc: "Chinese AI, very fast, nearly free to run",
               },
               {
                 value: "gemini",
-                label: "🔵 Gemini — Google AI (×4 accounts)",
+                label: "🔵 Gemini: Google AI (×4 accounts)",
                 desc: "4 Google accounts in rotation, always available, completely free",
               },
             ].map(opt => (

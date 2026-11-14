@@ -431,7 +431,7 @@ ${content.split('\n').filter(Boolean).map(p => `<p>${p.replace(/&/g,'&amp;').rep
                     {t("pages.grammarCheck.applyAll")}
                   </Button>
                 )}
-                {/* Export dropdown — shown after a successful check */}
+                {/* Export dropdown - shown after a successful check */}
                 {(grammarCheckMutation.isSuccess || hasChanges) && textToCheck.trim() && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

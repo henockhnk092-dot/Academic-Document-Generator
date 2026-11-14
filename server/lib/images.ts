@@ -4,8 +4,8 @@
 
 export interface ImageResult {
   id: string | number;
-  webformatURL: string;   // medium — keeps PixabayImage compat
-  largeImageURL: string;  // large  — keeps PixabayImage compat
+  webformatURL: string;   // medium - keeps PixabayImage compat
+  largeImageURL: string;  // large - keeps PixabayImage compat
   previewURL: string;
   tags: string;
   user: string;

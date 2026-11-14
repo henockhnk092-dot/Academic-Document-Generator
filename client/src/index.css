@@ -504,7 +504,7 @@ body {
 
 /* ── Print styles ──────────────────────────────────────────────────────────── */
 @media print {
-  /* Hide all chrome — sidebar, header, buttons, toasts */
+  /* Hide all chrome: sidebar, header, buttons, toasts */
   [data-sidebar],
   [data-testid="button-sidebar-toggle"],
   header,
@@ -555,4 +555,30 @@ body {
   a[href^="javascript"]::after {
     content: "";
   }
+}
+
+/* ── Syntax-highlighted code blocks ─────────────────────────────────────── */
+pre.code-block {
+  position: relative;
+  padding: 1rem 1rem 1rem 1rem;
+}
+
+pre.code-block .code-lang-label {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.6rem;
+  font-size: 0.65rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #7c8494;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Override hljs theme background so it fits our border-radius */
+pre.code-block.hljs,
+pre.code-block .hljs {
+  background: #282c34; /* atom-one-dark bg */
+  border-radius: 0.5rem;
 }

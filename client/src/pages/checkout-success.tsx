@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, ArrowRight, Sparkles } from "lucide-react";
@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 export default function CheckoutSuccess() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { user } = useAuth();
   const { t } = useTranslation();
   const [isVerifying, setIsVerifying] = useState(true);
@@ -17,25 +18,28 @@ export default function CheckoutSuccess() {
   useEffect(() => {
     const verifyCheckout = async () => {
       try {
-        // Wait a moment for Stripe webhook to process
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const params = new URLSearchParams(search);
+        const provider = params.get("provider");
 
-        // Invalidate usage query to fetch updated subscription status
+        // Plan activation must come from the payment webhook, not browser state.
+        // This page only gives the webhook a moment to process before refreshing usage.
+        await new Promise((resolve) => setTimeout(resolve, provider === "bmc" ? 3000 : 2000));
+
+        // Invalidate usage cache
         if (user?.uid) {
           await queryClient.invalidateQueries({ queryKey: ["/api/usage", user.uid] });
-          await queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription", user.uid] });
         }
 
         setIsVerifying(false);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Verification error:", err);
-        setError(err.message || t("pages.checkoutSuccess.verifyFailed"));
+        setError(err instanceof Error ? err.message : t("pages.checkoutSuccess.verifyFailed"));
         setIsVerifying(false);
       }
     };
 
     verifyCheckout();
-  }, [user?.uid, t]);
+  }, [user?.uid, search, t]);
 
   if (isVerifying) {
     return (

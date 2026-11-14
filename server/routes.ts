@@ -115,7 +115,7 @@ async function assertPublicHttpUrl(url: string): Promise<URL> {
   return parsedUrl;
 }
 
-// Rate limiters — protect AI generation endpoints from abuse
+// Rate limiters - protect AI generation endpoints from abuse
 const generateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10,
@@ -197,7 +197,7 @@ RULES:
 - Include in-text citations and a References section
 - All tables must have proper headers and real data (no placeholder dashes)
 
-OUTPUT — return ONLY valid JSON, no markdown wrapper:
+OUTPUT: return ONLY valid JSON, no markdown wrapper:
 {
   "title": "Full Document Title",
   "date": "May 2026",
@@ -460,7 +460,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
       pixabay: !!process.env.PIXABAY_API_KEY,
       pexels: !!process.env.PEXELS_API_KEY,
       unsplash: !!process.env.UNSPLASH_ACCESS_KEY,
-      wikimedia: true, // always available — no key required
+      wikimedia: true, // always available - no key required
     });
   });
 
@@ -757,7 +757,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
   });
 
   // Templates API
-  // ── Built-in Templates (no DB needed — served from memory) ──────────────
+  // ── Built-in Templates (no DB needed - served from memory) ──────────────
   const BUILT_IN_TEMPLATES = [
     { id: 1,  name: "IEEE Conference Paper",        category: "paper",         type: "conference", usageCount: 1250, description: "Standard IEEE format for conference submissions with abstract, introduction, methodology, results, and conclusion sections.", structure: { sections: ["Abstract","Introduction","Related Work","Methodology","Results","Discussion","Conclusion","References"] }, prompt: "Write an IEEE conference paper on machine learning applications in healthcare with abstract, introduction, related work, methodology, results, discussion, and conclusion sections.", isDefault: true },
     { id: 2,  name: "Harvard Thesis",               category: "thesis",        type: "thesis",     usageCount: 890,  description: "Complete thesis structure following Harvard citation style with chapters for literature review, methodology, and findings.", structure: { chapters: ["Introduction","Literature Review","Methodology","Findings","Discussion","Conclusion","Bibliography"] }, prompt: "Write a comprehensive thesis on climate change impact on coastal ecosystems with introduction, literature review, methodology, findings, discussion, and conclusion chapters.", isDefault: true },
@@ -773,7 +773,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
     { id: 12, name: "Modern Architecture",          category: "image",         type: "images",     usageCount: 680,  description: "Contemporary architectural designs and urban photography.", structure: {}, prompt: "Modern minimalist architecture with clean lines, glass facades, geometric shapes, dramatic shadows, professional architectural photography", isDefault: true },
     { id: 13, name: "Abstract Art",                 category: "image",         type: "images",     usageCount: 750,  description: "Abstract and creative art templates with vibrant colors and patterns.", structure: {}, prompt: "Abstract art with flowing colors, geometric patterns, vibrant gradients, modern digital art style, visually striking composition", isDefault: true },
   ];
-  // In-memory usage counters (persist across requests, reset on redeploy — acceptable for display counts)
+  // In-memory usage counters (persist across requests, reset on redeploy - acceptable for display counts)
   const templateUsage: Record<number, number> = {};
 
   app.get("/api/templates", (req, res) => {
@@ -932,7 +932,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
       // Fetch from CrossRef API
       const response = await fetch(`https://api.crossref.org/works/${encodeURIComponent(cleanDoi)}`, {
         headers: {
-          'User-Agent': 'AcademicGen/1.0 (mailto:support@academicgen.com)',
+          'User-Agent': 'AcademicGen/1.0 (mailto:support@hnkiot.com)',
         },
       });
 
@@ -1153,7 +1153,7 @@ OUTPUT — return ONLY valid JSON, no markdown wrapper:
           await storage.createAiMessage({ sessionId, role: "user", content: message });
           await storage.createAiMessage({ sessionId, role: "assistant", content: response });
         } catch (_dbError) {
-          // non-critical — database unavailable
+          // non-critical - database unavailable
         }
       }
 
@@ -1647,7 +1647,7 @@ ${numbered}`;
       throw new Error("All paraphrasing services failed.");
     }
 
-    // "auto" or "humanize_ai" — try full chain in priority order
+    // "auto" or "humanize_ai" - try full chain in priority order
     const r1 = await tryHumanizeAIPro();
     if (r1) return { text: r1, modelUsed: "Humanize AI Pro" };
 

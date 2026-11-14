@@ -28,8 +28,8 @@ export const app = express();
 
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: false, // disabled — Vite/React inline scripts would break
-  crossOriginEmbedderPolicy: false, // disabled — needed for Google Fonts iframes
+  contentSecurityPolicy: false, // disabled - Vite/React inline scripts would break
+  crossOriginEmbedderPolicy: false, // disabled - needed for Google Fonts iframes
 }));
 
 // Gzip compression for all responses

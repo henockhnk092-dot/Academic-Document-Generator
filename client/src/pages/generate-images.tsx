@@ -124,7 +124,7 @@ export default function GenerateImages() {
             await sleep(3000);
             return generateImageAPI(retryCount + 1);
           }
-          // AI generation failed — try stock photo as last resort
+          // AI generation failed - try stock photo as last resort
           try {
             const resp = await fetch("/api/images/random", {
               method: "POST",

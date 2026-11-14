@@ -21,6 +21,9 @@ import { SpeechPlayer } from "@/components/speech-player";
 import { useSpeech, getSpeechPrefs, saveSpeechPrefs } from "@/hooks/use-speech";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/components/auth-provider";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { PricingModal } from "@/components/pricing-modal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,7 +69,7 @@ function ScoreRing({ value, size = 110, label = "AI Score", sublabel }: {
       </svg>
       <div className="relative z-10 text-center select-none">
         <div className="text-2xl font-bold tabular-nums" style={{ color }}>
-          {value === null ? "—" : `${value}%`}
+          {value === null ? "-" : `${value}%`}
         </div>
         <div className="text-[11px] text-muted-foreground leading-tight">{label}</div>
         {sublabel && <div className="text-[10px] text-muted-foreground/70 leading-tight">{sublabel}</div>}
@@ -195,8 +198,12 @@ export default function Humanize() {
   const [engineMode, setEngineMode]     = useState<string>(prefs0.engineMode ?? "azure");
   const sentRefs = useRef<Record<number, HTMLSpanElement | null>>({});
 
+  const [modelUsed, setModelUsed] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   // Load text passed from a generator page via sessionStorage
   useEffect(() => {
@@ -238,7 +245,12 @@ export default function Humanize() {
       setInputMode("paste");
       toast({ title: t("pages.humanize.fileExtractedTitle"), description: t("pages.humanize.fileExtractedDesc", { words: countWords(data.text), name: file.name }) });
     } catch (err: any) {
-      toast({ title: t("pages.humanize.uploadFailedTitle"), description: t("pages.humanize.uploadFailedDesc"), variant: "destructive" });
+      toast({
+        title: t("pages.humanize.uploadFailedTitle"),
+        description: err.message || t("pages.humanize.uploadFailedDesc"),
+        variant: "destructive",
+        duration: 8000,
+      });
     } finally {
       setIsLoading(false);
       setStep("");
@@ -257,21 +269,30 @@ export default function Humanize() {
     if (f) handleFileUpload(f);
   };
 
+  const getAuthToken = async (): Promise<string | null> => {
+    const auth = getFirebaseAuth();
+    return auth?.currentUser ? auth.currentUser.getIdToken() : null;
+  };
+
   // ── Humanize ────────────────────────────────────────────────────────────────
   const handleHumanize = async () => {
     if (!inputText.trim() || overLimit || isLoading || isParaphrasing) return;
+
+    if (!isAuthenticated) { navigate("/"); setShowUpgradeModal(true); return; }
 
     setIsLoading(true);
     setStep(t("pages.humanize.humanizingText"));
     stop();
     try {
-      const data: any = await apiRequest("POST", "/api/humanize", { text: inputText, mode });
+      const token = await getAuthToken();
+      const data: any = await apiRequest("POST", "/api/humanize", { text: inputText, mode, uid: user?.uid, token });
       setHumanizedText(data.humanizedText || "");
       setOriginalText(data.originalText || inputText);
       setScores(data.humanizedScores || []);
       setOriginalScores(data.originalScores || []);
       setOriginalAiScore(data.originalAiScore ?? null);
       setHumanizedAiScore(data.humanizedAiScore ?? null);
+      setModelUsed(data.modelUsed || "");
       setRounds([]);
       toast({
         title: t("pages.humanize.humanizedTitle"),
@@ -280,6 +301,7 @@ export default function Humanize() {
           : t("pages.humanize.humanizedDescNoScore"),
       });
     } catch (err: any) {
+      if (err.message === "upgrade_required") { setShowUpgradeModal(true); return; }
       toast({ title: t("pages.humanize.humanizeFailedTitle"), description: t("pages.humanize.humanizeFailedDesc"), variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -295,17 +317,20 @@ export default function Humanize() {
     stop();
     try {
       const aiBefore = humanizedAiScore ?? 0;
-      const data: any = await apiRequest("POST", "/api/humanize", { text: humanizedText, mode });
+      const token = await getAuthToken();
+      const data: any = await apiRequest("POST", "/api/humanize", { text: humanizedText, mode, uid: user?.uid, token });
       const aiAfter = data.humanizedAiScore ?? 0;
       setHumanizedText(data.humanizedText || humanizedText);
       setScores(data.humanizedScores || scores);
       setHumanizedAiScore(aiAfter);
+      setModelUsed(data.modelUsed || modelUsed);
       setRounds(prev => [...prev, { roundNumber: prev.length + 1, aiBefore, aiAfter }]);
       toast({
         title: t("pages.humanize.paraphraseCompleteTitle", { round: rounds.length + 1 }),
         description: t("pages.humanize.paraphraseCompleteDesc", { before: aiBefore, after: aiAfter }),
       });
     } catch (err: any) {
+      if (err.message === "upgrade_required") { setShowUpgradeModal(true); return; }
       toast({ title: t("pages.humanize.paraphraseFailedTitle"), description: t("pages.humanize.paraphraseFailedDesc"), variant: "destructive" });
     } finally {
       setIsParaphrasing(false);
@@ -385,6 +410,7 @@ export default function Humanize() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
+    <>
     <GeneratorLayout
       title={t("pages.humanizer.title")}
       description={t("pages.humanizer.subtitle")}
@@ -499,7 +525,7 @@ export default function Humanize() {
                       {MODES.map(m => (
                         <SelectItem key={m.value} value={m.value}>
                           <span className="font-medium">{m.label}</span>
-                          <span className="ml-1 text-muted-foreground text-xs">— {m.desc}</span>
+                          <span className="ml-1 text-muted-foreground text-xs">, {m.desc}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -513,6 +539,8 @@ export default function Humanize() {
                 >
                   {isLoading ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("pages.humanize.humanizingEllipsis")}</>
+                  ) : !isAuthenticated ? (
+                    <><ShieldCheck className="w-4 h-4 mr-2" />{t("pages.humanize.humanizeText")} <Badge variant="secondary" className="ml-2 text-[10px]">Pro</Badge></>
                   ) : (
                     <><Wand2 className="w-4 h-4 mr-2" />{t("pages.humanize.humanizeText")}</>
                   )}
@@ -712,11 +740,17 @@ export default function Humanize() {
                   {/* ── Humanized tab ── */}
                   <TabsContent value="humanized" className="space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground">
                           {countWords(humanizedText).toLocaleString()} {t("common.words")}
                         </span>
                         <ScoreBadge score={humanizedAiScore} />
+                        {modelUsed && (
+                          <Badge variant="outline" className="text-xs gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                            <CheckCheck className="h-3 w-3" />
+                            {modelUsed}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex gap-1.5">
                         <Button variant="outline" size="sm" onClick={() => copyText(humanizedText, "h")} className="gap-1.5">
@@ -846,7 +880,7 @@ export default function Humanize() {
                     <div className="grid grid-cols-3 gap-3">
                       <div className="border rounded-lg p-3">
                         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("pages.humanize.statAI")}</div>
-                        <div className="text-2xl font-bold mt-0.5">{humanizedAiScore ?? "—"}%</div>
+                        <div className="text-2xl font-bold mt-0.5">{humanizedAiScore != null ? `${humanizedAiScore}%` : "-"}</div>
                       </div>
                       <div className="border rounded-lg p-3">
                         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("pages.humanize.statFlagged")}</div>
@@ -913,5 +947,8 @@ export default function Humanize() {
         </div>
       )}
     </GeneratorLayout>
+
+    <PricingModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+    </>
   );
 }

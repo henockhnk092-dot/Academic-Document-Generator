@@ -420,7 +420,7 @@ export function useGeminiTTS(options: UseGeminiTTSOptions = {}): UseGeminiTTSRet
 
     // ── Fallback chain: Azure → ElevenLabs → VoiceRSS → StreamElements → Gemini ──
     // TEMPORARY order: Azure moved first since the ElevenLabs account is out of
-    // quota (402 on every request) — revert to ElevenLabs → Azure → VoiceRSS →
+    // quota (402 on every request) - revert to ElevenLabs → Azure → VoiceRSS →
     // StreamElements once that's fixed. StreamElements stays second-to-last: its
     // public API has a platform-wide outage. Gemini TTS is the final server-side
     // attempt before falling back to browser speech synthesis.

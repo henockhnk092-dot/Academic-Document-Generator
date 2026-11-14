@@ -93,7 +93,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
               })}
             </div>
 
-            {/* Prev / Next — wrapper matches image width so arrows always sit at image edges */}
+            {/* Prev / Next - wrapper matches image width so arrows always sit at image edges */}
             <div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-between z-20 px-2"
               style={{ width: 'clamp(188px, 72vw, 500px)' }}

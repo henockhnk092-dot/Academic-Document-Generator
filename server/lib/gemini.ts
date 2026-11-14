@@ -48,11 +48,11 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
         lastError = error;
         continue;
       }
-      throw error; // non-key error — rethrow immediately
+      throw error; // non-key error - rethrow immediately
     }
   }
 
-  // All keys exhausted — rotate so the next request starts fresh
+  // All keys exhausted - rotate so the next request starts fresh
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
   throw lastError;
 }
@@ -194,7 +194,7 @@ export async function generateContent(
 
       const text = response.text;
 
-      // Safety filter or empty response — surface a clear message instead of
+      // Safety filter or empty response - surface a clear message instead of
       // letting downstream JSON parsing fail with a cryptic error.
       if (!text || text.trim() === "") {
         const candidate = response.candidates?.[0];

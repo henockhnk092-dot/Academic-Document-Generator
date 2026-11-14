@@ -61,9 +61,9 @@ export default function Home() {
 
   const stats = [
     { value: "10",  label: t("home.stats.tools") },
-    { value: "66+", label: t("home.stats.templates") },
+    { value: "13+", label: t("home.stats.templates") },
     { value: "10+", label: t("home.stats.formats") },
-    { value: "5",   label: t("home.stats.citations") },
+    { value: "6",   label: t("home.stats.citations") },
   ];
 
   const statsRef = useRef(null);
@@ -95,7 +95,7 @@ export default function Home() {
               {t("home.heroBadge")}
             </motion.span>
 
-            {/* title — scales from 2xl on mobile to 6xl on large desktop */}
+            {/* title - scales from 2xl on mobile to 6xl on large desktop */}
             <motion.h1
               variants={fadeUp}
               className="font-playfair text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight tracking-tight"
@@ -138,7 +138,7 @@ export default function Home() {
             animate="visible"
             variants={staggerContainer}
           >
-            {/* left card — PDF */}
+            {/* left card - PDF */}
             <motion.div
               variants={{
                 hidden: { opacity: 0, rotate: -18, y: 20 },
@@ -161,7 +161,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* center card — Word doc (tallest) */}
+            {/* center card - Word doc (tallest) */}
             <motion.div
               variants={{
                 hidden: { opacity: 0, scale: 0.9, y: 30 },
@@ -187,7 +187,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* right card — Presentation */}
+            {/* right card - Presentation */}
             <motion.div
               variants={{
                 hidden: { opacity: 0, rotate: 18, y: 20 },
@@ -252,7 +252,7 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 relative">
-            {/* connector line — only on sm+ */}
+            {/* connector line - only on sm+ */}
             <div className="hidden sm:block absolute top-10 left-[20%] right-[20%] h-px bg-border z-0" />
 
             {steps.map(({ icon: Icon, num, title, desc }, i) => (

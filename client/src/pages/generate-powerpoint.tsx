@@ -105,7 +105,7 @@ function PresentationCoach({ script, tone, showTts, slideId }: PresentationCoach
 
           let blob: Blob | null = null;
 
-          // Full provider fallback chain — try preferred engine first, then the rest
+          // Full provider fallback chain - try preferred engine first, then the rest
           // Order: azure → elevenlabs → voicerss → streamelements → gemini → browser
           const fetchMap: Record<string, () => Promise<Blob | null>> = {
             azure: () => fetchAzureAudio(scriptText, azureVoice, 1),
@@ -975,7 +975,7 @@ export default function GeneratePowerPoint() {
                       </CardDescription>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {/* TTS Controls — read full presentation aloud */}
+                      {/* TTS Controls - read full presentation aloud */}
                       {presentation && (
                         <DocumentTTSControls
                           status={tts.status}
