@@ -193,7 +193,7 @@ async function safeRewrite(engine: string, orig: string, current: string, log: (
     issues = factIssues(orig, next);
   }
   if (issues.some((i) => /missing|added/.test(i))) {
-    log(`Kept the previous version of one passage (facts would have changed: ${issues.slice(0, 2).join("; ")}).`);
+    log("Kept one passage as it was, to protect its numbers and citations.");
     return current;
   }
   return next;
@@ -275,10 +275,10 @@ async function runJob(j: Job, original: string, title: string) {
     let quetext: any = null;
     if (process.env.QUETEXT_API_KEY && words(final) >= 50) {
       log("Final AI check and plagiarism scan.");
-      const [ai, plag] = await Promise.all([
-        quetextReport("ai-detect-report", final, title).catch((e) => ({ error: e.message })),
-        quetextReport("report", final, title).catch((e) => ({ error: e.message })),
-      ]);
+      // One after the other: two parallel reports on the same key get rate-limited.
+      const ai: any = await quetextReport("ai-detect-report", final, title).catch((e) => ({ error: e.message }));
+      const plag: any = await quetextReport("report", final, title).catch((e) => ({ error: e.message }));
+      if (ai?.error || plag?.error) console.warn("[rv] Quetext:", ai?.error || "", plag?.error || "");
       quetext = {
         aiScore: ai?.ai_score ?? null,
         plagiarism: plag?.score ?? plag?.percentage ?? null,

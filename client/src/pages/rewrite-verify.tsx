@@ -191,8 +191,8 @@ export default function RewriteVerify() {
                   <>
                     {job.result.finalCheck && (
                       <div className="grid sm:grid-cols-2 gap-3">
-                        <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Final AI-likeness (independent check)</p><p className="text-2xl font-bold">{job.result.finalCheck.aiScore ?? "n/a"}{job.result.finalCheck.aiScore !== null ? "%" : ""}</p></div>
-                        <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Plagiarism similarity</p><p className="text-2xl font-bold">{job.result.finalCheck.plagiarism ?? "n/a"}{job.result.finalCheck.plagiarism !== null ? "%" : ""}</p></div>
+                        {job.result.finalCheck.aiScore !== null && job.result.finalCheck.aiScore !== undefined && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Final AI-likeness (independent check)</p><p className="text-2xl font-bold">{Math.round(Number(job.result.finalCheck.aiScore))}%</p></div>)}
+                        {job.result.finalCheck.plagiarism !== null && job.result.finalCheck.plagiarism !== undefined && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Plagiarism similarity</p><p className="text-2xl font-bold">{job.result.finalCheck.plagiarism}%</p></div>)}
                       </div>
                     )}
                     {!!job.result.finalCheck?.sources?.length && (

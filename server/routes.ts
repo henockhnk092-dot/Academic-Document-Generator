@@ -1560,26 +1560,43 @@ ${numbered}`;
       try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), 30000);
-        const apiRes = await fetch("https://thehumanizeai.pro/api/humanize", {
+        // Endpoint and body as verified in our benchmark (api/v1, model "humanoidx"); the old /api/humanize path 404s.
+        const apiRes = await fetch("https://thehumanizeai.pro/api/v1/humanize", {
           method: "POST",
           headers: { "Authorization": `Bearer ${humanizeKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ text, mode: mode || "academic" }),
+          body: JSON.stringify({ text, model: "humanoidx", tone: mode === "casual" ? "casual" : mode === "professional" ? "professional" : "academic" }),
           signal: ctrl.signal,
         });
         clearTimeout(tid);
         if (apiRes.ok) {
           const data = await apiRes.json();
-          return data.humanized_text || data.humanizedText || null;
+          let out: string = data.humanized_text || data.humanizedText || "";
+          if (out.trim().startsWith("{")) { try { out = JSON.parse(out).message2 || out; } catch { /* keep raw */ } }
+          return out.trim() || null;
         }
+        console.log(`[Paraphrase] Humanize AI Pro HTTP ${apiRes.status}`);
         return null;
       } catch { console.log("[Paraphrase] Humanize AI Pro unavailable"); return null; }
     };
 
     const tryGemini = async (): Promise<string | null> => {
       try {
-        return await generateChatResponse(
-          `Rewrite the following text to sound natural and human-written, ${hint}.\nVary sentence structure, use natural transitions, avoid repetitive phrasing. Preserve all factual information.\nReturn ONLY the rewritten text.\n\nText:\n${text}`
+        // Plain generator (has the key rotation + flash-lite quota fallback), not the chat assistant persona.
+        const out = await generateContent(
+          `Rewrite the following text completely in your own words, ${hint}, the way a careful student writes.
+Required changes:
+- Rephrase EVERY sentence. Do not copy any run of 5 or more words from the original, except names, numbers, units and technical terms.
+- Split long sentences; mix short (6 to 10 words) and medium sentences. Change sentence openings and word order.
+- Prefer plain verbs (use, show, find, help, need) over "utilize", "facilitate", "leverage", "paramount", "critical".
+Keep exactly: every fact, number, unit, name, technical term, citation marker (like [3] or (Smith, 2020)) and figure/table reference. Do not add facts.
+Stay in the requested register: for academic text no slang, no contractions, no exclamation marks, no rhetorical questions, no first person unless the original uses it.
+No em dashes, no headings, no lists. Return ONLY the rewritten text.
+
+Text:
+${text}`,
+          { temperature: 0.9, maxTokens: 8192 },
         );
+        return out.trim() || null;
       } catch { console.log("[Paraphrase] All Gemini keys failed"); return null; }
     };
 
@@ -1592,12 +1609,13 @@ ${numbered}`;
       throw new Error("All paraphrasing services failed.");
     }
 
-    // "auto" or "humanize_ai" - try full chain in priority order
-    const r1 = await tryHumanizeAIPro();
-    if (r1) return { text: r1, modelUsed: "Humanize AI Pro" };
+    // "auto" or "humanize_ai": Gemini first (keeps facts better in our tests; HumanizeAI Pro added errors),
+    // then HumanizeAI Pro as the backup engine.
+    const r1 = await tryGemini();
+    if (r1) return { text: r1, modelUsed: "Gemini" };
 
-    const r2 = await tryGemini();
-    if (r2) return { text: r2, modelUsed: "Gemini" };
+    const r2 = await tryHumanizeAIPro();
+    if (r2) return { text: r2, modelUsed: "Humanize AI Pro" };
 
     throw new Error("All paraphrasing services failed. Please try again.");
   }
