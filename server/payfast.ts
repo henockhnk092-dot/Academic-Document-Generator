@@ -54,7 +54,8 @@ async function uidFromRequest(req: Request): Promise<{ uid: string; email?: stri
   if (!token) return null;
   const { getApps, getApp } = await import("firebase-admin/app");
   const { getAuth } = await import("firebase-admin/auth");
-  if (getApps().length === 0) return null;
+  const { isFirebaseAdminAvailable } = await import("./firebaseSubscriptionStorage");
+  if (!isFirebaseAdminAvailable() || getApps().length === 0) return null;
   const d = await getAuth(getApp()).verifyIdToken(token);
   return { uid: d.uid, email: d.email };
 }

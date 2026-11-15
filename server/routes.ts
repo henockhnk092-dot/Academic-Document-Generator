@@ -48,7 +48,8 @@ async function getAuthenticatedUid(req: Request): Promise<string | null> {
 
   const { getApps, getApp } = await import("firebase-admin/app");
   const { getAuth } = await import("firebase-admin/auth");
-  if (getApps().length === 0) return null;
+  const { isFirebaseAdminAvailable } = await import("./firebaseSubscriptionStorage");
+  if (!isFirebaseAdminAvailable() || getApps().length === 0) return null;
 
   const decoded = await getAuth(getApp()).verifyIdToken(idToken);
   return decoded.uid;
@@ -1400,6 +1401,8 @@ Return JSON with "formatted" (full reference list entry) and "inText" (in-text c
       const { getApps, getApp } = await import("firebase-admin/app");
       const { getAuth } = await import("firebase-admin/auth");
       const { getFirestore: getAdminFs } = await import("firebase-admin/firestore");
+      const { isFirebaseAdminAvailable } = await import("./firebaseSubscriptionStorage");
+      isFirebaseAdminAvailable();
       if (getApps().length === 0) return { allowed: true, uid: null, plan: "unknown", isAdmin: false };
 
       const decoded = await getAuth(getApp()).verifyIdToken(token);
@@ -1838,6 +1841,8 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
       const idToken = authHeader.slice(7);
       const { getApps, getApp } = await import("firebase-admin/app");
       const { getAuth } = await import("firebase-admin/auth");
+      const { isFirebaseAdminAvailable } = await import("./firebaseSubscriptionStorage");
+      isFirebaseAdminAvailable();
       const apps = getApps();
       if (apps.length === 0) return false;
       const decoded = await getAuth(getApp()).verifyIdToken(idToken);
