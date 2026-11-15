@@ -20,15 +20,25 @@ const SANDBOX = { merchantId: "10000100", merchantKey: "46f0cd694581a", passphra
 
 function config() {
   const sandbox = (process.env.PAYFAST_SANDBOX ?? "true").toLowerCase() !== "false";
+  // Own sandbox account (PAYFAST_SANDBOX_*) if set; otherwise the shared public one. The shared account's
+  // passphrase was changed by someone (published one no longer matches, Nov 2026), so we leave it unsigned.
+  const ownSandbox = Boolean(process.env.PAYFAST_SANDBOX_MERCHANT_ID && process.env.PAYFAST_SANDBOX_MERCHANT_KEY);
   const creds = sandbox
-    ? SANDBOX
+    ? ownSandbox
+      ? {
+          merchantId: process.env.PAYFAST_SANDBOX_MERCHANT_ID || "",
+          merchantKey: process.env.PAYFAST_SANDBOX_MERCHANT_KEY || "",
+          passphrase: process.env.PAYFAST_SANDBOX_PASSPHRASE || "",
+        }
+      : SANDBOX
     : {
         merchantId: process.env.PAYFAST_MERCHANT_ID || "",
         merchantKey: process.env.PAYFAST_MERCHANT_KEY || "",
         passphrase: process.env.PAYFAST_PASSPHRASE || "",
       };
   const host = sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za";
-  return { sandbox, ...creds, processUrl: `${host}/eng/process`, validateUrl: `${host}/eng/query/validate` };
+  const signed = !sandbox || ownSandbox;
+  return { sandbox, signed, ...creds, processUrl: `${host}/eng/process`, validateUrl: `${host}/eng/query/validate` };
 }
 
 // PHP-style urlencode (what Payfast's signature uses): spaces as '+', uppercase hex.
@@ -96,7 +106,7 @@ export function registerPayfastRoutes(app: Express) {
         pairs.push(["subscription_type", "1"], ["recurring_amount", plan.amount.toFixed(2)], ["frequency", String(plan.recurring)], ["cycles", "0"]);
       }
       const fields = Object.fromEntries(pairs.filter(([, v]) => v !== ""));
-      fields.signature = sign(pairs, c.passphrase);
+      if (c.signed) fields.signature = sign(pairs, c.passphrase);
       res.json({ action: c.processUrl, fields, sandbox: c.sandbox });
     } catch (e) {
       log(`Payfast checkout error: ${e instanceof Error ? e.message : e}`, "payfast");
@@ -111,7 +121,8 @@ export function registerPayfastRoutes(app: Express) {
       const c = config();
       const body = req.body as Record<string, string>;
       const pairs = Object.entries(body).filter(([k]) => k !== "signature") as [string, string][];
-      if (sign(pairs, c.passphrase) !== body.signature) return log("ITN rejected: bad signature", "payfast");
+      // Shared public sandbox only: its passphrase is unknown, so rely on Payfast's own validation call below.
+      if (c.signed && sign(pairs, c.passphrase) !== body.signature) return log("ITN rejected: bad signature", "payfast");
       if (body.merchant_id !== c.merchantId) return log("ITN rejected: merchant mismatch", "payfast");
       const tier = body.custom_str2;
       const plan = PAYFAST_PRICES_ZAR[tier];
