@@ -22,6 +22,8 @@
     "aiImages": "AI Images",
     "references": "References",
     "aiHumanizer": "AI Humanizer",
+    "aiCheck": "AI Check",
+    "rewriteVerify": "Rewrite & Verify",
     "citationChecker": "Citation Checker",
     "templateReport": "Template Report",
     "grammarCheck": "Grammar Check"

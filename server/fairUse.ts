@@ -4,9 +4,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { isFirebaseAdminAvailable } from "./firebaseSubscriptionStorage";
 
-export type Meter = "docs" | "sections" | "words" | "chars";
+export type Meter = "docs" | "sections" | "words" | "chars" | "checks";
 type Period = "day" | "week" | "month";
-interface PlanLimits { period: Period; docs: number; sections: number; words: number; chars: number }
+interface PlanLimits { period: Period; docs: number; sections: number; words: number; chars: number; checks: number }
 
 // docs = full documents (report, thesis, paper, slides); sections = single-section generations;
 // words = humanize/paraphrase words; chars = read-aloud characters (Azure / Gemini voices).
@@ -14,15 +14,15 @@ interface PlanLimits { period: Period; docs: number; sections: number; words: nu
 // 1,000 humanize words, ~R0.29 per 1,000 Azure characters) stays at about 70-80% of what the plan nets after
 // the Payfast fee: Day R16 -> ~R12.5, Week R45 -> ~R32, Month R141 -> ~R101, Year ~R120/month -> ~R84.
 export const FAIR_USE: Record<string, PlanLimits> = {
-  guest:    { period: "day",   docs: 10, sections: 30,  words: 0,     chars: 20000 }, // per IP (campus networks share IPs)
-  free:     { period: "day",   docs: 3,  sections: 10,  words: 1000,  chars: 5000 },
-  day_pass: { period: "day",   docs: 6,  sections: 15,  words: 5000,  chars: 8000 },
-  weekly:   { period: "week",  docs: 15, sections: 40,  words: 15000, chars: 20000 },
-  monthly:  { period: "month", docs: 50, sections: 120, words: 60000, chars: 50000 },
-  yearly:   { period: "month", docs: 40, sections: 100, words: 50000, chars: 45000 },
+  guest:    { period: "day",   docs: 10, sections: 30,  words: 0,     chars: 20000, checks: 0 }, // per IP (campus networks share IPs)
+  free:     { period: "day",   docs: 3,  sections: 10,  words: 1000,  chars: 5000,  checks: 1000 },
+  day_pass: { period: "day",   docs: 6,  sections: 15,  words: 5000,  chars: 8000,  checks: 3000 },
+  weekly:   { period: "week",  docs: 15, sections: 40,  words: 15000, chars: 20000, checks: 10000 },
+  monthly:  { period: "month", docs: 50, sections: 120, words: 60000, chars: 50000, checks: 40000 },
+  yearly:   { period: "month", docs: 40, sections: 100, words: 50000, chars: 45000, checks: 30000 },
 };
 const PAID = ["day_pass", "weekly", "monthly", "yearly", "pro", "business", "paid"];
-const LABEL: Record<Meter, string> = { docs: "documents", sections: "section generations", words: "humanize words", chars: "read-aloud characters" };
+const LABEL: Record<Meter, string> = { docs: "documents", sections: "section generations", words: "humanize words", chars: "read-aloud characters", checks: "AI-check words" };
 
 // South African time (UTC+2, no daylight saving) so "resets tomorrow" matches the user's day.
 function periodKey(p: Period, now = new Date()): string {
@@ -127,8 +127,8 @@ export function fairUse(meter: Meter, amountOf: (req: Request) => number = AMOUN
         const signedOut = who.plan === "guest";
         const message = limit === 0
           ? (signedOut ? "Please sign in to use this feature." : "This feature is available on paid plans.")
-          : `Fair use limit reached: ${limit.toLocaleString("en-ZA")} ${LABEL[meter]} per ${limits.period} on your plan` +
-            ` (used ${now.toLocaleString("en-ZA")}). It resets ${RESETS[limits.period]}.` +
+          : `Fair use limit reached: ${limit.toLocaleString("en-US")} ${LABEL[meter]} per ${limits.period} on your plan` +
+            ` (used ${now.toLocaleString("en-US")}). It resets ${RESETS[limits.period]}.` +
             (signedOut ? " Sign in for your own allowance." : who.plan === "free" ? " Upgrade for a higher allowance." : "");
         return res.status(403).json({ error: message, code: "fair_use_limit", meter, limit, used: now, plan: who.plan, resets: RESETS[limits.period] });
       }
@@ -151,6 +151,6 @@ export async function fairUseStatus(req: Request) {
   const limits = FAIR_USE[who.plan] ?? FAIR_USE.monthly;
   const pk = periodKey(limits.period);
   const out: Record<string, { used: number; limit: number }> = {};
-  for (const m of ["docs", "sections", "words", "chars"] as Meter[]) out[m] = { used: await used(who.key, pk, m), limit: limits[m] };
+  for (const m of ["docs", "sections", "words", "chars", "checks"] as Meter[]) out[m] = { used: await used(who.key, pk, m), limit: limits[m] };
   return { metered: true, plan: who.plan, period: limits.period, resets: RESETS[limits.period], usage: out };
 }

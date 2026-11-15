@@ -41,6 +41,8 @@ const Pricing = lazy(() => import("@/pages/pricing"));
 const CheckoutSuccess = lazy(() => import("@/pages/checkout-success"));
 const CheckoutCancel = lazy(() => import("@/pages/checkout-cancel"));
 const Humanize = lazy(() => import("@/pages/humanize"));
+const AiCheck = lazy(() => import("@/pages/ai-check"));
+const RewriteVerify = lazy(() => import("@/pages/rewrite-verify"));
 const Citations = lazy(() => import("@/pages/citations"));
 const GrammarCheck = lazy(() => import("@/pages/grammar-check"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -174,6 +176,8 @@ function Router() {
         <Route path="/generate/template-report" component={GenerateTemplateReport} />
         <Route path="/generate/images" component={GenerateImages} />
         <Route path="/humanize" component={Humanize} />
+        <Route path="/ai-check" component={AiCheck} />
+        <Route path="/rewrite-verify" component={RewriteVerify} />
         <Route path="/citations" component={Citations} />
         <Route path="/grammar-check" component={GrammarCheck} />
         <Route path="/about" component={About} />

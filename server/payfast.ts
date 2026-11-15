@@ -6,6 +6,8 @@ import type { Express, Request, Response } from "express";
 import express from "express";
 import { log } from "./app";
 import { firebaseSubscriptionStorage } from "./firebaseSubscriptionStorage";
+import { CREDIT_PACKS, addCredits } from "./credits";
+import { getOrder, startPaidOrder } from "./aiTools";
 
 // Provisional rand prices per plan (Payfast charges in ZAR). Change here only.
 export const PAYFAST_PRICES_ZAR: Record<string, { amount: number; days: number; label: string; recurring?: 3 | 6 }> = {
@@ -82,7 +84,16 @@ export function registerPayfastRoutes(app: Express) {
       const user = await uidFromRequest(req).catch(() => null);
       if (!user) return res.status(401).json({ error: "Please sign in first." });
       const tier = String(req.body?.tier || "");
-      const plan = PAYFAST_PRICES_ZAR[tier];
+      const pack = CREDIT_PACKS[tier];
+      let plan: { amount: number; days: number; label: string; recurring?: 3 | 6 } | undefined =
+        PAYFAST_PRICES_ZAR[tier] ?? (pack ? { amount: pack.amount, days: 0, label: pack.label } : undefined);
+      // One-time payment for a single Rewrite & Verify document: price comes from the saved order, never the browser.
+      const orderId = tier === "rv_once" ? String(req.body?.orderId || "") : "";
+      if (orderId) {
+        const order = await getOrder(orderId);
+        if (!order || order.uid !== user.uid || order.status !== "pending") return res.status(400).json({ error: "This order is not available." });
+        plan = { amount: order.amount, days: 0, label: "AcademicGen Rewrite & Verify (one document)" };
+      }
       if (!plan) return res.status(400).json({ error: "Unknown plan." });
       const c = config();
       if (!c.merchantId || !c.merchantKey) return res.status(503).json({ error: "Payments are not configured yet." });
@@ -92,7 +103,7 @@ export function registerPayfastRoutes(app: Express) {
       const pairs: [string, string][] = [
         ["merchant_id", c.merchantId],
         ["merchant_key", c.merchantKey],
-        ["return_url", `${site}/checkout-success?provider=payfast&tier=${tier}`],
+        ["return_url", orderId ? `${site}/rewrite-verify?order=${orderId}` : `${site}/checkout-success?provider=payfast&tier=${tier}`],
         ["cancel_url", `${site}/pricing?payment=cancelled`],
         ["notify_url", `${api}/api/payfast/notify`],
         ["email_address", user.email || ""],
@@ -101,6 +112,7 @@ export function registerPayfastRoutes(app: Express) {
         ["item_name", plan.label],
         ["custom_str1", user.uid],
         ["custom_str2", tier],
+        ["custom_str3", orderId],
       ];
       if (plan.recurring) {
         pairs.push(["subscription_type", "1"], ["recurring_amount", plan.amount.toFixed(2)], ["frequency", String(plan.recurring)], ["cycles", "0"]);
@@ -125,13 +137,26 @@ export function registerPayfastRoutes(app: Express) {
       if (c.signed && sign(pairs, c.passphrase) !== body.signature) return log("ITN rejected: bad signature", "payfast");
       if (body.merchant_id !== c.merchantId) return log("ITN rejected: merchant mismatch", "payfast");
       const tier = body.custom_str2;
-      const plan = PAYFAST_PRICES_ZAR[tier];
+      const pack = CREDIT_PACKS[tier];
+      const order = tier === "rv_once" ? await getOrder(body.custom_str3) : null;
+      const plan = PAYFAST_PRICES_ZAR[tier] ?? (pack ? { amount: pack.amount, days: 0, label: pack.label } : undefined)
+        ?? (order ? { amount: order.amount, days: 0, label: "Rewrite & Verify (one document)" } : undefined);
       if (!plan || Math.abs(parseFloat(body.amount_gross) - plan.amount) > 0.01) return log("ITN rejected: amount mismatch", "payfast");
       const check = await fetch(c.validateUrl, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: paramString(pairs) });
       if ((await check.text()).trim() !== "VALID") return log("ITN rejected: Payfast validation failed", "payfast");
       if (body.payment_status !== "COMPLETE") return log(`ITN status ${body.payment_status} for ${tier}`, "payfast");
 
       const uid = body.custom_str1;
+      if (order) {
+        if (order.uid !== uid) return log("ITN rejected: order owner mismatch", "payfast");
+        const r = await startPaidOrder(body.custom_str3, `payfast-${body.pf_payment_id || body.m_payment_id}`);
+        return log(`Payfast one-time document paid: order ${body.custom_str3} -> ${r}${c.sandbox ? " (sandbox)" : ""}`, "payfast");
+      }
+      if (pack) {
+        const ref = `payfast-${body.pf_payment_id || body.m_payment_id}`;
+        const added = await addCredits(uid, pack.credits, ref, `${pack.label} (Payfast${c.sandbox ? " sandbox" : ""})`);
+        return log(`Payfast credits ${added ? "added" : "already added"}: ${pack.credits} for ${tier}${c.sandbox ? " (sandbox)" : ""}`, "payfast");
+      }
       await firebaseSubscriptionStorage.getOrCreateSubscription(uid);
       const expiry = new Date(Date.now() + plan.days * 86400000);
       await firebaseSubscriptionStorage.activateSubscription(uid, `payfast:${body.token || body.pf_payment_id}`, tier, expiry);

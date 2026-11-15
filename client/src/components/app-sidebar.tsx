@@ -5,6 +5,7 @@ import {
   Home, FolderOpen, FileText, Presentation, BookOpen, BookMarked,
   GraduationCap, Sparkles, Info, Mail, Settings, LogIn, LogOut, User,
   Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star, LayoutTemplate, Scale, Languages,
+  ScanSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
@@ -48,7 +49,9 @@ export function AppSidebar() {
     { titleKey: "generators.thesis",           url: "/generate/thesis",        icon: GraduationCap, descKey: "Complete thesis" },
     { titleKey: "generators.aiImages",         url: "/generate/images",        icon: Image,         descKey: "Text-to-image" },
     { titleKey: "generators.references",       url: "/references",             icon: Library,       descKey: "Reference library" },
+    { titleKey: "generators.aiCheck",          url: "/ai-check",               icon: ScanSearch,    descKey: "AI-likeness check" },
     { titleKey: "generators.aiHumanizer",      url: "/humanize",               icon: Wand2,         descKey: "Natural academic rewriting" },
+    { titleKey: "generators.rewriteVerify",    url: "/rewrite-verify",         icon: Sparkles,      descKey: "Premium: rewrite, check, report" },
     { titleKey: "generators.citationChecker",  url: "/citations",              icon: BookMarked,    descKey: "Detect fake references" },
     { titleKey: "generators.grammarCheck",     url: "/grammar-check",          icon: Languages,     descKey: "Grammar & style check" },
   ];

@@ -24,6 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth-provider";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { PricingModal } from "@/components/pricing-modal";
+import { RewriteReview } from "@/components/rewrite-review";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -762,6 +763,12 @@ export default function Humanize() {
                         </Button>
                       </div>
                     </div>
+
+                    <RewriteReview
+                      original={originalText}
+                      rewritten={humanizedText}
+                      onApply={(text) => { setHumanizedText(text); setScores([]); setHumanizedAiScore(null); }}
+                    />
 
                     {/* Legend */}
                     {scores.length > 0 && (

@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 
 const TIER_ICONS = {
   day_pass: Clock,
@@ -421,6 +422,49 @@ export default function Pricing() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Rewrite & Verify credits (premium, pay per use) */}
+        <div className="space-y-4" id="credits">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">Rewrite &amp; Verify credits</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
+              Our premium service: we rewrite your text in a natural academic style, keep your facts and citations, check it,
+              rework the flagged parts and give you a final AI and plagiarism report. Pay per use with credits (1 credit = R1, never expire),
+              or pay once for a single document.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { tier: "credits_69", price: 69, credits: 69, note: "About 1,150 words" },
+              { tier: "credits_299", price: 299, credits: 320, note: "About 5,400 words, 21 bonus credits" },
+              { tier: "credits_799", price: 799, credits: 900, note: "About 15,000 words, best value" },
+            ].map((p) => (
+              <Card key={p.tier} className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl">{p.credits} credits</CardTitle>
+                  <CardDescription>{p.note}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1"><span className="text-3xl font-bold">R{p.price}</span></CardContent>
+                <CardFooter>
+                  <Button className="w-full" variant={p.price === 299 ? "default" : "outline"} data-testid={`button-buy-${p.tier}`}
+                    onClick={async () => {
+                      if (!isAuthenticated || !user) { toast({ title: t("pages.pricing.signInRequired"), description: t("pages.pricing.signInRequiredDesc"), variant: "destructive" }); return; }
+                      if (!(await startPayfast(p.tier).catch(() => false))) toast({ title: "Payment", description: "Could not open the payment page. Please try again.", variant: "destructive" });
+                    }}>
+                    Buy credits
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          <div className="rounded-lg border p-4 text-sm text-center">
+            <p><span className="font-semibold">Premium engine:</span> 59 credits per 1,000 words (minimum 300 words per job). More engines coming soon.</p>
+          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            No credits? Pay once for one document (credit price plus 20%, from R29) on the{" "}
+            <Link href="/rewrite-verify" className="underline">Rewrite &amp; Verify page</Link>. AI Check and the standard Rewrite are included in every plan.
+          </p>
         </div>
 
         {/* FAQ Section */}
