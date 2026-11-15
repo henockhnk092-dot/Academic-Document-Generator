@@ -35,10 +35,10 @@ const FEATURE_KEYS = ["feature1", "feature2", "feature3", "feature4", "feature5"
 
 // Fair-use allowance per plan (must match server/fairUse.ts). Generous for normal study, stops abuse.
 const FAIR_USE_TEXT: Record<string, { docs: string; extra: string }> = {
-  day_pass: { docs: "Up to 10 full documents in the day", extra: "10,000 humanize words and 20,000 read-aloud characters" },
-  weekly: { docs: "Up to 30 full documents a week", extra: "30,000 humanize words and 60,000 read-aloud characters a week" },
-  monthly: { docs: "Up to 100 full documents a month", extra: "100,000 humanize words and 150,000 read-aloud characters a month" },
-  yearly: { docs: "Up to 100 full documents every month", extra: "100,000 humanize words and 150,000 read-aloud characters every month" },
+  day_pass: { docs: "Up to 6 full documents in the day", extra: "5,000 humanize words and 8,000 read-aloud characters" },
+  weekly: { docs: "Up to 15 full documents a week", extra: "15,000 humanize words and 20,000 read-aloud characters a week" },
+  monthly: { docs: "Up to 50 full documents a month", extra: "60,000 humanize words and 50,000 read-aloud characters a month" },
+  yearly: { docs: "Up to 40 full documents every month", extra: "50,000 humanize words and 45,000 read-aloud characters every month" },
 };
 
 export default function Pricing() {

@@ -10,13 +10,16 @@ interface PlanLimits { period: Period; docs: number; sections: number; words: nu
 
 // docs = full documents (report, thesis, paper, slides); sections = single-section generations;
 // words = humanize/paraphrase words; chars = read-aloud characters (Azure / Gemini voices).
+// Worst case per plan (every meter maxed, paid Gemini ~R1.20 per thesis, ~R0.15 per section, ~R0.15 per
+// 1,000 humanize words, ~R0.29 per 1,000 Azure characters) stays at about 70-80% of what the plan nets after
+// the Payfast fee: Day R16 -> ~R12.5, Week R45 -> ~R32, Month R141 -> ~R101, Year ~R120/month -> ~R84.
 export const FAIR_USE: Record<string, PlanLimits> = {
-  guest:    { period: "day",   docs: 20,  sections: 60,  words: 0,      chars: 40000 }, // per IP (campus networks share IPs)
-  free:     { period: "day",   docs: 5,   sections: 25,  words: 2000,   chars: 20000 },
-  day_pass: { period: "day",   docs: 10,  sections: 60,  words: 10000,  chars: 20000 },
-  weekly:   { period: "week",  docs: 30,  sections: 150, words: 30000,  chars: 60000 },
-  monthly:  { period: "month", docs: 100, sections: 400, words: 100000, chars: 150000 },
-  yearly:   { period: "month", docs: 100, sections: 400, words: 100000, chars: 150000 },
+  guest:    { period: "day",   docs: 10, sections: 30,  words: 0,     chars: 20000 }, // per IP (campus networks share IPs)
+  free:     { period: "day",   docs: 3,  sections: 10,  words: 1000,  chars: 5000 },
+  day_pass: { period: "day",   docs: 6,  sections: 15,  words: 5000,  chars: 8000 },
+  weekly:   { period: "week",  docs: 15, sections: 40,  words: 15000, chars: 20000 },
+  monthly:  { period: "month", docs: 50, sections: 120, words: 60000, chars: 50000 },
+  yearly:   { period: "month", docs: 40, sections: 100, words: 50000, chars: 45000 },
 };
 const PAID = ["day_pass", "weekly", "monthly", "yearly", "pro", "business", "paid"];
 const LABEL: Record<Meter, string> = { docs: "documents", sections: "section generations", words: "humanize words", chars: "read-aloud characters" };
