@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
+import { TextInputWithUpload } from "@/components/text-input-with-upload";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -215,7 +216,7 @@ export default function RewriteVerify() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Your text</CardTitle>
-                <CardDescription>50 to {info?.maxWords.toLocaleString("en-US") ?? "5,000"} words per job. Headings, equations and reference lists are left as they are.</CardDescription>
+                <CardDescription>Paste or upload 50 to {info?.maxWords.toLocaleString("en-US") ?? "5,000"} words per job. Headings, equations and reference lists are left as they are.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {info?.launch && info.launch.left > 0 && (
@@ -223,7 +224,7 @@ export default function RewriteVerify() {
                     <span className="font-semibold">Launch offer:</span> your first document (up to {info.launch.maxWords.toLocaleString("en-US")} words) for only R{info.launch.price}. {info.launch.left} of {info.launch.slots} places left.
                   </div>
                 )}
-                <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste your text here..." className="min-h-[300px]" data-testid="input-rv" />
+                <TextInputWithUpload value={text} onChange={setText} placeholder="Paste your text here..." minHeight="min-h-[300px]" testId="input-rv" />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{words.toLocaleString("en-US")} words{tooLong ? " (too long, split it)" : ""}</span>
                   <Button variant="ghost" size="sm" onClick={() => setText("")} disabled={!text}><Trash2 className="w-4 h-4 mr-1" />Clear</Button>

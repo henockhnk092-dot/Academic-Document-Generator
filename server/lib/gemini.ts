@@ -52,9 +52,37 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
     }
   }
 
-  // All keys exhausted - rotate so the next request starts fresh
+  // All keys exhausted. The free tier allows only ~20 gemini-2.5-flash requests per day per key, so retry the
+  // same request on a lighter text model that has its own (much larger) free quota before giving up.
   currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.5-flash-lite";
+  if (fallbackModel && fallbackModel !== "none") {
+    for (let k = 0; k < API_KEYS.length; k++) {
+      try {
+        const result = await fn(withModelOverride(new GoogleGenAI({ apiKey: API_KEYS[k] }), fallbackModel));
+        console.warn(`Gemini: served by fallback model ${fallbackModel} (key ${k + 1}) after quota errors.`);
+        return result;
+      } catch (error: any) {
+        if (!isKeyFailureError(error)) throw error;
+        lastError = error;
+      }
+    }
+  }
   throw lastError;
+}
+
+// Same client, but text generation calls use `model` instead (speech and image models are left unchanged).
+function withModelOverride(client: GoogleGenAI, model: string): GoogleGenAI {
+  const swap = (p: any) => (p && typeof p.model === "string" && !/tts|image|imagen|veo/i.test(p.model) ? { ...p, model } : p);
+  const models = new Proxy(client.models as any, {
+    get(target, prop) {
+      const v = target[prop];
+      if (typeof v !== "function") return v;
+      if (prop === "generateContent" || prop === "generateContentStream") return (p: any) => v.call(target, swap(p));
+      return v.bind(target);
+    },
+  });
+  return new Proxy(client as any, { get: (t, prop) => (prop === "models" ? models : t[prop]) }) as GoogleGenAI;
 }
 
 const LANG_NAMES: Record<string, string> = {

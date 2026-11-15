@@ -25,6 +25,7 @@ import { useAuth } from "@/components/auth-provider";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { PricingModal } from "@/components/pricing-modal";
 import { RewriteReview } from "@/components/rewrite-review";
+import { SurpriseMeButton } from "@/components/text-input-with-upload";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -450,6 +451,9 @@ export default function Humanize() {
                   >
                     <ClipboardPaste size={13} /> {t("common.pasteText")}
                   </button>
+                  <div className="ml-auto self-center pr-1">
+                    <SurpriseMeButton onText={(txt) => { setInputText(txt); setFileName(""); setInputMode("paste"); }} />
+                  </div>
                 </div>
 
                 {/* Upload zone */}

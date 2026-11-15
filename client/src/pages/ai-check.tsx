@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ScanSearch, Loader2, ShieldCheck, AlertTriangle, Sparkles, Trash2 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
+import { TextInputWithUpload } from "@/components/text-input-with-upload";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,10 +57,10 @@ export default function AiCheck() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Your text</CardTitle>
-            <CardDescription>Paste 40 to 10,000 words. Included in your plan (fair use).</CardDescription>
+            <CardDescription>Paste or upload 40 to 10,000 words. Included in your plan (fair use).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste your paragraph, essay or chapter here..." className="min-h-[320px]" data-testid="input-ai-check" />
+            <TextInputWithUpload value={text} onChange={setText} placeholder="Paste your paragraph, essay or chapter here..." minHeight="min-h-[320px]" testId="input-ai-check" />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">{words.toLocaleString("en-US")} words</span>
               <div className="flex gap-2">

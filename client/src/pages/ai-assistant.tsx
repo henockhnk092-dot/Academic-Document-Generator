@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { azureAvailable, AZURE_VOICES, fetchAzureAudio, getSpeechPrefs } from "@/hooks/use-speech";
+import { getSpeechPrefs, useSpeech } from "@/hooks/use-speech";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File } from "lucide-react";
@@ -157,15 +157,18 @@ export default function AiAssistant() {
     }
   }, [messages]);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Same voice system as the rest of the site: the user's chosen engine and voice first (Azure neural by
+  // default), then automatic fallback Azure -> ElevenLabs -> VoiceRSS -> StreamElements -> Gemini -> browser,
+  // read sentence by sentence so long answers start quickly.
+  const { speak, stop: stopSpeech, speaking } = useSpeech();
+  const wasSpeaking = useRef(false);
+  useEffect(() => {
+    if (wasSpeaking.current && !speaking) setSpeakingId(null);
+    wasSpeaking.current = speaking;
+  }, [speaking]);
 
   // Cleanup TTS on unmount
-  useEffect(() => {
-    return () => {
-      window.speechSynthesis?.cancel();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    };
-  }, []);
+  useEffect(() => () => stopSpeech(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCopyMessage = async (text: string, messageId: number) => {
     const plainText = stripMarkdown(text);
@@ -178,45 +181,20 @@ export default function AiAssistant() {
     }
   };
 
-  const handleSpeak = async (text: string, messageId: number) => {
-    // Stop if already speaking this message
+  const handleSpeak = (text: string, messageId: number) => {
+    // Clicking the same message again stops it
     if (speakingId === messageId) {
-      window.speechSynthesis?.cancel();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      stopSpeech();
       setSpeakingId(null);
       return;
     }
-    // Stop any previous speech
-    window.speechSynthesis?.cancel();
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-
     const plainText = stripMarkdown(text);
+    const sentences = (plainText.match(/[^.!?\n]+[.!?]+["')\]]*|[^.!?\n]+(?=\n|$)/g) || [plainText])
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const prefs = getSpeechPrefs();
     setSpeakingId(messageId);
-
-    // Try Azure TTS first
-    if (azureAvailable) {
-      try {
-        const voice = getSpeechPrefs().voiceName || AZURE_VOICES[0]?.name || "en-US-JennyNeural";
-        const blob = await fetchAzureAudio(plainText, voice, 1);
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); setSpeakingId(null); audioRef.current = null; };
-        audio.onerror = () => { URL.revokeObjectURL(url); setSpeakingId(null); audioRef.current = null; };
-        await audio.play();
-        return;
-      } catch {
-        // fall through to browser TTS
-      }
-    }
-
-    // Browser TTS fallback
-    const utterance = new SpeechSynthesisUtterance(plainText);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.onend = () => setSpeakingId(null);
-    utterance.onerror = () => setSpeakingId(null);
-    window.speechSynthesis.speak(utterance);
+    speak(sentences, prefs.rate ?? 1, prefs.voiceName ?? null);
   };
 
   const scrollToBottom = () => {

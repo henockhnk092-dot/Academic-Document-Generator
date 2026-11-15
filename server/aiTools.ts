@@ -8,6 +8,7 @@ import { generateContent } from "./lib/gemini";
 import { isFirebaseAdminAvailable } from "./firebaseSubscriptionStorage";
 import { fairUse, AMOUNT } from "./fairUse";
 import { getBalance, addCredits, chargeCredits, refundCredits } from "./credits";
+import { getRandomTopic } from "../shared/random-topics";
 
 const UA = "AcademicGen/1.0 (+https://www.academicgen.com)";
 const words = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
@@ -249,22 +250,27 @@ async function runJob(j: Job, original: string, title: string) {
     const editable = chunks.filter((c) => c.edit);
     log(`Rewriting ${editable.length} passage(s) with the ${ENGINES[j.engine].label} engine.`);
     let targets = editable;
+    let best = { score: Infinity, texts: chunks.map((c) => c.text) };
     for (let round = 1; round <= MAX_ROUNDS; round++) {
       for (let i = 0; i < targets.length; i += 3) {
         await Promise.all(targets.slice(i, i + 3).map(async (c) => { c.text = await safeRewrite(j.engine, c.orig, c.text, log); }));
         j.progress = Math.min(85, Math.round(((round - 1) + (i + 3) / Math.max(targets.length, 1)) / MAX_ROUNDS * 80));
       }
-      const full = chunks.map((c) => c.text).join("\n\n");
+      const full = join(chunks);
       const det = await zerogptDetect(full);
       j.rounds.push({ round, score: det.score });
       log(`Round ${round}: AI-likeness ${det.score}%.`);
+      // A later round can score worse than an earlier one: always keep the best version seen.
+      if (det.score < best.score) best = { score: det.score, texts: chunks.map((c) => c.text) };
       if (det.score <= TARGET || round === MAX_ROUNDS) break;
       const flagged = det.flagged.map((f) => norm(f).slice(0, 60)).filter(Boolean);
       targets = editable.filter((c) => flagged.some((f) => norm(c.text).includes(f)));
       if (!targets.length) break;
       log(`Reworking ${targets.length} flagged passage(s).`);
     }
-    const final = chunks.map((c) => c.text).join("\n\n");
+    best.texts.forEach((t, i) => { chunks[i].text = t; });
+    if (j.rounds.length > 1) log(`Keeping the best round (${best.score}% AI-likeness).`);
+    const final = join(chunks);
     j.progress = 90;
     let quetext: any = null;
     if (process.env.QUETEXT_API_KEY && words(final) >= 50) {
@@ -396,6 +402,23 @@ export function registerAiTools(app: Express, deps: { geminiDetect: (t: string) 
     } catch (e: any) {
       res.status(500).json({ error: "The AI check failed. Please try again in a minute." });
       console.error("[ai-check]", e?.message);
+    }
+  });
+
+  // "Surprise me": a short academic paragraph on a random topic, so visitors can try the tools instantly.
+  app.post("/api/sample-text", fairUse("sections"), async (_req, res) => {
+    try {
+      const { topic, category } = getRandomTopic();
+      const text = await generateContent(
+        `Write one academic paragraph of 170 to 220 words for a university report on: "${topic}".
+Typical AI-assistant style is fine. Include one numeric citation marker like [1], one reference to "Figure 1" or "Table 1",
+and two or three concrete numbers with units. No heading, no title, no bullet points, no em dashes. Return only the paragraph.`,
+        { temperature: 1.0, maxTokens: 8192 },
+      );
+      res.json({ success: true, topic, category, text: text.trim() });
+    } catch (e: any) {
+      console.error("[sample-text]", e?.message);
+      res.status(500).json({ error: "Could not create a sample right now. Please try again." });
     }
   });
 
