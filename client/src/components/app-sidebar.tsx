@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
 import { useAuth } from "@/components/auth-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { BUSINESS } from "@/lib/business";
+import { BUSINESS, SOCIAL_LINKS } from "@/lib/business";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -211,6 +211,23 @@ export function AppSidebar() {
             {t("auth.signIn")}
           </Button>
         )}
+        {/* Follow us: shown on every page */}
+        <div className="flex flex-wrap items-center justify-center gap-0.5" aria-label="Follow AcademicGen">
+          {SOCIAL_LINKS.map((link) => (
+            <a
+              key={link.name}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${link.name}: ${link.handle ?? ""}`.trim()}
+              aria-label={link.name}
+              className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+              data-testid={`sidebar-social-${link.name.toLowerCase()}`}
+            >
+              <link.icon className="h-4 w-4" />
+            </a>
+          ))}
+        </div>
         <a
           href={BUSINESS.website}
           target="_blank"
