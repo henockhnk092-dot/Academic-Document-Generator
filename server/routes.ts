@@ -15,6 +15,7 @@ import { firebaseSubscriptionStorage } from "./firebaseSubscriptionStorage";
 import { USAGE_LIMITS, PRICING_TIERS } from "@shared/schema";
 import { getBMCCheckoutUrl, getBMCProducts, isBMCConfigured } from "./bmcClient";
 import { registerPayfastRoutes } from "./payfast";
+import { fairUse, fairUseStatus, AMOUNT } from "./fairUse";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const PAYMENT_PROVIDERS = ["bmc", "yoco", "stripe", "none"] as const;
@@ -139,6 +140,19 @@ const exportLimiter = rateLimit({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiters to AI and export routes
   app.use("/api/generate", generateLimiter);
+
+  // Fair use (server-side, cannot be skipped by calling the API directly). See server/fairUse.ts for the limits.
+  for (const p of ["/api/generate/report", "/api/generate/powerpoint", "/api/generate/conference", "/api/generate/thesis", "/api/generate/template-report"]) {
+    app.post(p, fairUse("docs"));
+  }
+  app.post("/api/generate/section", fairUse("sections"));
+  app.post("/api/humanize", fairUse("words", AMOUNT.words));
+  app.post("/api/tts/azure", fairUse("chars", AMOUNT.chars));
+  app.post("/api/tts/generate", fairUse("chars", AMOUNT.chars));
+  app.get("/api/fair-use", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json(await fairUseStatus(req).catch(() => ({ metered: false })));
+  });
   app.use("/api/export", exportLimiter);
   registerPayfastRoutes(app);
   // ── PDF Export ────────────────────────────────────────────────────────────

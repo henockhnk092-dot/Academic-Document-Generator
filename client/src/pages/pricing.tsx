@@ -33,6 +33,14 @@ const TIER_ORDER = ['day_pass', 'weekly', 'monthly', 'yearly'] as const;
 
 const FEATURE_KEYS = ["feature1", "feature2", "feature3", "feature4", "feature5", "feature6", "feature7", "feature8"] as const;
 
+// Fair-use allowance per plan (must match server/fairUse.ts). Generous for normal study, stops abuse.
+const FAIR_USE_TEXT: Record<string, { docs: string; extra: string }> = {
+  day_pass: { docs: "Up to 10 full documents in the day", extra: "10,000 humanize words and 20,000 read-aloud characters" },
+  weekly: { docs: "Up to 30 full documents a week", extra: "30,000 humanize words and 60,000 read-aloud characters a week" },
+  monthly: { docs: "Up to 100 full documents a month", extra: "100,000 humanize words and 150,000 read-aloud characters a month" },
+  yearly: { docs: "Up to 100 full documents every month", extra: "100,000 humanize words and 150,000 read-aloud characters every month" },
+};
+
 export default function Pricing() {
   const { t } = useTranslation();
 
@@ -176,6 +184,9 @@ export default function Pricing() {
             <Coffee className="h-4 w-4" />
             <span>{t("pages.pricing.securePayments")}</span>
           </div>
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto mt-3">
+            {t("pages.pricing.fairUseNote", { defaultValue: "Fair use: each plan includes a generous allowance for normal study. It resets automatically each day, week or month, and protects the service from automated abuse." })}
+          </p>
         </div>
 
         {/* Current Plan Status */}
@@ -267,7 +278,11 @@ export default function Pricing() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      <span>{t("pages.pricing.unlimitedGenerations")}</span>
+                      <span>{t(`pages.pricing.fairUseDocs_${tier}`, { defaultValue: FAIR_USE_TEXT[tier].docs })}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <span>{t(`pages.pricing.fairUseExtra_${tier}`, { defaultValue: FAIR_USE_TEXT[tier].extra })}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
