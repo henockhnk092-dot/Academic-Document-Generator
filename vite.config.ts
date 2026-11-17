@@ -10,12 +10,12 @@ export default defineConfig({
     runtimeErrorOverlay(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "favicon.svg", "apple-touch-icon.png", "icons/*.svg"],
+      includeAssets: ["favicon.ico", "favicon-16x16.png", "favicon-32x32.png", "apple-touch-icon.png", "icons/*.png", "og/*.jpg"],
       manifest: {
         name: "AcademicGen - AI Document Generator",
         short_name: "AcademicGen",
         description: "AI-powered platform for generating professional academic documents",
-        theme_color: "#6366f1",
+        theme_color: "#0B1220",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait-primary",
@@ -24,52 +24,58 @@ export default defineConfig({
         categories: ["education", "productivity", "utilities"],
         icons: [
           {
-            src: "/icons/icon-72x72.svg",
+            src: "/icons/icon-72x72.png",
             sizes: "72x72",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-96x96.svg",
+            src: "/icons/icon-96x96.png",
             sizes: "96x96",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-128x128.svg",
+            src: "/icons/icon-128x128.png",
             sizes: "128x128",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-144x144.svg",
+            src: "/icons/icon-144x144.png",
             sizes: "144x144",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-152x152.svg",
+            src: "/icons/icon-152x152.png",
             sizes: "152x152",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-192x192.svg",
+            src: "/icons/icon-192x192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-384x384.svg",
+            src: "/icons/icon-384x384.png",
             sizes: "384x384",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
           },
           {
-            src: "/icons/icon-512x512.svg",
+            src: "/icons/icon-512x512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "maskable any"
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "/icons/maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable"
           }
         ],
         shortcuts: [
@@ -77,19 +83,19 @@ export default defineConfig({
             name: "Generate Report",
             short_name: "Report",
             url: "/generate/report",
-            icons: [{ src: "/icons/icon-96x96.svg", sizes: "96x96" }]
+            icons: [{ src: "/icons/icon-96x96.png", sizes: "96x96" }]
           },
           {
             name: "Generate Presentation",
             short_name: "PPT",
             url: "/generate/powerpoint",
-            icons: [{ src: "/icons/icon-96x96.svg", sizes: "96x96" }]
+            icons: [{ src: "/icons/icon-96x96.png", sizes: "96x96" }]
           },
           {
             name: "My Projects",
             short_name: "Projects",
             url: "/projects",
-            icons: [{ src: "/icons/icon-96x96.svg", sizes: "96x96" }]
+            icons: [{ src: "/icons/icon-96x96.png", sizes: "96x96" }]
           }
         ]
       },
