@@ -8,7 +8,7 @@ export const BUSINESS = {
   name: "HNK IoT Solutions",
   legalName: "HNK IoT Solutions (Pty) Ltd",
   registration: "2026/647269/07",
-  founder: "Henock Mukonkole",
+  founder: "Henock Hnk",
   website: "https://hnkiot.com",
   email: "henock@hnkiot.com",
   supportEmail: "support@hnkiot.com",
