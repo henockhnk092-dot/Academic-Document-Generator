@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ScanSearch, Loader2, ShieldCheck, AlertTriangle, Sparkles, Trash2 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { TextInputWithUpload } from "@/components/text-input-with-upload";
+import { ResultTools } from "@/components/result-tools";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,6 +95,7 @@ export default function AiCheck() {
                     <span key={i} className={s.flagged ? "bg-red-200/70 dark:bg-red-900/50 rounded px-0.5" : ""}>{s.text} </span>
                   ))}
                 </div>
+                <ResultTools text={text} title="AI Check result" sentences={result.sentences} />
                 <div className="rounded-md bg-muted p-3 text-sm space-y-2">
                   <p>Want it to read more naturally?</p>
                   <div className="flex flex-wrap gap-2">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { TextInputWithUpload } from "@/components/text-input-with-upload";
+import { ResultTools } from "@/components/result-tools";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -201,11 +202,8 @@ export default function RewriteVerify() {
                       </details>
                     )}
                     <Textarea readOnly value={job.result.text} className="min-h-[320px]" />
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={copy}><Copy className="w-4 h-4 mr-1" />Copy</Button>
-                      <Button variant="outline" onClick={download}><Download className="w-4 h-4 mr-1" />Download .txt</Button>
-                      <Button variant="ghost" onClick={reset}>New text</Button>
-                    </div>
+                    <ResultTools text={job.result.text} title="Rewrite & Verify result" />
+                    <Button variant="ghost" onClick={reset}>New text</Button>
                     <p className="text-xs text-muted-foreground">Read it through and make it your own. Follow your university's rules on AI-assisted writing.</p>
                   </>
                 )}
