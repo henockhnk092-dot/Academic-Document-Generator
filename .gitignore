@@ -30,3 +30,6 @@ railway.exe
 # Firebase Admin SDK service account keys — NEVER commit these
 *firebase-adminsdk*.json
 *service-account*.json
+
+# large tutorial videos are deployed with the site, not stored in git
+client/public/videos/

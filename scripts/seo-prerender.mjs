@@ -30,6 +30,7 @@ const PAGES = [
   { route: "/references", title: "Reference Library: DOI, URL and BibTeX | AcademicGen", desc: "Save sources from a DOI or link, format them in any style and export BibTeX or RIS.", img: "home", priority: "0.6" },
   { route: "/templates", title: "Academic Document Templates | AcademicGen", desc: "Start from templates for technical reports, IEEE papers, theses and presentations.", img: "home", priority: "0.6" },
   { route: "/ai-assistant", title: "AI Writing Assistant Chat | AcademicGen", desc: "Ask questions about academic writing, structure, references and presentations, and listen to answers read aloud.", img: "home", priority: "0.6" },
+  { route: "/tutorials", title: "Video Tutorials: AI Check, Humanizer, Rewrite & Verify | AcademicGen", desc: "Watch short video tutorials of AcademicGen tools recorded on real text: AI Check, the AI Humanizer with Review with AI, and Rewrite & Verify.", img: "home", priority: "0.7" },
   { route: "/about", title: "About AcademicGen | Built in Cape Town by HNK IoT Solutions", desc: "AcademicGen is an AI academic writing assistant built in Cape Town by HNK IoT Solutions (Pty) Ltd.", img: "home", priority: "0.5" },
   { route: "/contact", title: "Contact AcademicGen | Support and WhatsApp", desc: "Questions about AcademicGen? Email support@hnkiot.com or WhatsApp +27 61 471 9400.", img: "home", priority: "0.5" },
   { route: "/legal", title: "Terms and Privacy | AcademicGen", desc: "Terms of use, privacy policy and fair use for AcademicGen by HNK IoT Solutions (Pty) Ltd.", img: "home", priority: "0.3" },
