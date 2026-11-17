@@ -190,12 +190,30 @@ export default function RewriteVerify() {
                 {job && <ul className="text-sm text-muted-foreground space-y-1">{job.log.map((l, i) => <li key={i}>{l}</li>)}</ul>}
                 {job?.result && (
                   <>
-                    {job.result.finalCheck && (
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        {job.result.finalCheck.aiScore !== null && job.result.finalCheck.aiScore !== undefined && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Final AI-likeness (independent check)</p><p className="text-2xl font-bold">{Math.round(Number(job.result.finalCheck.aiScore))}%</p></div>)}
-                        {job.result.finalCheck.plagiarism !== null && job.result.finalCheck.plagiarism !== undefined && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Plagiarism similarity</p><p className="text-2xl font-bold">{job.result.finalCheck.plagiarism}%</p></div>)}
-                      </div>
-                    )}
+                    {(() => {
+                      const rounds = job.result.rounds || [];
+                      const first = rounds.length ? rounds[0].score : null;
+                      const best = rounds.length ? Math.min(...rounds.map((r) => r.score)) : null;
+                      const fc = job.result.finalCheck;
+                      const has = (v: any) => v !== null && v !== undefined;
+                      return (
+                        <div className="space-y-3">
+                          {best !== null && (
+                            <div className="rounded-lg border-2 border-emerald-500/50 bg-emerald-500/5 p-4">
+                              <p className="text-xs text-muted-foreground">AI-likeness after rewrite (checked every round)</p>
+                              <p className="text-3xl font-bold">{Math.round(best)}%{first !== null && first > best ? <span className="text-base font-medium text-muted-foreground ml-2">from {Math.round(first)}%</span> : null}</p>
+                            </div>
+                          )}
+                          {fc && (has(fc.aiScore) || has(fc.plagiarism)) && (
+                            <div className="grid sm:grid-cols-2 gap-3">
+                              {has(fc.aiScore) && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Strict independent check (Quetext)</p><p className="text-xl font-semibold">{Math.round(Number(fc.aiScore))}%</p></div>)}
+                              {has(fc.plagiarism) && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Plagiarism similarity</p><p className="text-xl font-semibold">{fc.plagiarism}%</p></div>)}
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">AI detectors disagree and none is perfect; strict checkers often score technical writing high. Read the text, make it your own, and follow your university's rules.</p>
+                        </div>
+                      );
+                    })()}
                     {!!job.result.finalCheck?.sources?.length && (
                       <details className="text-sm"><summary className="cursor-pointer">Matched sources ({job.result.finalCheck.sources.length})</summary>
                         <ul className="mt-2 space-y-1">{job.result.finalCheck.sources.map((s, i) => <li key={i} className="truncate"><a className="underline" href={s.url} target="_blank" rel="noopener noreferrer">{s.url}</a> ({s.similar}%)</li>)}</ul>
