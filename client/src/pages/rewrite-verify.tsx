@@ -46,7 +46,7 @@ async function payfastRedirect(body: Record<string, string>): Promise<string | n
 }
 
 export default function RewriteVerify() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
   const [info, setInfo] = useState<EnginesInfo | null>(null);
   const [engine, setEngine] = useState("premium");
@@ -160,7 +160,7 @@ export default function RewriteVerify() {
   };
   const reset = () => { setJob(null); localStorage.removeItem(JOB_KEY); };
 
-  const enough = balance !== null && balance >= cost;
+  const enough = isAdmin || (balance !== null && balance >= cost);
 
   return (
     <GeneratorLayout
@@ -245,7 +245,7 @@ export default function RewriteVerify() {
                 ) : (
                   <div className="flex flex-wrap items-center gap-2 pt-2">
                     <Button onClick={runWithCredits} disabled={busy || tooShort || tooLong || !enough} data-testid="button-rv-credits">
-                      {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Coins className="w-4 h-4 mr-2" />}Run with credits ({cost})
+                      {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Coins className="w-4 h-4 mr-2" />}{isAdmin ? "Run (admin, free)" : `Run with credits (${cost})`}
                     </Button>
                     <Button variant="outline" onClick={payOnce} disabled={busy || tooShort || tooLong} data-testid="button-rv-once">
                       <CreditCard className="w-4 h-4 mr-2" />{launchFits ? `Pay once: R${info!.launch!.price} (launch offer)` : `Pay once: R${once}`}

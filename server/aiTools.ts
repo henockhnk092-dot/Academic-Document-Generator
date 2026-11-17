@@ -320,12 +320,22 @@ function validate(text: string, engine: string, uid: string): { status: number; 
   return null;
 }
 
+// Admin accounts (users/<uid>.isAdmin) run Rewrite & Verify without credits.
+async function isAdminUid(uid: string): Promise<boolean> {
+  try {
+    const db = await firestore();
+    const d = db ? (await db.collection("users").doc(uid).get()).data() : null;
+    return d?.isAdmin === true || d?.role === "admin";
+  } catch { return false; }
+}
+
 async function startJob(uid: string, text: string, engine: string, title: string): Promise<{ id: string; cost: number } | { status: number; error: string; code?: string; cost?: number }> {
   const w = words(text);
-  const cost = quote(engine, w);
+  const admin = await isAdminUid(uid);
+  const cost = admin ? 0 : quote(engine, w); // admins test for free (still uses engine words)
   const id = crypto.randomUUID();
   try {
-    await chargeCredits(uid, cost, id, `Rewrite & Verify, ${w} words, ${ENGINES[engine].label}`);
+    if (cost > 0) await chargeCredits(uid, cost, id, `Rewrite & Verify, ${w} words, ${ENGINES[engine].label}`);
   } catch (e: any) {
     if (e?.message === "not_enough_credits") return { status: 402, error: `This needs ${cost} credits. Please buy credits or pay once for this document.`, code: "not_enough_credits", cost };
     return { status: 500, error: "Could not reserve credits. Please try again." };
