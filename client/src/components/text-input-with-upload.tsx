@@ -25,9 +25,9 @@ export function SurpriseMeButton({ onText, size = "sm" }: { onText: (text: strin
         catch (e: any) { toast({ title: "Surprise me", description: e.message, variant: "destructive" }); }
         finally { setBusy(false); }
       }}
-      className={`inline-flex items-center gap-1.5 rounded-md bg-amber-400 text-slate-900 hover:bg-amber-300 shadow-sm transition-colors font-semibold disabled:opacity-60 ${size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
+      className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md bg-amber-400 text-slate-900 hover:bg-amber-300 shadow-sm transition-colors font-semibold disabled:opacity-60 ${size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
       title="Fill the box with a sample academic paragraph on a random topic" data-testid="button-surprise-me">
-      {busy ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} {busy ? "Writing a sample..." : "Surprise me: random topic"}
+      {busy ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} {busy ? "Writing..." : "Surprise me"}
     </button>
   );
 }
@@ -66,19 +66,19 @@ export function TextInputWithUpload({ value, onChange, placeholder, minHeight = 
 
   const tab = (m: "upload" | "paste", icon: JSX.Element, label: string) => (
     <button type="button" onClick={() => setMode(m)}
-      className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${mode === m ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+      className={`px-3 sm:px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${mode === m ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
       {icon} {label}
     </button>
   );
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap p-1 rounded-lg bg-muted gap-1 w-fit">
-          {tab("upload", <UploadCloud size={13} />, t("common.uploadFile", { defaultValue: "Upload file" }))}
-          {tab("paste", <ClipboardPaste size={13} />, t("common.pasteText", { defaultValue: "Paste text" }))}
+      <div className="flex items-center p-1 rounded-lg bg-muted gap-1">
+        {tab("upload", <UploadCloud size={13} />, t("common.uploadFile", { defaultValue: "Upload file" }))}
+        {tab("paste", <ClipboardPaste size={13} />, t("common.pasteText", { defaultValue: "Paste text" }))}
+        <div className="ml-auto shrink-0 pl-1">
+          <SurpriseMeButton onText={(txt) => { onChange(txt); setFileName(""); setMode("paste"); }} />
         </div>
-        <SurpriseMeButton onText={(txt) => { onChange(txt); setFileName(""); setMode("paste"); }} />
       </div>
 
       {mode === "upload" ? (

@@ -430,10 +430,10 @@ export default function Humanize() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Input mode tabs */}
-                <div className="flex flex-wrap p-1 rounded-lg bg-muted gap-1">
+                <div className="flex items-center p-1 rounded-lg bg-muted gap-1">
                   <button
                     onClick={() => setInputMode("upload")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-3 sm:px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                       inputMode === "upload"
                         ? "bg-background shadow text-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -443,7 +443,7 @@ export default function Humanize() {
                   </button>
                   <button
                     onClick={() => setInputMode("paste")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-3 sm:px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                       inputMode === "paste"
                         ? "bg-background shadow text-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -451,7 +451,7 @@ export default function Humanize() {
                   >
                     <ClipboardPaste size={13} /> {t("common.pasteText")}
                   </button>
-                  <div className="ml-auto self-center pr-1">
+                  <div className="ml-auto shrink-0 pl-1">
                     <SurpriseMeButton onText={(txt) => { setInputText(txt); setFileName(""); setInputMode("paste"); }} />
                   </div>
                 </div>
