@@ -25,9 +25,9 @@ export function SurpriseMeButton({ onText, size = "sm" }: { onText: (text: strin
         catch (e: any) { toast({ title: "Surprise me", description: e.message, variant: "destructive" }); }
         finally { setBusy(false); }
       }}
-      className={`inline-flex items-center gap-1.5 rounded-md border border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors font-medium disabled:opacity-60 ${size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
-      data-testid="button-surprise-me">
-      {busy ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} Surprise me
+      className={`inline-flex items-center gap-1.5 rounded-md bg-amber-400 text-slate-900 hover:bg-amber-300 shadow-sm transition-colors font-semibold disabled:opacity-60 ${size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
+      title="Fill the box with a sample academic paragraph on a random topic" data-testid="button-surprise-me">
+      {busy ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} {busy ? "Writing a sample..." : "Surprise me: random topic"}
     </button>
   );
 }
