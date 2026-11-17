@@ -823,7 +823,7 @@
       "reportWordCount": "字数统计",
       "reportRoundProgression": "回合进展",
       "reportNoRounds": "还没有释义回合。",
-      "reportRoundLine": "回合 {{round}}：{{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "回合 {{round}}：{{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "句子分析",
       "reportNoSentenceData": "没有可用的句子数据。",
       "reportAiLabel": "人工智能{{score}}%",

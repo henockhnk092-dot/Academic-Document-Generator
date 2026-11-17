@@ -40,7 +40,14 @@ interface Round {
   roundNumber: number;
   aiBefore: number;
   aiAfter: number;
+  kept?: boolean; // the round scored the same or worse, so the better previous version was kept
 }
+
+// Signed change: improvements are negative ("-32%"), worse rounds positive ("+32%").
+const signedDelta = (before: number, after: number) => {
+  const d = Math.round(after - before);
+  return d > 0 ? `+${d}` : d < 0 ? `-${Math.abs(d)}` : "0";
+};
 
 // ── Subcomponents ─────────────────────────────────────────────────────────────
 
@@ -140,7 +147,7 @@ function buildReport(params: {
     lines.push(t("pages.humanize.reportNoRounds"));
   } else {
     rounds.forEach(r =>
-      lines.push(t("pages.humanize.reportRoundLine", { round: r.roundNumber, before: r.aiBefore, after: r.aiAfter, delta: r.aiBefore - r.aiAfter }))
+      lines.push(t("pages.humanize.reportRoundLine", { round: r.roundNumber, before: r.aiBefore, after: r.aiAfter, delta: signedDelta(r.aiBefore, r.aiAfter) + (r.kept ? ", kept previous" : "") }))
     );
   }
   lines.push("", t("pages.humanize.reportSentenceAnalysis"), "-----------------");
@@ -322,14 +329,19 @@ export default function Humanize() {
       const token = await getAuthToken();
       const data: any = await apiRequest("POST", "/api/humanize", { text: humanizedText, mode, uid: user?.uid, token });
       const aiAfter = data.humanizedAiScore ?? 0;
-      setHumanizedText(data.humanizedText || humanizedText);
-      setScores(data.humanizedScores || scores);
-      setHumanizedAiScore(aiAfter);
-      setModelUsed(data.modelUsed || modelUsed);
-      setRounds(prev => [...prev, { roundNumber: prev.length + 1, aiBefore, aiAfter }]);
+      const improved = data.humanizedText && aiAfter < aiBefore;
+      if (improved) {
+        setHumanizedText(data.humanizedText);
+        setScores(data.humanizedScores || scores);
+        setHumanizedAiScore(aiAfter);
+        setModelUsed(data.modelUsed || modelUsed);
+      }
+      setRounds(prev => [...prev, { roundNumber: prev.length + 1, aiBefore, aiAfter, kept: !improved }]);
       toast({
         title: t("pages.humanize.paraphraseCompleteTitle", { round: rounds.length + 1 }),
-        description: t("pages.humanize.paraphraseCompleteDesc", { before: aiBefore, after: aiAfter }),
+        description: improved
+          ? t("pages.humanize.paraphraseCompleteDesc", { before: aiBefore, after: aiAfter })
+          : `No improvement this round (${aiBefore}% to ${aiAfter}%), so your better version was kept.`,
       });
     } catch (err: any) {
       if (err.message === "upgrade_required") { setShowUpgradeModal(true); return; }
@@ -915,7 +927,7 @@ export default function Humanize() {
                               {" → "}
                               <span className="text-emerald-600">{r.aiAfter}%</span>
                             </span>
-                            <span className="text-xs text-muted-foreground">−{r.aiBefore - r.aiAfter}%</span>
+                            <span className="text-xs text-muted-foreground">{signedDelta(r.aiBefore, r.aiAfter)}%{r.kept ? " (kept previous)" : ""}</span>
                           </div>
                         ))}
                       </div>

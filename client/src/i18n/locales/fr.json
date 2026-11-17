@@ -1044,7 +1044,7 @@
       "reportWordCount": "Nombre de mots",
       "reportRoundProgression": "PROGRESSION EN ROND",
       "reportNoRounds": "Pas encore de tours de paraphrase.",
-      "reportRoundLine": "Tour {{round}} : {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Tour {{round}} : {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "ANALYSE DE PHRASES",
       "reportNoSentenceData": "Aucune donnée sur les phrases disponible.",
       "reportAiLabel": "IA {{score}}%",

@@ -823,7 +823,7 @@
       "reportWordCount": "単語数",
       "reportRoundProgression": "ラウンドプログレッション",
       "reportNoRounds": "言い換えラウンドはまだありません。",
-      "reportRoundLine": "ラウンド {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "ラウンド {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "文章分析",
       "reportNoSentenceData": "文章データがありません。",
       "reportAiLabel": "AI {{score}}%",

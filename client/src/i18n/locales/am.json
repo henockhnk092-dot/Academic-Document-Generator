@@ -823,7 +823,7 @@
       "reportWordCount": "የቃል ብዛት",
       "reportRoundProgression": "ዙር እድገት",
       "reportNoRounds": "እስካሁን ምንም የትርጉም ጥቅስ የለም።",
-      "reportRoundLine": "ዙር {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "ዙር {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "የአረፍተ ነገር ትንተና",
       "reportNoSentenceData": "ምንም የአረፍተ ነገር ውሂብ አይገኝም።",
       "reportAiLabel": "AI {{score}}%",

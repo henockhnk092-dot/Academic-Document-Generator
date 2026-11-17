@@ -823,7 +823,7 @@
       "reportWordCount": "عدد الكلمات",
       "reportRoundProgression": "تقدم الجولة",
       "reportNoRounds": "لا توجد جولات إعادة صياغة حتى الآن.",
-      "reportRoundLine": "الجولة {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "الجولة {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "تحليل الجملة",
       "reportNoSentenceData": "لا توجد بيانات الجملة المتاحة.",
       "reportAiLabel": "الذكاء الاصطناعي {{score}}%",

@@ -1044,7 +1044,7 @@
       "reportWordCount": "Conteo de palabras",
       "reportRoundProgression": "PROGRESIÓN DE RONDA",
       "reportNoRounds": "Aún no hay rondas de paráfrasis.",
-      "reportRoundLine": "Ronda {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Ronda {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "ANÁLISIS DE ORACIONES",
       "reportNoSentenceData": "No hay datos de sentencia disponibles.",
       "reportAiLabel": "IA {{score}}%",

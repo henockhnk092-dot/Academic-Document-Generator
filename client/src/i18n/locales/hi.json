@@ -823,7 +823,7 @@
       "reportWordCount": "शब्द गणना",
       "reportRoundProgression": "गोल प्रगति",
       "reportNoRounds": "अभी तक कोई पैराफ़्रेज़ राउंड नहीं।",
-      "reportRoundLine": "गोल {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "गोल {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "वाक्य विश्लेषण",
       "reportNoSentenceData": "कोई वाक्य डेटा उपलब्ध नहीं है.",
       "reportAiLabel": "एआई {{score}}%",

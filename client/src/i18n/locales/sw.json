@@ -823,7 +823,7 @@
       "reportWordCount": "Hesabu ya Neno",
       "reportRoundProgression": "MAENDELEO YA MZUNGUKO",
       "reportNoRounds": "Bado hakuna duru za vifungu vya maneno.",
-      "reportRoundLine": "Raundi ya {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Raundi ya {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "UCHAMBUZI WA SENTENSI",
       "reportNoSentenceData": "Hakuna data ya sentensi inayopatikana.",
       "reportAiLabel": "AI {{score}}%",

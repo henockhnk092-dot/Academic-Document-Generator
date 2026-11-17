@@ -823,7 +823,7 @@
       "reportWordCount": "단어 수",
       "reportRoundProgression": "라운드 진행",
       "reportNoRounds": "아직 의역 라운드가 없습니다.",
-      "reportRoundLine": "라운드 {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "라운드 {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "문장 분석",
       "reportNoSentenceData": "문장 데이터가 없습니다.",
       "reportAiLabel": "AI {{score}}%",

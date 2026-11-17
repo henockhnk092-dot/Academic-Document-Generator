@@ -823,7 +823,7 @@
       "reportWordCount": "Wortanzahl",
       "reportRoundProgression": "RUNDER FORTSCHRITT",
       "reportNoRounds": "Noch keine Paraphrasierungsrunden.",
-      "reportRoundLine": "Runde {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Runde {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "SATZANALYSE",
       "reportNoSentenceData": "Keine Satzdaten verfügbar.",
       "reportAiLabel": "KI {{score}}%",

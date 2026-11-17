@@ -823,7 +823,7 @@
       "reportWordCount": "Contagem de palavras",
       "reportRoundProgression": "PROGRESSÃO RODADA",
       "reportNoRounds": "Nenhuma rodada de paráfrase ainda.",
-      "reportRoundLine": "Rodada {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Rodada {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "ANÁLISE DE SENTENÇA",
       "reportNoSentenceData": "Nenhum dado de frase disponível.",
       "reportAiLabel": "IA {{score}}%",

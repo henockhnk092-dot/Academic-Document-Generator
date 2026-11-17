@@ -967,7 +967,7 @@
       "reportWordCount": "Word Count",
       "reportRoundProgression": "ROUND PROGRESSION",
       "reportNoRounds": "No paraphrase rounds yet.",
-      "reportRoundLine": "Round {{round}}: {{before}}% -> {{after}}% (-{{delta}}%)",
+      "reportRoundLine": "Round {{round}}: {{before}}% -> {{after}}% ({{delta}}%)",
       "reportSentenceAnalysis": "SENTENCE ANALYSIS",
       "reportNoSentenceData": "No sentence data available.",
       "reportAiLabel": "AI {{score}}%",
