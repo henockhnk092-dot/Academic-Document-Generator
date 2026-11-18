@@ -83,6 +83,19 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
         if (isTransientError(error)) await pause(2000);
       }
     }
+    // Busy spikes usually pass within seconds: a few patient retries on the fallback model before giving up.
+    for (const wait of [3000, 6000, 12000]) {
+      if (!isTransientError(lastError)) break;
+      await pause(wait);
+      try {
+        const result = await fn(withModelOverride(new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex % API_KEYS.length] }), fallbackModel));
+        console.warn(`Gemini: served by ${fallbackModel} after a busy retry.`);
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        if (!isKeyFailureError(error) && !isTransientError(error)) throw error;
+      }
+    }
   }
   throw lastError;
 }
