@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getSpeechPrefs, useSpeech } from "@/hooks/use-speech";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File, Lightbulb } from "lucide-react";
+import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File, Lightbulb, Info } from "lucide-react";
 import { useFileUpload } from "@/hooks/use-file-upload";
 
 function formatMarkdown(text: string): JSX.Element {
@@ -164,6 +164,8 @@ export default function AiAssistant() {
   // Quick Prompts panel: shown by default, the reader's choice is remembered on this device
   const [showPrompts, setShowPrompts] = useState(() => { try { return localStorage.getItem("ag_assistant_prompts") !== "hidden"; } catch { return true; } });
   const togglePrompts = (v: boolean) => { setShowPrompts(v); try { localStorage.setItem("ag_assistant_prompts", v ? "shown" : "hidden"); } catch { /* private mode */ } };
+  const [showTips, setShowTips] = useState(() => { try { return localStorage.getItem("ag_assistant_tips") !== "hidden"; } catch { return true; } });
+  const toggleTips = (v: boolean) => { setShowTips(v); try { localStorage.setItem("ag_assistant_tips", v ? "shown" : "hidden"); } catch { /* private mode */ } };
   const wasSpeaking = useRef(false);
   useEffect(() => {
     if (wasSpeaking.current && !speaking) setSpeakingId(null);
@@ -287,7 +289,7 @@ export default function AiAssistant() {
             <Card className={showPrompts ? "lg:col-span-3" : "lg:col-span-4"}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 whitespace-nowrap">
                     <Bot className="w-5 h-5 text-primary" />
                     {t("pages.aiAssistant.chatTitle")}
                   </CardTitle>
@@ -295,6 +297,10 @@ export default function AiAssistant() {
                     <Button variant={showPrompts ? "secondary" : "ghost"} size="sm" onClick={() => togglePrompts(!showPrompts)} aria-pressed={showPrompts}
                       title={showPrompts ? "Hide quick prompts" : "Show quick prompts"} data-testid="button-toggle-prompts">
                       <Lightbulb className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Prompts</span>
+                    </Button>
+                    <Button variant={showTips ? "secondary" : "ghost"} size="sm" onClick={() => toggleTips(!showTips)} aria-pressed={showTips}
+                      title={showTips ? "Hide tips" : "Show tips"} data-testid="button-toggle-tips">
+                      <Info className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Tips</span>
                     </Button>
                     <Button variant="ghost" size="sm" onClick={clearChat}>
                       <Eraser className="w-4 h-4 mr-2" />
@@ -502,9 +508,12 @@ export default function AiAssistant() {
             </Card>}
           </div>
 
-          <Card className="border-primary/20 bg-primary/5">
+          {showTips && <Card className="border-primary/20 bg-primary/5" data-testid="card-tips">
             <CardContent className="pt-4 pb-4">
-              <p className="text-sm font-semibold text-primary mb-2">{t("pages.aiAssistant.tipTitle")}</p>
+              <div className="flex items-start gap-2 mb-2">
+                <p className="text-sm font-semibold text-primary flex-1">{t("pages.aiAssistant.tipTitle")}</p>
+                <Button size="icon" variant="ghost" className="h-7 w-7 -mt-1 -mr-2 shrink-0" onClick={() => toggleTips(false)} aria-label="Hide tips" data-testid="button-hide-tips"><X className="w-4 h-4" /></Button>
+              </div>
               <ul className="space-y-1">
                 {(["tipBullet1", "tipBullet2", "tipBullet3"] as const).map((key) => (
                   <li key={key} className="flex gap-2 items-start text-sm text-muted-foreground">
@@ -514,7 +523,7 @@ export default function AiAssistant() {
                 ))}
               </ul>
             </CardContent>
-          </Card>
+          </Card>}
       </div>
     </div>
   );
