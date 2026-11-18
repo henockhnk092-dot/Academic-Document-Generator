@@ -156,6 +156,8 @@ export default function Settings() {
   const [adminKeyEdits, setAdminKeyEdits] = useState<Record<string, string>>({});
   const [adminKeyVisible, setAdminKeyVisible] = useState<Record<string, boolean>>({});
   const [adminKeysLoading, setAdminKeysLoading] = useState(false);
+  // The server has its own, stricter admin list (ADMIN_EMAILS). If it says no, hide the panel instead of showing an error.
+  const [serverAdmin, setServerAdmin] = useState(true);
   const [adminKeysSaving, setAdminKeysSaving] = useState(false);
   const [paraphraseModel, setParaphraseModel] = useState("auto");
   const [requirePaidForScan, setRequirePaidForScan] = useState(true);
@@ -236,6 +238,7 @@ export default function Settings() {
     try {
       const headers = await getAdminHeaders();
       const response = await fetch("/api/admin/config", { headers });
+      if (response.status === 403 || response.status === 401) { setServerAdmin(false); return; }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Forbidden");
       const entries = (data.entries || []) as AdminConfigEntry[];
@@ -958,7 +961,7 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
-              {isAdmin && (
+              {isAdmin && serverAdmin && (
                 <p className="text-xs text-muted-foreground mt-2">
                   API keys for Pixabay, Pexels, and Unsplash are configured in the Admin panel below.
                 </p>
@@ -1035,7 +1038,7 @@ export default function Settings() {
           </Button>
         </div>
 
-        {isAdmin && (
+        {isAdmin && serverAdmin && (
           <Card className="border-red-500/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
