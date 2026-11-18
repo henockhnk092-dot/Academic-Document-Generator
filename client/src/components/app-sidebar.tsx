@@ -5,7 +5,7 @@ import {
   Home, FolderOpen, FileText, Presentation, BookOpen, BookMarked,
   GraduationCap, Sparkles, Info, Mail, Settings, LogIn, LogOut, User,
   Layout, Library, Bot, BarChart3, Image, FileSignature, Crown, Wand2, Star, LayoutTemplate, Scale, Languages,
-  ScanSearch, PlayCircle,
+  ScanSearch, PlayCircle, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthDialog } from "@/components/auth-dialog";
@@ -62,6 +62,7 @@ export function AppSidebar() {
 
   const supportItems = [
     { titleKey: "support.tutorials", url: "/tutorials", icon: PlayCircle },
+    { titleKey: "support.download", url: "/download", icon: Download },
     { titleKey: "support.about",    url: "/about",    icon: Info },
     { titleKey: "support.contact",  url: "/contact",  icon: Mail },
     { titleKey: "support.legal",    url: "/legal",    icon: Scale },

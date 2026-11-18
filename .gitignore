@@ -33,3 +33,4 @@ railway.exe
 
 # large tutorial videos are deployed with the site, not stored in git
 client/public/videos/
+client/public/downloads/

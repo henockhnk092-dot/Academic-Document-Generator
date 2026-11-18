@@ -44,6 +44,7 @@ const Humanize = lazy(() => import("@/pages/humanize"));
 const AiCheck = lazy(() => import("@/pages/ai-check"));
 const RewriteVerify = lazy(() => import("@/pages/rewrite-verify"));
 const Tutorials = lazy(() => import("@/pages/tutorials"));
+const DownloadPage = lazy(() => import("@/pages/download"));
 const Citations = lazy(() => import("@/pages/citations"));
 const GrammarCheck = lazy(() => import("@/pages/grammar-check"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -180,6 +181,7 @@ function Router() {
         <Route path="/ai-check" component={AiCheck} />
         <Route path="/rewrite-verify" component={RewriteVerify} />
         <Route path="/tutorials" component={Tutorials} />
+        <Route path="/download" component={DownloadPage} />
         <Route path="/citations" component={Citations} />
         <Route path="/grammar-check" component={GrammarCheck} />
         <Route path="/about" component={About} />
