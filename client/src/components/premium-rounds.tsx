@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Premium rounds on the Humanizer page: the same pipeline as Rewrite & Verify (WriteHuman engine, fact guard,
 // "fix then rehumanize", fresh retries, independent ZeroGPT score each round, Quetext final report).
-// It is the method that took our own thesis from 97.4% to 18.4% AI-likeness on Quetext.
+// Measured on long academic documents in internal benchmarks (Quetext as the independent judge).
 type Round = { round: number; score: number };
 type Job = {
   status: "running" | "done" | "failed"; progress: number; log: string[]; rounds: Round[]; before?: number | null; error?: string;
@@ -84,7 +84,7 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center"><Sparkles className="w-4 h-4" /></div>
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">Premium rounds <Badge variant="secondary" className="text-[10px]">Thesis method</Badge></CardTitle>
+            <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">Premium rounds <Badge variant="secondary" className="text-[10px]">Best results</Badge></CardTitle>
             <CardDescription className="text-xs sm:text-sm">
               Our strongest engine rewrites your text in several rounds. After each round an independent detector scores it, flagged parts are reworked, and your numbers and citations are protected. You get the best round plus a final AI and plagiarism report.
             </CardDescription>

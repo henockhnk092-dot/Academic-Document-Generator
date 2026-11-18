@@ -147,7 +147,7 @@ async function quetextReport(kind: "ai-detect-report" | "report", text: string, 
   return ((await r.json().catch(() => ({}))) as any)?.data ?? {};
 }
 
-// ── fact guard (same rules as our thesis pipeline) ──
+// ── fact guard (same rules as our document pipeline) ──
 const CITE_RE = /\[\d+(?:\s*[-–,]\s*\d+)*\]|\([A-Z][^()]{0,80}?\d{4}[a-z]?\)|[A-Z][A-Za-z\-]+(?: et al\.)? \(\d{4}[a-z]?\)/g;
 const NUM_RE = /(?<![A-Za-z])[-±]?\d+(?:[.,]\d+)*/g;
 const REF_RE = /\b(?:Figure|Fig\.|Table|Section|Chapter|Equation|Eq\.|Appendix)\s+[A-Z]?\d+(?:\.\d+)*/gi;
@@ -185,7 +185,7 @@ ${rewritten}`,
 }
 
 // Rewrite one chunk, then guard its facts against the original; returns the best safe version.
-// Method from the thesis and conference-paper runs (Quetext 97.4% -> 18.4% and 93.3% -> 17.9%):
+// Method from internal benchmarks on long academic documents (independent Quetext checks):
 //  - "fix, then rehumanize": a fact repair puts the original's phrasing back, which detectors flag again, so the
 //    repaired text goes through the engine once more and is kept only if its facts still match;
 //  - `fresh` starts from the ORIGINAL passage instead of the last output (fresh attempts rescued many passages).
