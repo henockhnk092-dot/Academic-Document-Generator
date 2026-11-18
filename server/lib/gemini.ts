@@ -29,6 +29,15 @@ function isKeyFailureError(error: any): boolean {
   );
 }
 
+// Google's temporary overload answers (503 "high demand", 500, UNAVAILABLE): retry on another key/model instead of failing.
+function isTransientError(error: any): boolean {
+  const status = error?.status ?? error?.code ?? error?.error?.code;
+  const msg = String(error?.message ?? "").toLowerCase();
+  return status === 503 || status === 500 || status === 504 || msg.includes("unavailable") || msg.includes("high demand") ||
+    msg.includes("overloaded") || msg.includes("try again later") || msg.includes("deadline") || msg.includes('"code":503') || msg.includes('"code":500');
+}
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<T> {
   if (API_KEYS.length === 0) {
     throw new Error("No Gemini API keys configured. Add GEMINI_API_KEY_1 (and optionally _2, _3) to environment variables.");
@@ -48,7 +57,13 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
         lastError = error;
         continue;
       }
-      throw error; // non-key error - rethrow immediately
+      if (isTransientError(error)) {
+        console.warn(`Gemini busy on key ${keyIndex + 1} (${String(error?.message ?? error).slice(0, 120)}), retrying...`);
+        lastError = error;
+        await pause(1500);
+        continue;
+      }
+      throw error; // other errors (bad request, safety) - rethrow immediately
     }
   }
 
@@ -63,8 +78,9 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
         console.warn(`Gemini: served by fallback model ${fallbackModel} (key ${k + 1}) after quota errors.`);
         return result;
       } catch (error: any) {
-        if (!isKeyFailureError(error)) throw error;
+        if (!isKeyFailureError(error) && !isTransientError(error)) throw error;
         lastError = error;
+        if (isTransientError(error)) await pause(2000);
       }
     }
   }
