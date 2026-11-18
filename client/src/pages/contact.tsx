@@ -82,7 +82,7 @@ export default function Contact() {
     <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-contact">
       <div className="space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t("pages.contact.title")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("pages.contact.title")}</h1>
           <p className="text-muted-foreground">
             {t("pages.contact.subtitle")}
           </p>

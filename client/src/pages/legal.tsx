@@ -122,7 +122,7 @@ export default function Legal() {
               <Scale className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("pages.legal.title")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("pages.legal.title")}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">{t("pages.legal.subtitle")}</p>
           <div className="flex flex-wrap justify-center gap-2">
             <Badge variant="secondary" className="flex items-center gap-1.5"><HelpCircle className="h-3.5 w-3.5" /> {faqs.length} {t("pages.legal.faqsAnswered")}</Badge>

@@ -99,7 +99,7 @@ export default function About() {
               <Sparkles className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("pages.about.title")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("pages.about.title")}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             {t("pages.about.tagline")}
           </p>

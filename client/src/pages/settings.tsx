@@ -407,7 +407,7 @@ export default function Settings() {
     <div className="container max-w-6xl py-8 px-4 mx-auto 3xl:max-w-[1760px]" data-testid="page-settings">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <SettingsIcon className="h-8 w-8" />
             {t("pages.settings.title")}
           </h1>

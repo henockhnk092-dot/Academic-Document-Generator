@@ -314,7 +314,7 @@ export default function Templates() {
     <div className="container mx-auto px-4 py-8 max-w-7xl 3xl:max-w-[1760px]" data-testid="page-templates">
       <div className="mb-8 space-y-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{t("pages.templates.title")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t("pages.templates.title")}</h1>
           <p className="text-muted-foreground">
             {t("pages.templates.subtitle")}
           </p>

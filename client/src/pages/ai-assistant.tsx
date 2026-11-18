@@ -275,7 +275,7 @@ export default function AiAssistant() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl 3xl:max-w-[1760px]" data-testid="page-ai-assistant">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t("pages.aiAssistant.title")}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t("pages.aiAssistant.title")}</h1>
         <p className="text-muted-foreground">{t("pages.aiAssistant.subtitle")}</p>
       </div>
 

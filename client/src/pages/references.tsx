@@ -836,7 +836,7 @@ export default function References() {
       <div className="mb-8 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{t("pages.references.title")}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t("pages.references.title")}</h1>
             <p className="text-muted-foreground">
               {t("pages.references.subtitle")}
             </p>

@@ -174,11 +174,11 @@ export default function Pricing() {
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
-            <Crown className="h-10 w-10 text-primary" />
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight flex items-center justify-center gap-3">
+            <Crown className="h-7 w-7 sm:h-10 sm:w-10 text-primary" />
             {t("pages.pricing.title")}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             {t("pages.pricing.subtitle")}
           </p>
           <div className="flex items-center justify-center gap-2 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 py-2 px-4 rounded-lg max-w-md mx-auto">
