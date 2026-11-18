@@ -314,13 +314,13 @@ export function ChatbotWidget() {
         className={cn(
           "fixed transition-all duration-300 ease-in-out",
           isOpen
-            ? "inset-x-0 bottom-0 top-12 z-[9999] sm:z-50 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[min(360px,calc(100vw-1rem))] sm:h-[500px] sm:max-h-[85vh] sm:rounded-lg"
+            ? "inset-x-0 top-0 h-[100dvh] z-[9999] sm:z-50 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[min(360px,calc(100vw-1rem))] sm:h-[500px] sm:max-h-[85vh] sm:rounded-lg"
             : "z-50 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] right-2 sm:right-4 w-auto h-auto"
         )}
       >
         {isOpen ? (
-          <div className="flex flex-col h-screen sm:h-full w-full bg-background border-0 sm:border sm:rounded-lg shadow-lg overflow-hidden">
-            <div className="flex items-center justify-between p-2 sm:p-3 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:pt-3 border-b bg-muted/30">
+          <div className="flex flex-col h-full w-full bg-background border-0 sm:border sm:rounded-lg shadow-lg overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between p-2 sm:p-3 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:pt-3 border-b bg-muted/30">
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
@@ -362,7 +362,7 @@ export function ChatbotWidget() {
               </div>
             </div>
 
-            <ScrollArea className="flex-1 p-2 sm:p-3" ref={scrollAreaRef}>
+            <ScrollArea className="flex-1 min-h-0 p-2 sm:p-3" ref={scrollAreaRef}>
               <div className="space-y-2 sm:space-y-3">
                 {messages.map((message) => (
                   <div
@@ -454,7 +454,7 @@ export function ChatbotWidget() {
               </div>
             </ScrollArea>
 
-            <div className="p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-3 border-t space-y-1.5">
+            <div className="shrink-0 bg-background p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-3 border-t space-y-1.5">
               {attachedFile && (
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded text-xs">
                   <FileText className="h-3 w-3 shrink-0 text-primary" />
@@ -498,7 +498,7 @@ export function ChatbotWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading}
-                  className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
+                  className="flex-1 min-w-0 text-base sm:text-sm h-10"
                   data-testid="input-chat-message"
                 />
                 <Button
