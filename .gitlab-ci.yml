@@ -1,18 +1,25 @@
-# You can override the included template(s) by including variable overrides
+# GitLab security scanning for AcademicGen.
+# Deploys do NOT run here: Render builds the API from this repo and Cloudflare Pages serves the site.
+# Fix (18 Nov 2026): the `sast` job was declared without its template, so the pipeline config was invalid
+# and every push failed (with an e-mail). Both scanners now come from GitLab's official templates.
+# Scan findings are reported in the pipeline/security tab without failing the pipeline.
 # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
 # Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
-- test
-- secret-detection
+  - test
+  - secret-detection
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables:
+  SECRET_DETECTION_ENABLED: "true"
+
 sast:
   stage: test
-include:
-- template: Security/Secret-Detection.gitlab-ci.yml
-variables:
-  SECRET_DETECTION_ENABLED: 'true'
+  allow_failure: true
+
 secret_detection:
   stage: secret-detection
+  allow_failure: true
