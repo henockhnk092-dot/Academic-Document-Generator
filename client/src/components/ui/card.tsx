@@ -36,7 +36,9 @@ const CardTitle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "text-xl sm:text-2xl font-semibold leading-none tracking-tight",
+      // default size scales with the screen; a size passed in className wins at every breakpoint
+      /(^|\s)text-(xs|sm|base|lg|xl|[2-9]xl)(\s|$)/.test(className || "") ? "" : "text-xl sm:text-2xl",
+      "font-semibold leading-none tracking-tight",
       className
     )}
     {...props}

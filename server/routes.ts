@@ -15,6 +15,7 @@ import { firebaseSubscriptionStorage } from "./firebaseSubscriptionStorage";
 import { USAGE_LIMITS, PRICING_TIERS } from "@shared/schema";
 import { getBMCCheckoutUrl, getBMCProducts, isBMCConfigured } from "./bmcClient";
 import { registerPayfastRoutes } from "./payfast";
+import { registerCommunityRoutes } from "./community";
 import { fairUse, fairUseStatus, AMOUNT } from "./fairUse";
 import { registerAiTools } from "./aiTools";
 
@@ -156,6 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.use("/api/export", exportLimiter);
   registerPayfastRoutes(app);
+  registerCommunityRoutes(app);
   registerAiTools(app, { geminiDetect: (t: string) => detectAiContentFull(t) });
   // ── PDF Export ────────────────────────────────────────────────────────────
   app.post("/api/export/pdf", async (req, res) => {
