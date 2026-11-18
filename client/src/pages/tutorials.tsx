@@ -7,22 +7,22 @@ import { Button } from "@/components/ui/button";
 
 // Light-theme tutorials (v2, recorded on the real site with a demo account). Files in /videos/v2.
 const TOOL_TUTS = [
-  { file: "tut_technical_report", title: "Technical Report", desc: "A full structured report from one topic.", href: "/generate/report" },
-  { file: "tut_conference_paper", title: "Conference Paper", desc: "IEEE format with abstract, keywords and references.", href: "/generate/conference" },
-  { file: "tut_thesis", title: "Thesis", desc: "Plan every chapter, from introduction to conclusion.", href: "/generate/thesis" },
-  { file: "tut_powerpoint", title: "PowerPoint", desc: "Slides with images and speaker notes.", href: "/generate/powerpoint" },
-  { file: "tut_custom_report", title: "Custom Report", desc: "Design your own sections.", href: "/generate/custom-report" },
-  { file: "tut_ai_images", title: "AI Images", desc: "Illustrations from a short description.", href: "/generate/images" },
-  { file: "tut_citation_checker", title: "Citation Checker", desc: "Find made-up or wrongly formatted references.", href: "/citations" },
-  { file: "tut_grammar_check", title: "Grammar Check", desc: "Grammar, spelling and style suggestions.", href: "/grammar-check" },
-  { file: "tut_ai_check", title: "AI Check", desc: "Score and flagged sentences, free.", href: "/ai-check" },
-  { file: "tut_humanizer", title: "AI Humanizer", desc: "Clear academic wording, Premium rounds and Review with AI.", href: "/humanize" },
-  { file: "tut_rewrite_verify", title: "Rewrite & Verify", desc: "Long documents with a final AI and plagiarism report.", href: "/rewrite-verify" },
-  { file: "tut_ai_assistant", title: "AI Assistant", desc: "Ask about writing, structure and references.", href: "/ai-assistant" },
-  { file: "tut_community", title: "Community", desc: "Chat with students, reviewed by AI.", href: "/community" },
-  { file: "tut_templates_projects", title: "Templates and projects", desc: "Ready structures and your saved work.", href: "/templates" },
-  { file: "tut_download_app", title: "Download the app", desc: "Android, Windows, iPhone and Mac.", href: "/download" },
-  { file: "tut_pricing", title: "Pricing", desc: "Start free; plans from R19 a day.", href: "/pricing" },
+  { file: "technical_report", title: "Technical Report", desc: "A full structured report from one topic.", href: "/generate/report" },
+  { file: "conference_paper", title: "Conference Paper", desc: "IEEE format with abstract, keywords and references.", href: "/generate/conference" },
+  { file: "thesis", title: "Thesis", desc: "Plan every chapter, from introduction to conclusion.", href: "/generate/thesis" },
+  { file: "powerpoint", title: "PowerPoint", desc: "Slides with images and speaker notes.", href: "/generate/powerpoint" },
+  { file: "custom_report", title: "Custom Report", desc: "Design your own sections.", href: "/generate/custom-report" },
+  { file: "ai_images", title: "AI Images", desc: "Illustrations from a short description.", href: "/generate/images" },
+  { file: "citation_checker", title: "Citation Checker", desc: "Find made-up or wrongly formatted references.", href: "/citations" },
+  { file: "grammar_check", title: "Grammar Check", desc: "Grammar, spelling and style suggestions.", href: "/grammar-check" },
+  { file: "ai_check", title: "AI Check", desc: "Score and flagged sentences, free.", href: "/ai-check" },
+  { file: "humanizer_premium", title: "AI Humanizer", desc: "Clear academic wording, Premium rounds and Review with AI.", href: "/humanize" },
+  { file: "rewrite_verify", title: "Rewrite & Verify", desc: "Long documents with a final AI and plagiarism report.", href: "/rewrite-verify" },
+  { file: "ai_assistant", title: "AI Assistant", desc: "Ask about writing, structure and references.", href: "/ai-assistant" },
+  { file: "community", title: "Community", desc: "Chat with students, reviewed by AI.", href: "/community" },
+  { file: "templates_projects", title: "Templates and projects", desc: "Ready structures and your saved work.", href: "/templates" },
+  { file: "download_app", title: "Download the app", desc: "Android, Windows, iPhone and Mac.", href: "/download" },
+  { file: "pricing", title: "Pricing", desc: "Start free; plans from R19 a day.", href: "/pricing" },
 ];
 
 // Earlier walkthroughs on the LearnHub YouTube channel (embedded, so views count on YouTube)
@@ -109,13 +109,33 @@ export default function Tutorials() {
         </Card>
 
         <div>
+          <h2 className="text-lg sm:text-xl font-semibold mb-1">User guides: step by step</h2>
+          <p className="text-sm text-muted-foreground mb-4">Every click explained, with numbered steps.</p>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            {[{ file: "guide_ai_check", title: "How to use AI Check", desc: "6 steps: add your text, check it, read the score, export and improve.", href: "/ai-check" },
+              { file: "guide_humanizer", title: "How to use the AI Humanizer", desc: "7 steps plus Premium rounds: rewrite, compare, Review with AI, export.", href: "/humanize" }].map((v) => (
+              <Card key={v.file} className="overflow-hidden flex flex-col">
+                <video className="w-full bg-black aspect-video" controls preload="none" playsInline poster={`/videos/v2/${v.file}.jpg`} data-testid={`video-${v.file}`}>
+                  <source src={`/videos/v2/${v.file}.mp4`} type="video/mp4" />
+                </video>
+                <CardContent className="pt-4 space-y-2 flex flex-col flex-1">
+                  <p className="font-medium">{v.title}</p>
+                  <p className="text-sm text-muted-foreground">{v.desc}</p>
+                  <div className="pt-2 mt-auto"><Link href={v.href}><Button size="sm" variant="outline">Open the tool</Button></Link></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <h2 className="text-lg sm:text-xl font-semibold mb-1">Tool tutorials</h2>
           <p className="text-sm text-muted-foreground mb-4">One short video for every tool.</p>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {TOOL_TUTS.map((v) => (
               <Card key={v.file} className="overflow-hidden flex flex-col">
-                <video className="w-full bg-black aspect-video" controls preload="none" playsInline poster={`/videos/v2/${v.file}.jpg`} data-testid={`video-${v.file}`}>
-                  <source src={`/videos/v2/${v.file}.mp4`} type="video/mp4" />
+                <video className="w-full bg-black aspect-video" controls preload="none" playsInline poster={`/videos/series/${v.file}.jpg`} data-testid={`video-${v.file}`}>
+                  <source src={`/videos/series/${v.file}.mp4`} type="video/mp4" />
                 </video>
                 <CardContent className="pt-4 space-y-2 flex flex-col flex-1">
                   <p className="font-medium">{v.title}</p>
