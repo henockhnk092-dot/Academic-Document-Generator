@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const SHORTS = [
   { file: "short_ai_check", title: "AI Check in 30 seconds", desc: "Score and flagged sentences, export, full screen and voices.", href: "/ai-check" },
-  { file: "short_humanizer", title: "AI Humanizer + Review with AI", desc: "Natural academic rewrite, then AI checks meaning, numbers and citations.", href: "/humanize" },
+  { file: "short_humanizer_v2", title: "AI Humanizer + Review with AI", desc: "Natural academic rewrite, then AI checks meaning, numbers and citations.", href: "/humanize" },
   { file: "short_rewrite_verify", title: "Rewrite & Verify", desc: "Premium rewrite with fact guard, AI check rounds and a plagiarism report.", href: "/rewrite-verify" },
   { file: "short_feature_montage", title: "6 tools in 20 seconds", desc: "A quick look at the student writing toolkit.", href: "/" },
   { file: "short_getting_started", title: "Getting started", desc: "Open academicgen.com, find every tool and see the plans.", href: "/pricing" },
