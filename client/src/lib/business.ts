@@ -15,6 +15,7 @@ export const BUSINESS = {
   phone: "+27 61 471 9400",
   whatsapp: "https://wa.me/27614719400",
   location: "Cape Town, South Africa",
+  address: "33 Scott Road, Parow West, Cape Town, South Africa",
   googleProfile: "https://share.google/D01cdCEDmTfWC9dmi",
 } as const;
 

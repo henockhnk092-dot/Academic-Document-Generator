@@ -133,8 +133,8 @@ export default function Legal() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="faq">
-          <TabsList className="w-full grid grid-cols-3">
+        <Tabs defaultValue={typeof window !== "undefined" && ["faq", "privacy", "terms", "refunds"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "faq"}>
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto gap-1">
             <TabsTrigger value="faq" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <HelpCircle className="h-4 w-4 shrink-0" />
               {t("pages.legal.tabFaq")}
@@ -149,7 +149,51 @@ export default function Legal() {
               <span className="hidden sm:inline">{t("pages.legal.tabTerms")}</span>
               <span className="sm:hidden">{t("pages.legal.tabTermsShort")}</span>
             </TabsTrigger>
+            <TabsTrigger value="refunds" className="flex items-center gap-1.5 text-xs sm:text-sm" data-testid="tab-refunds">
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Refunds and billing</span>
+              <span className="sm:hidden">Refunds</span>
+            </TabsTrigger>
           </TabsList>
+
+          {/* ── Refunds, cancellation and billing ── */}
+          <TabsContent value="refunds" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" />Refunds, cancellation and billing</CardTitle>
+                <CardDescription>Last updated: 18 November 2026</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 text-sm text-muted-foreground leading-relaxed">
+                <Section icon={CreditCard} title="What you pay for">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><strong className="text-foreground">Day Pass (R19) and Weekly (R49):</strong> once-off payments. They do not renew.</li>
+                    <li><strong className="text-foreground">Monthly (R149):</strong> renews automatically every month on the same date until you cancel.</li>
+                    <li><strong className="text-foreground">Yearly (R1,499):</strong> renews automatically every year on the same date until you cancel.</li>
+                    <li><strong className="text-foreground">Credit packs and pay-once documents:</strong> once-off payments for Rewrite &amp; Verify. 1 credit = R1 of usage.</li>
+                  </ul>
+                  <p className="mt-2">All prices are in South African rand (ZAR). Each plan includes the fair-use allowance shown on the Pricing page. Payments are processed by Payfast; we never see or store your card details.</p>
+                </Section>
+                <Section icon={RefreshCw} title="Cancelling a subscription">
+                  <p>You can cancel a Monthly or Yearly plan at any time by emailing support@hnkiot.com or sending a WhatsApp message to +27 61 471 9400 from the contact details on your account, or with the cancel link in the Payfast subscription email. We stop future charges within one business day. You keep access until the end of the period you already paid for.</p>
+                </Section>
+                <Section icon={CheckCircle2} title="Refunds">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>If a Rewrite &amp; Verify job fails, or we cannot rewrite your text without changing its facts, the credits are returned to your account automatically.</li>
+                    <li>If you were charged in error, charged twice, or the service did not work because of a fault on our side, contact us within 7 days of the charge and we will refund you to the original payment method.</li>
+                    <li>Unused credit packs can be refunded within 7 days of purchase if none of the credits were used.</li>
+                    <li>Subscription periods and credits that were already used are not refundable, except where the law requires it.</li>
+                  </ul>
+                  <p className="mt-2">Approved refunds are processed within 7 business days. The time for the money to reach your account depends on your bank.</p>
+                </Section>
+                <Section icon={AlertTriangle} title="Fair use and academic integrity">
+                  <p>AcademicGen helps you plan, write, check and improve your own work. We do not promise any particular detector score or outcome, and you are responsible for following your university's rules on AI. Accounts that abuse the service, for example through automated or resold use, may be suspended without a refund of the abused period.</p>
+                </Section>
+                <Section icon={Users} title="Company details">
+                  <p><strong className="text-foreground">HNK IoT Solutions (Pty) Ltd</strong>, registration number 2026/647269/07.<br />33 Scott Road, Parow West, Cape Town, South Africa.<br />Email: support@hnkiot.com · WhatsApp: +27 61 471 9400</p>
+                </Section>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* ── FAQ ── */}
           <TabsContent value="faq" className="mt-6">
@@ -313,6 +357,7 @@ export default function Legal() {
                       <li>{t("pages.legal.terms.billing3")}</li>
                       <li>{t("pages.legal.terms.billing4")}</li>
                       <li>{t("pages.legal.terms.billing5")}</li>
+                      <li>{t("pages.legal.terms.billing6")}</li>
                     </ul>
                   </Section>
 
@@ -336,6 +381,7 @@ export default function Legal() {
                       <li>{t("pages.legal.terms.ai2")}</li>
                       <li>{t("pages.legal.terms.ai3")}</li>
                       <li>{t("pages.legal.terms.ai4")}</li>
+                      <li>{t("pages.legal.terms.ai5")}</li>
                     </ul>
                   </Section>
 

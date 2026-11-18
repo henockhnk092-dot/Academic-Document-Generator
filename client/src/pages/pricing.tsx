@@ -188,6 +188,10 @@ export default function Pricing() {
           <p className="text-xs text-muted-foreground max-w-xl mx-auto mt-3">
             {t("pages.pricing.fairUseNote", { defaultValue: "Fair use: each plan includes a generous allowance for normal study. It resets automatically each day, week or month, and protects the service from automated abuse." })}
           </p>
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto mt-1" data-testid="text-renewal-note">
+            Day Pass and Weekly are once-off. Monthly and Yearly renew automatically until you cancel; cancel any time and keep access until the end of the paid period.{" "}
+            <a href="/legal#refunds" className="underline hover:text-foreground">Refunds and billing</a>
+          </p>
         </div>
 
         {/* Current Plan Status */}

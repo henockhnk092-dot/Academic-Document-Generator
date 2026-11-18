@@ -292,6 +292,7 @@ export default function Contact() {
                       {BUSINESS.founder} · {t("pages.contact.locationName")}
                     </p>
                     <p className="text-xs text-muted-foreground">Reg. {BUSINESS.registration}</p>
+                    <p className="text-xs text-muted-foreground">{BUSINESS.address}</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
