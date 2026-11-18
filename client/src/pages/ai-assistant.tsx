@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getSpeechPrefs, useSpeech } from "@/hooks/use-speech";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File } from "lucide-react";
+import { Send, Bot, User, Loader2, BookOpen, Eraser, Copy, Volume2, Square, Check, Paperclip, FileText, Image, X, File, Lightbulb } from "lucide-react";
 import { useFileUpload } from "@/hooks/use-file-upload";
 
 function formatMarkdown(text: string): JSX.Element {
@@ -161,6 +161,9 @@ export default function AiAssistant() {
   // default), then automatic fallback Azure -> ElevenLabs -> VoiceRSS -> StreamElements -> Gemini -> browser,
   // read sentence by sentence so long answers start quickly.
   const { speak, stop: stopSpeech, speaking } = useSpeech();
+  // Quick Prompts panel: shown by default, the reader's choice is remembered on this device
+  const [showPrompts, setShowPrompts] = useState(() => { try { return localStorage.getItem("ag_assistant_prompts") !== "hidden"; } catch { return true; } });
+  const togglePrompts = (v: boolean) => { setShowPrompts(v); try { localStorage.setItem("ag_assistant_prompts", v ? "shown" : "hidden"); } catch { /* private mode */ } };
   const wasSpeaking = useRef(false);
   useEffect(() => {
     if (wasSpeaking.current && !speaking) setSpeakingId(null);
@@ -281,17 +284,23 @@ export default function AiAssistant() {
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <Card className="lg:col-span-3">
+            <Card className={showPrompts ? "lg:col-span-3" : "lg:col-span-4"}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Bot className="w-5 h-5 text-primary" />
                     {t("pages.aiAssistant.chatTitle")}
                   </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={clearChat}>
-                    <Eraser className="w-4 h-4 mr-2" />
-                    {t("pages.aiAssistant.clear")}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant={showPrompts ? "secondary" : "ghost"} size="sm" onClick={() => togglePrompts(!showPrompts)} aria-pressed={showPrompts}
+                      title={showPrompts ? "Hide quick prompts" : "Show quick prompts"} data-testid="button-toggle-prompts">
+                      <Lightbulb className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Prompts</span>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={clearChat}>
+                      <Eraser className="w-4 h-4 mr-2" />
+                      {t("pages.aiAssistant.clear")}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <Separator />
@@ -465,9 +474,12 @@ export default function AiAssistant() {
               </CardContent>
             </Card>
 
-            <Card>
+            {showPrompts && <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">{t("pages.aiAssistant.quickPrompts")}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-sm flex-1">{t("pages.aiAssistant.quickPrompts")}</CardTitle>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 -mr-2 shrink-0" onClick={() => togglePrompts(false)} aria-label="Hide quick prompts" data-testid="button-hide-prompts"><X className="w-4 h-4" /></Button>
+                </div>
                 <CardDescription className="text-xs">
                   {t("pages.aiAssistant.quickPromptsDesc")}
                 </CardDescription>
@@ -487,7 +499,7 @@ export default function AiAssistant() {
                   </Button>
                 ))}
               </CardContent>
-            </Card>
+            </Card>}
           </div>
 
           <Card className="border-primary/20 bg-primary/5">

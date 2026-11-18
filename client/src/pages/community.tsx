@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Users, Hash, Sparkles, Send, Loader2, MoreVertical, Reply, Copy, Trash2, Flag, ShieldCheck, X, AtSign, MessageSquare, BookOpen, GraduationCap, LifeBuoy, ChevronUp, AlertCircle } from "lucide-react";
+import { Users, Hash, Sparkles, Send, Loader2, MoreVertical, Reply, Copy, Trash2, Flag, ShieldCheck, X, AtSign, MessageSquare, BookOpen, GraduationCap, LifeBuoy, ChevronUp, AlertCircle, Volume2, VolumeX, Square } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/components/auth-provider";
 import { AuthDialog } from "@/components/auth-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeech, getSpeechPrefs } from "@/hooks/use-speech";
 
 type Room = { id: string; name: string; desc: string };
 type Msg = { id: string; uid: string; name: string; photo: string | null; text: string; kind: "user" | "ai"; replyTo: string | null; createdAt: number; deleted?: boolean };
@@ -68,6 +69,45 @@ export default function CommunityPage() {
   const [blocked, setBlocked] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Guidelines panel: shown by default, the reader's choice is remembered on this device
+  const [showRules, setShowRules] = useState(() => { try { return localStorage.getItem("ag_community_rules") !== "hidden"; } catch { return true; } });
+  // ── audio reader: Listen on any message, or Read aloud to hear new messages as they arrive ──
+  const { speak, stop: stopSpeech, speaking } = useSpeech();
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [autoRead, setAutoRead] = useState(() => { try { return localStorage.getItem("ag_community_autoread") === "on"; } catch { return false; } });
+  const [readQueue, setReadQueue] = useState<Msg[]>([]);
+  const autoReadRef = useRef(autoRead), meRef = useRef<Me | null>(null), wasSpeaking = useRef(false);
+  autoReadRef.current = autoRead;
+  const sentencesOf = (t: string) => (t.match(/[^.!?\n]+[.!?]+["')\]]*|[^.!?\n]+(?=\n|$)/g) || [t]).map((x) => x.trim()).filter(Boolean);
+  const say = (m: Msg) => {
+    const prefs = getSpeechPrefs();
+    const who = m.kind === "ai" ? "AcademicGen AI" : m.uid === meRef.current?.uid ? "You" : m.name;
+    setSpeakingId(m.id);
+    speak([`${who} says.`, ...sentencesOf(m.text)], prefs.rate ?? 1, prefs.voiceName ?? null);
+  };
+  const listen = (m: Msg) => {
+    if (speakingId === m.id) { stopSpeech(); setSpeakingId(null); return; }
+    setReadQueue([]); say(m);
+  };
+  const stopAll = () => { setReadQueue([]); stopSpeech(); setSpeakingId(null); };
+  const toggleAutoRead = () => {
+    const v = !autoRead; setAutoRead(v);
+    try { localStorage.setItem("ag_community_autoread", v ? "on" : "off"); } catch { /* private mode */ }
+    if (!v) stopAll();
+    toast({ title: v ? "Read aloud is on" : "Read aloud is off", description: v ? "New messages will be read to you as they arrive." : undefined });
+  };
+  // when one message finishes, read the next queued one
+  useEffect(() => {
+    if (wasSpeaking.current && !speaking) setSpeakingId(null);
+    wasSpeaking.current = speaking;
+    if (!speaking && readQueue.length) { const [next, ...rest] = readQueue; setReadQueue(rest); say(next); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speaking, readQueue]);
+  useEffect(() => () => stopSpeech(), [stopSpeech]);
+
+  const [showChannels, setShowChannels] = useState(() => { try { return localStorage.getItem("ag_community_channels") !== "hidden"; } catch { return true; } });
+  const toggleChannels = (v: boolean) => { setShowChannels(v); try { localStorage.setItem("ag_community_channels", v ? "shown" : "hidden"); } catch { /* private mode */ } };
+  const toggleRules = (v: boolean) => { setShowRules(v); try { localStorage.setItem("ag_community_rules", v ? "shown" : "hidden"); } catch { /* private mode */ } };
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const lastAt = useRef(0), lastPoll = useRef(0), stick = useRef(true), roomRef = useRef(room);
@@ -91,7 +131,7 @@ export default function CommunityPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Could not load the chat.");
       if (roomRef.current !== r) return;
-      setMe(d.me); setOnline(d.online); setMore(d.more); lastPoll.current = d.now; merge(d.messages);
+      setMe(d.me); meRef.current = d.me; setOnline(d.online); setMore(d.more); lastPoll.current = d.now; merge(d.messages);
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }, [merge]);
 
@@ -103,7 +143,12 @@ export default function CommunityPage() {
       if (!res.ok) return;
       const d = await res.json();
       if (roomRef.current !== r) return;
-      setOnline(d.online); lastPoll.current = d.now; merge(d.messages, d.removed);
+      setOnline(d.online); lastPoll.current = d.now;
+      if (autoReadRef.current) {
+        const fresh = (d.messages as Msg[]).filter((m) => !m.deleted && m.text && m.uid !== meRef.current?.uid && m.createdAt > lastAt.current);
+        if (fresh.length) setReadQueue((q) => [...q, ...fresh]);
+      }
+      merge(d.messages, d.removed);
     } catch { /* offline: try again next tick */ }
   }, [merge]);
 
@@ -187,8 +232,12 @@ export default function CommunityPage() {
   return (
     <GeneratorLayout title="Community" description="Chat with other students about writing, research and studying. Every message is reviewed by AI to keep it safe."
       icon={<Users className="w-6 h-6 text-white" />} gradient="from-emerald-500 to-teal-600">
-      <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_270px]">
+      <div className={`grid gap-4 ${
+        showChannels
+          ? (showRules ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_270px]" : "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)]")
+          : (showRules ? "xl:grid-cols-[minmax(0,1fr)_270px]" : "")}`}>
         {/* Channels: sidebar on desktop, scrollable chips on phones and tablets */}
+        {showChannels && <>
         <div className="lg:hidden -mx-1 overflow-x-auto">
           <div className="flex gap-2 px-1 pb-1 w-max">
             {ROOMS.map((r) => (
@@ -200,7 +249,12 @@ export default function CommunityPage() {
           </div>
         </div>
         <Card className="hidden lg:block h-fit">
-          <CardHeader className="pb-2"><CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">Channels</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground flex-1">Channels</CardTitle>
+              <Button size="icon" variant="ghost" className="h-7 w-7 -mr-2 shrink-0" onClick={() => toggleChannels(false)} aria-label="Hide channels" data-testid="button-hide-channels"><X className="w-4 h-4" /></Button>
+            </div>
+          </CardHeader>
           <CardContent className="space-y-1 px-2 pb-3">
             {ROOMS.map((r) => (
               <button key={r.id} onClick={() => setRoom(r.id)} data-testid={`button-room-${r.id}`}
@@ -211,6 +265,7 @@ export default function CommunityPage() {
             <div className="flex items-center gap-2 px-2.5 pt-3 text-xs text-muted-foreground"><span className="w-2 h-2 rounded-full bg-emerald-500" />{online} online now</div>
           </CardContent>
         </Card>
+        </>}
 
         {/* Chat */}
         <Card className="flex flex-col min-w-0 h-[calc(100dvh-15.5rem)] min-h-[440px] sm:h-[calc(100dvh-16rem)] md:h-[calc(100dvh-22rem)] lg:h-[calc(100dvh-17.5rem)] overflow-hidden">
@@ -221,6 +276,23 @@ export default function CommunityPage() {
               <p className="text-xs text-muted-foreground truncate">{current.desc}</p>
             </div>
             <Badge variant="outline" className="shrink-0 gap-1 text-[11px]"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{online}<span className="hidden sm:inline"> online</span></Badge>
+            {(speaking || readQueue.length > 0) && (
+              <Button size="sm" variant="ghost" className="h-7 px-2 shrink-0 gap-1 text-xs text-destructive" onClick={stopAll} title="Stop reading" data-testid="button-stop-reading">
+                <Square className="w-3.5 h-3.5 fill-current" /><span className="hidden 2xl:inline">Stop</span>
+              </Button>
+            )}
+            <Button size="sm" variant={autoRead ? "secondary" : "ghost"} className="h-7 px-2 shrink-0 gap-1 text-xs" onClick={toggleAutoRead}
+              aria-pressed={autoRead} title={autoRead ? "Stop reading new messages aloud" : "Read new messages aloud"} data-testid="button-toggle-autoread">
+              {autoRead ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}<span className="hidden 2xl:inline">Read aloud</span>
+            </Button>
+            <Button size="sm" variant={showChannels ? "secondary" : "ghost"} className="h-7 px-2 shrink-0 gap-1 text-xs" onClick={() => toggleChannels(!showChannels)}
+              aria-pressed={showChannels} title={showChannels ? "Hide channels" : "Show channels"} data-testid="button-toggle-channels">
+              <Hash className="w-3.5 h-3.5" /><span className="hidden 2xl:inline">Channels</span>
+            </Button>
+            <Button size="sm" variant={showRules ? "secondary" : "ghost"} className="h-7 px-2 shrink-0 gap-1 text-xs" onClick={() => toggleRules(!showRules)}
+              aria-pressed={showRules} title={showRules ? "Hide community guidelines" : "Show community guidelines"} data-testid="button-toggle-guidelines">
+              <ShieldCheck className="w-3.5 h-3.5" /><span className="hidden 2xl:inline">Guidelines</span>
+            </Button>
           </div>
 
           <div ref={listRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 space-y-1" data-testid="list-messages">
@@ -252,7 +324,7 @@ export default function CommunityPage() {
                     )}
                     <div className={`flex items-start gap-1 ${mine ? "flex-row-reverse" : ""}`}>
                       <div className={`rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
-                        m.kind === "ai" ? "bg-violet-500/10 border border-violet-500/30" : mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                        m.kind === "ai" ? "bg-violet-500/10 border border-violet-500/30" : mine ? "bg-primary text-primary-foreground" : "bg-muted"} ${speakingId === m.id ? "ring-2 ring-primary/60" : ""}`}>
                         {parent && (
                           <div className={`mb-1.5 border-l-2 pl-2 text-xs opacity-80 ${mine ? "border-primary-foreground/60" : "border-primary/60"}`}>
                             <span className="font-medium">{parent.uid === me?.uid ? "You" : parent.name}</span>: {parent.deleted ? "message removed" : parent.text.slice(0, 90)}{parent.text.length > 90 ? "..." : ""}
@@ -260,6 +332,10 @@ export default function CommunityPage() {
                         )}
                         {m.text}
                       </div>
+                      <button onClick={() => listen(m)} aria-label={speakingId === m.id ? "Stop listening" : "Listen to this message"} title={speakingId === m.id ? "Stop" : "Listen"}
+                        className={`mt-1 p-1 rounded hover:bg-muted transition-opacity ${speakingId === m.id ? "text-primary opacity-100" : "text-muted-foreground sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"}`} data-testid={`button-listen-${m.id}`}>
+                        {speakingId === m.id ? <Square className="w-3.5 h-3.5 fill-current" /> : <Volume2 className="w-4 h-4" />}
+                      </button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="mt-1 p-1 rounded text-muted-foreground hover:bg-muted sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity" aria-label="Message actions">
@@ -268,6 +344,7 @@ export default function CommunityPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={mine ? "end" : "start"}>
                           <DropdownMenuItem onClick={() => { setReplyTo(m); inputRef.current?.focus(); }}><Reply className="w-4 h-4 mr-2" />Reply</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => listen(m)}><Volume2 className="w-4 h-4 mr-2" />{speakingId === m.id ? "Stop listening" : "Listen"}</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigator.clipboard?.writeText(m.text)}><Copy className="w-4 h-4 mr-2" />Copy text</DropdownMenuItem>
                           {(mine || me?.admin) && <DropdownMenuItem onClick={() => act("delete", m)} className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>}
                           {!mine && m.kind !== "ai" && <DropdownMenuItem onClick={() => act("report", m)}><Flag className="w-4 h-4 mr-2" />Report</DropdownMenuItem>}
@@ -317,17 +394,20 @@ export default function CommunityPage() {
         </Card>
 
         {/* Guidelines: right column on wide screens, below the chat otherwise */}
-        <div className="lg:col-span-2 xl:col-span-1"><RulesCard /></div>
+        {showRules && <div className={showChannels ? "lg:col-span-2 xl:col-span-1" : ""}><RulesCard onHide={() => toggleRules(false)} /></div>}
       </div>
     </GeneratorLayout>
   );
 }
 
-function RulesCard() {
+function RulesCard({ onHide }: { onHide?: () => void }) {
   return (
     <Card className="h-fit">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-primary" />Community guidelines</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 flex-1"><ShieldCheck className="w-4 h-4 text-primary" />Community guidelines</CardTitle>
+          {onHide && <Button size="icon" variant="ghost" className="h-7 w-7 -mr-2 shrink-0" onClick={onHide} aria-label="Hide community guidelines" data-testid="button-hide-guidelines"><X className="w-4 h-4" /></Button>}
+        </div>
         <CardDescription className="text-xs">AI reviews every message before it appears. Messages that break a rule are not posted, and you see why.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
