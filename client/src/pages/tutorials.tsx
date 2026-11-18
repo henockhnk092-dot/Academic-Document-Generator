@@ -61,6 +61,20 @@ export default function Tutorials() {
       gradient="from-rose-500 to-orange-500"
     >
       <div className="space-y-8">
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg">What AcademicGen does (under 2 minutes)</CardTitle>
+            <CardDescription>From a 2 a.m. deadline to a finished report: every tool, shown on the real site.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <video className="w-full rounded-lg border bg-black aspect-video" controls preload="metadata" playsInline
+              poster="/videos/v2/academicgen_what_we_do.jpg" data-testid="video-what-we-do">
+              <source src="/videos/v2/academicgen_what_we_do.mp4" type="video/mp4" />
+            </video>
+            <div className="pt-3"><Link href="/"><Button size="sm"><Sparkles className="w-4 h-4 mr-1" />Start free</Button></Link></div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Full tour: every tool in 4 minutes</CardTitle>
