@@ -26,6 +26,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import { PricingModal } from "@/components/pricing-modal";
 import { RewriteReview } from "@/components/rewrite-review";
 import { SurpriseMeButton } from "@/components/text-input-with-upload";
+import { PremiumRounds } from "@/components/premium-rounds";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -562,6 +563,10 @@ export default function Humanize() {
                 </Button>
               </CardContent>
             </Card>
+            <PremiumRounds text={inputText} onUse={(txt) => {
+              setOriginalText(inputText); setHumanizedText(txt); setScores([]); setHumanizedAiScore(null); setOriginalAiScore(null);
+              toast({ title: "Premium text ready", description: "Review it with AI, then copy or export." });
+            }} />
           </div>
 
           {/* Empty state right */}

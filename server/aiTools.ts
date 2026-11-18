@@ -185,12 +185,20 @@ ${rewritten}`,
 }
 
 // Rewrite one chunk, then guard its facts against the original; returns the best safe version.
-async function safeRewrite(engine: string, orig: string, current: string, log: (s: string) => void): Promise<string> {
-  let next = await ENGINE_FN[engine](current);
+// Method from the thesis and conference-paper runs (Quetext 97.4% -> 18.4% and 93.3% -> 17.9%):
+//  - "fix, then rehumanize": a fact repair puts the original's phrasing back, which detectors flag again, so the
+//    repaired text goes through the engine once more and is kept only if its facts still match;
+//  - `fresh` starts from the ORIGINAL passage instead of the last output (fresh attempts rescued many passages).
+async function safeRewrite(engine: string, orig: string, current: string, log: (s: string) => void, fresh = false): Promise<string> {
+  let next = await ENGINE_FN[engine](fresh ? orig : current);
   let issues = factIssues(orig, next);
   if (issues.length) {
     next = await geminiFix(orig, next, issues).catch(() => next);
     issues = factIssues(orig, next);
+    if (!issues.length && engine !== "standard") {
+      const again = await ENGINE_FN[engine](next).catch(() => "");
+      if (again && !factIssues(orig, again).length) next = again; // rehumanized and still faithful
+    }
   }
   if (issues.some((i) => /missing|added/.test(i))) {
     log("Kept one passage as it was, to protect its numbers and citations.");
@@ -228,7 +236,7 @@ const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 // ── jobs ──
 interface Job {
   id: string; uid: string; engine: string; words: number; cost: number; status: "running" | "done" | "failed";
-  progress: number; log: string[]; rounds: { round: number; score: number }[]; result?: any; error?: string; startedAt: number; refunded?: boolean;
+  progress: number; log: string[]; rounds: { round: number; score: number }[]; before?: number | null; result?: any; error?: string; startedAt: number; refunded?: boolean;
 }
 const jobs = new Map<string, Job>();
 
@@ -248,12 +256,17 @@ async function runJob(j: Job, original: string, title: string) {
   try {
     const chunks = chunksOf(original);
     const editable = chunks.filter((c) => c.edit);
+    // Score of the original text, so the report can show before -> after on the same detector.
+    j.before = await zerogptDetect(original).then((d) => d.score).catch(() => null);
+    if (j.before !== null) log(`Your text before: AI-likeness ${j.before}%.`);
     log(`Rewriting ${editable.length} passage(s) with the ${ENGINES[j.engine].label} engine.`);
     let targets = editable;
     let best = { score: Infinity, texts: chunks.map((c) => c.text) };
     for (let round = 1; round <= MAX_ROUNDS; round++) {
       for (let i = 0; i < targets.length; i += 3) {
-        await Promise.all(targets.slice(i, i + 3).map(async (c) => { c.text = await safeRewrite(j.engine, c.orig, c.text, log); }));
+        // Rounds 2 and 4 retry flagged passages fresh from the original; round 3 rehumanizes the latest version.
+        const fresh = round % 2 === 0;
+        await Promise.all(targets.slice(i, i + 3).map(async (c) => { c.text = await safeRewrite(j.engine, c.orig, c.text, log, fresh); }));
         j.progress = Math.min(85, Math.round(((round - 1) + (i + 3) / Math.max(targets.length, 1)) / MAX_ROUNDS * 80));
       }
       const full = join(chunks);
@@ -290,7 +303,7 @@ async function runJob(j: Job, original: string, title: string) {
       log(`We could not rewrite this text safely without changing its facts, so your ${j.cost} credits were refunded.`);
       j.refunded = true;
     }
-    j.result = { text: final, originalWords: j.words, finalWords: words(final), rounds: j.rounds, finalCheck: quetext };
+    j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext };
     j.status = "done";
     j.progress = 100;
     log("Done.");
