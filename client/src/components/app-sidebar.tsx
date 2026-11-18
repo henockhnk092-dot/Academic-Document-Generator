@@ -38,6 +38,8 @@ export function AppSidebar() {
     { titleKey: "nav.myTemplates",   url: "/my-templates", icon: Star },
     { titleKey: "nav.aiAssistant",   url: "/ai-assistant", icon: Bot },
     { titleKey: "nav.analytics",     url: "/analytics",    icon: BarChart3 },
+    { titleKey: "support.tutorials", url: "/tutorials",    icon: PlayCircle },
+    { titleKey: "support.download",  url: "/download",     icon: Download },
   ];
 
   const generatorItems = [
@@ -62,8 +64,6 @@ export function AppSidebar() {
 
   const supportItems = [
     { titleKey: "support.community", url: "/community", icon: UsersIcon },
-    { titleKey: "support.tutorials", url: "/tutorials", icon: PlayCircle },
-    { titleKey: "support.download", url: "/download", icon: Download },
     { titleKey: "support.about",    url: "/about",    icon: Info },
     { titleKey: "support.contact",  url: "/contact",  icon: Mail },
     { titleKey: "support.legal",    url: "/legal",    icon: Scale },
