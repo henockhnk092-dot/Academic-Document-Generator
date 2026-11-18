@@ -15,7 +15,7 @@ interface Engine { id: string; label: string; perK: number; desc: string; availa
 interface EnginesInfo { engines: Engine[]; minWords: number; maxWords: number; once: { markup: number; min: number }; launch?: { price: number; maxWords: number; slots: number; left: number } | null }
 interface Job {
   id: string; engine: string; words: number; cost: number; status: "running" | "done" | "failed"; progress: number;
-  log: string[]; rounds: { round: number; score: number }[]; error?: string;
+  log: string[]; rounds: { round: number; score: number; quetext?: number | null }[]; error?: string;
   result?: { text: string; finalWords: number; rounds: { round: number; score: number }[]; finalCheck: { aiScore: number | null; plagiarism: number | null; sources: { url: string; similar: number }[] } | null };
 }
 
@@ -184,7 +184,7 @@ export default function RewriteVerify() {
                 {job && job.status === "running" && <Progress value={job.progress} />}
                 {job && job.rounds.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {job.rounds.map((r) => <Badge key={r.round} variant="secondary">Round {r.round}: {r.score}% AI-like</Badge>)}
+                    {job.rounds.map((r) => <Badge key={r.round} variant="secondary">Round {r.round}: {r.score}% AI-like{r.quetext != null ? ` · Quetext ${r.quetext}%` : ""}</Badge>)}
                   </div>
                 )}
                 {job && <ul className="text-sm text-muted-foreground space-y-1">{job.log.map((l, i) => <li key={i}>{l}</li>)}</ul>}

@@ -22,8 +22,9 @@ export const ENGINES: Record<string, { label: string; perK: number; desc: string
 };
 const MIN_WORDS_BILLED = 300;
 const MAX_WORDS = 5000;
-const TARGET = 15; // stop when the AI-likeness score is at or below this %
-const MAX_ROUNDS = 4;
+const TARGET = 15; // ZeroGPT must be at or below this %
+const QT_TARGET = 20; // ...and Quetext at or below this % (accept only when BOTH independent detectors agree)
+const MAX_ROUNDS = 5;
 
 // Engines on sale (RV_ENGINES, comma list). Default: premium only. Tested 15 Nov 2026 on a technical paragraph:
 // Standard (Gemini) and Advanced (ZeroGPT) stayed at 100% AI-likeness after 4 rounds; Premium (WriteHuman) reached 0%.
@@ -236,7 +237,7 @@ const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 // ── jobs ──
 interface Job {
   id: string; uid: string; engine: string; words: number; cost: number; status: "running" | "done" | "failed";
-  progress: number; log: string[]; rounds: { round: number; score: number }[]; before?: number | null; result?: any; error?: string; startedAt: number; refunded?: boolean;
+  progress: number; log: string[]; rounds: { round: number; score: number; quetext?: number | null }[]; before?: number | null; result?: any; error?: string; startedAt: number; refunded?: boolean;
 }
 const jobs = new Map<string, Job>();
 
@@ -262,27 +263,43 @@ async function runJob(j: Job, original: string, title: string) {
     log(`Rewriting ${editable.length} passage(s) with the ${ENGINES[j.engine].label} engine.`);
     let targets = editable;
     let best = { score: Infinity, texts: chunks.map((c) => c.text) };
+    let forceFresh = false; // set when Quetext disagrees with ZeroGPT
     for (let round = 1; round <= MAX_ROUNDS; round++) {
       for (let i = 0; i < targets.length; i += 3) {
         // Rounds 2 and 4 retry flagged passages fresh from the original; round 3 rehumanizes the latest version.
-        const fresh = round % 2 === 0;
+        const fresh = forceFresh || round % 2 === 0;
         await Promise.all(targets.slice(i, i + 3).map(async (c) => { c.text = await safeRewrite(j.engine, c.orig, c.text, log, fresh); }));
         j.progress = Math.min(85, Math.round(((round - 1) + (i + 3) / Math.max(targets.length, 1)) / MAX_ROUNDS * 80));
       }
+      forceFresh = false;
       const full = join(chunks);
       const det = await zerogptDetect(full);
-      j.rounds.push({ round, score: det.score });
-      log(`Round ${round}: AI-likeness ${det.score}%.`);
+      // Detectors can disagree (seen: ZeroGPT 0%, Quetext 100% on the same text). When ZeroGPT passes, confirm with
+      // Quetext; a round counts only when both are low, and rounds are ranked on the worse of the two.
+      let qt: number | null = null;
+      if (det.score <= TARGET && process.env.QUETEXT_API_KEY && words(full) >= 50) {
+        const r: any = await quetextReport("ai-detect-report", full, title).catch(() => null);
+        qt = r && r.ai_score != null ? Math.round(Number(r.ai_score) * 100) / 100 : null;
+      }
+      j.rounds.push({ round, score: det.score, quetext: qt });
+      log(`Round ${round}: AI-likeness ${det.score}% (ZeroGPT)${qt !== null ? `, ${qt}% (Quetext)` : ""}.`);
+      const combined = qt !== null ? Math.max(det.score, qt) : det.score + 100; // unconfirmed rounds rank below confirmed ones
       // A later round can score worse than an earlier one: always keep the best version seen.
-      if (det.score < best.score) best = { score: det.score, texts: chunks.map((c) => c.text) };
-      if (det.score <= TARGET || round === MAX_ROUNDS) break;
+      if (combined < best.score) best = { score: combined, texts: chunks.map((c) => c.text), zg: det.score, qt } as any;
+      if ((det.score <= TARGET && (qt === null ? !process.env.QUETEXT_API_KEY : qt <= QT_TARGET)) || round === MAX_ROUNDS) break;
+      if (det.score <= TARGET) {
+        targets = editable; forceFresh = true; // ZeroGPT passed but Quetext did not: fresh attempts on every passage
+        log(`The second detector still flags it. Reworking all ${targets.length} passage(s).`);
+        continue;
+      }
       const flagged = det.flagged.map((f) => norm(f).slice(0, 60)).filter(Boolean);
       targets = editable.filter((c) => flagged.some((f) => norm(c.text).includes(f)));
-      if (!targets.length) break;
+      if (!targets.length) targets = editable;
       log(`Reworking ${targets.length} flagged passage(s).`);
     }
     best.texts.forEach((t, i) => { chunks[i].text = t; });
-    if (j.rounds.length > 1) log(`Keeping the best round (${best.score}% AI-likeness).`);
+    const bz = (best as any).zg, bq = (best as any).qt;
+    if (j.rounds.length > 1) log(`Keeping the best round (${bz ?? best.score}% ZeroGPT${bq != null ? `, ${bq}% Quetext` : ""}).`);
     const final = join(chunks);
     j.progress = 90;
     let quetext: any = null;

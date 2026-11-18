@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 // Premium rounds on the Humanizer page: the same pipeline as Rewrite & Verify (WriteHuman engine, fact guard,
 // "fix then rehumanize", fresh retries, independent ZeroGPT score each round, Quetext final report).
 // Measured on long academic documents in internal benchmarks (Quetext as the independent judge).
-type Round = { round: number; score: number };
+type Round = { round: number; score: number; quetext?: number | null };
 type Job = {
   status: "running" | "done" | "failed"; progress: number; log: string[]; rounds: Round[]; before?: number | null; error?: string;
   result?: { text: string; before?: number | null; rounds: Round[]; finalCheck: { aiScore: number | null; plagiarism: number | null } | null };
@@ -116,7 +116,7 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
             <div className="flex flex-wrap items-center gap-2">
               {before !== null && <Badge variant="outline" className="text-xs">Before: {before}% AI-like</Badge>}
               {rounds.map((r) => (
-                <Badge key={r.round} variant="secondary" className={`text-xs ${best !== null && r.score === best && job.status === "done" ? "ring-1 ring-emerald-500" : ""}`}>Round {r.round}: {r.score}%</Badge>
+                <Badge key={r.round} variant="secondary" className={`text-xs ${best !== null && r.score === best && job.status === "done" ? "ring-1 ring-emerald-500" : ""}`}>Round {r.round}: {r.score}%{r.quetext != null ? ` · Quetext ${r.quetext}%` : ""}</Badge>
               ))}
               {job.status === "running" && <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />{job.log[job.log.length - 1] || "Starting..."}</span>}
             </div>
