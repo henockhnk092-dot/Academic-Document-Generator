@@ -111,10 +111,7 @@ export function verifyBMCWebhook(
   signature: string,
   secret: string
 ): boolean {
-  if (!secret || !signature) {
-    // If no secret configured, skip verification (development mode)
-    return true;
-  }
+  if (!secret || !signature) return false; // never accept unsigned webhooks
 
   try {
     const hmac = crypto.createHmac('sha256', secret);

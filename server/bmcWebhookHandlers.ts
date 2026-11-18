@@ -27,14 +27,16 @@ export class BMCWebhookHandlers {
   ): Promise<{ success: boolean; message: string }> {
     log(`Processing BMC webhook: ${payload.event}`, 'bmc');
 
-    // Verify signature if webhook secret is configured
+    // Fail closed: without a configured secret AND a valid signature, nothing is processed.
+    // (Previously an unsigned or wrongly signed request was accepted and could activate a paid plan.)
     const webhookSecret = process.env.BMC_WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
-      const isValid = verifyBMCWebhook(rawBody, signature, webhookSecret);
-      if (!isValid) {
-        log('Invalid webhook signature', 'bmc');
-        return { success: false, message: 'Invalid signature' };
-      }
+    if (!webhookSecret) {
+      log('BMC webhook rejected: BMC_WEBHOOK_SECRET not configured', 'bmc');
+      return { success: false, message: 'Webhook not configured' };
+    }
+    if (!signature || !verifyBMCWebhook(rawBody, signature, webhookSecret)) {
+      log('Invalid webhook signature', 'bmc');
+      return { success: false, message: 'Invalid signature' };
     }
 
     try {
