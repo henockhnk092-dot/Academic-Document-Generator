@@ -5,12 +5,24 @@ import { GeneratorLayout } from "@/components/generator-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const SHORTS = [
-  { file: "short_ai_check", title: "AI Check in 30 seconds", desc: "Score and flagged sentences, export, full screen and voices.", href: "/ai-check" },
-  { file: "short_humanizer_v2", title: "AI Humanizer + Review with AI", desc: "Natural academic rewrite, then AI checks meaning, numbers and citations.", href: "/humanize" },
-  { file: "short_rewrite_verify", title: "Rewrite & Verify", desc: "Premium rewrite with fact guard, AI check rounds and a plagiarism report.", href: "/rewrite-verify" },
-  { file: "short_feature_montage", title: "6 tools in 20 seconds", desc: "A quick look at the student writing toolkit.", href: "/" },
-  { file: "short_getting_started", title: "Getting started", desc: "Open academicgen.com, find every tool and see the plans.", href: "/pricing" },
+// Light-theme tutorials (v2, recorded on the real site with a demo account). Files in /videos/v2.
+const TOOL_TUTS = [
+  { file: "tut_technical_report", title: "Technical Report", desc: "A full structured report from one topic.", href: "/generate/report" },
+  { file: "tut_conference_paper", title: "Conference Paper", desc: "IEEE format with abstract, keywords and references.", href: "/generate/conference" },
+  { file: "tut_thesis", title: "Thesis", desc: "Plan every chapter, from introduction to conclusion.", href: "/generate/thesis" },
+  { file: "tut_powerpoint", title: "PowerPoint", desc: "Slides with images and speaker notes.", href: "/generate/powerpoint" },
+  { file: "tut_custom_report", title: "Custom Report", desc: "Design your own sections.", href: "/generate/custom-report" },
+  { file: "tut_ai_images", title: "AI Images", desc: "Illustrations from a short description.", href: "/generate/images" },
+  { file: "tut_citation_checker", title: "Citation Checker", desc: "Find made-up or wrongly formatted references.", href: "/citations" },
+  { file: "tut_grammar_check", title: "Grammar Check", desc: "Grammar, spelling and style suggestions.", href: "/grammar-check" },
+  { file: "tut_ai_check", title: "AI Check", desc: "Score and flagged sentences, free.", href: "/ai-check" },
+  { file: "tut_humanizer", title: "AI Humanizer", desc: "Clear academic wording, Premium rounds and Review with AI.", href: "/humanize" },
+  { file: "tut_rewrite_verify", title: "Rewrite & Verify", desc: "Long documents with a final AI and plagiarism report.", href: "/rewrite-verify" },
+  { file: "tut_ai_assistant", title: "AI Assistant", desc: "Ask about writing, structure and references.", href: "/ai-assistant" },
+  { file: "tut_community", title: "Community", desc: "Chat with students, reviewed by AI.", href: "/community" },
+  { file: "tut_templates_projects", title: "Templates and projects", desc: "Ready structures and your saved work.", href: "/templates" },
+  { file: "tut_download_app", title: "Download the app", desc: "Android, Windows, iPhone and Mac.", href: "/download" },
+  { file: "tut_pricing", title: "Pricing", desc: "Start free; plans from R19 a day.", href: "/pricing" },
 ];
 
 // Earlier walkthroughs on the LearnHub YouTube channel (embedded, so views count on YouTube)
@@ -44,20 +56,20 @@ export default function Tutorials() {
   return (
     <GeneratorLayout
       title="Video tutorials"
-      description="Watch how AI Check, the AI Humanizer and Rewrite & Verify work on real text, step by step."
+      description="Short videos of every AcademicGen tool, recorded on the real site, step by step."
       icon={<PlayCircle className="w-6 h-6 text-white" />}
       gradient="from-rose-500 to-orange-500"
     >
       <div className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Full tutorial (2 minutes)</CardTitle>
-            <CardDescription>From opening the site to the final Rewrite & Verify report.</CardDescription>
+            <CardTitle className="text-lg">Full tour: every tool in 4 minutes</CardTitle>
+            <CardDescription>Generators, checking tools, Premium rounds, the AI Assistant, Community and pricing.</CardDescription>
           </CardHeader>
           <CardContent>
             <video className="w-full rounded-lg border bg-black aspect-video" controls preload="metadata" playsInline
-              poster="/videos/academicgen_tutorial_full.jpg" data-testid="video-full">
-              <source src="/videos/academicgen_tutorial_full.mp4" type="video/mp4" />
+              poster="/videos/v2/academicgen_tour_full.jpg" data-testid="video-full">
+              <source src="/videos/v2/academicgen_tour_full.mp4" type="video/mp4" />
             </video>
             <div className="flex flex-wrap gap-2 mt-4">
               <Link href="/ai-check"><Button size="sm" variant="outline"><ScanSearch className="w-4 h-4 mr-1" />Try AI Check</Button></Link>
@@ -66,6 +78,40 @@ export default function Tutorials() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="border-violet-500/40">
+          <CardHeader>
+            <CardTitle className="text-lg flex flex-wrap items-center gap-2"><Sparkles className="w-5 h-5 text-violet-600" />Premium rounds: a real result</CardTitle>
+            <CardDescription>A typical AI-written paragraph, recorded live: 100% AI-like before, then 0% on ZeroGPT and 0.06% on Quetext after five rounds, with the plagiarism report and Review with AI.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <video className="w-full rounded-lg border bg-black aspect-video" controls preload="metadata" playsInline
+              poster="/videos/v2/tut_premium_rounds.jpg" data-testid="video-premium">
+              <source src="/videos/v2/tut_premium_rounds.mp4" type="video/mp4" />
+            </video>
+            <p className="text-xs text-muted-foreground mt-3">Scores come from independent detectors and vary from text to text; they are estimates, not a guarantee.</p>
+            <div className="pt-3"><Link href="/humanize"><Button size="sm"><Wand2 className="w-4 h-4 mr-1" />Try Premium rounds</Button></Link></div>
+          </CardContent>
+        </Card>
+
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold mb-1">Tool tutorials</h2>
+          <p className="text-sm text-muted-foreground mb-4">One short video for every tool.</p>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {TOOL_TUTS.map((v) => (
+              <Card key={v.file} className="overflow-hidden flex flex-col">
+                <video className="w-full bg-black aspect-video" controls preload="none" playsInline poster={`/videos/v2/${v.file}.jpg`} data-testid={`video-${v.file}`}>
+                  <source src={`/videos/v2/${v.file}.mp4`} type="video/mp4" />
+                </video>
+                <CardContent className="pt-4 space-y-2 flex flex-col flex-1">
+                  <p className="font-medium">{v.title}</p>
+                  <p className="text-sm text-muted-foreground">{v.desc}</p>
+                  <div className="pt-2 mt-auto"><Link href={v.href}><Button size="sm" variant="outline">Open the tool</Button></Link></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
 
         <div>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
@@ -89,24 +135,6 @@ export default function Tutorials() {
           </div>
         </div>
 
-        <div>
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Short videos</h2>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {SHORTS.map((s) => (
-              <Card key={s.file} className="overflow-hidden flex flex-col">
-                <video className="w-full bg-black aspect-[9/16] max-h-[640px] object-contain" controls preload="none" playsInline
-                  poster={`/videos/${s.file}.jpg`} data-testid={`video-${s.file}`}>
-                  <source src={`/videos/${s.file}.mp4`} type="video/mp4" />
-                </video>
-                <CardContent className="pt-4 space-y-2 flex flex-col flex-1">
-                  <p className="font-medium">{s.title}</p>
-                  <p className="text-sm text-muted-foreground">{s.desc}</p>
-                  <div className="pt-2 mt-auto"><Link href={s.href}><Button size="sm" variant="outline">Open the tool</Button></Link></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
       </div>
     </GeneratorLayout>
   );
