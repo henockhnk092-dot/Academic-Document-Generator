@@ -1117,7 +1117,7 @@ export default function GenerateConference() {
               <div
                 ref={previewRef}
                 className="border rounded-lg bg-background min-h-[600px] overflow-auto shadow-inner"
-                style={{ maxHeight: '800px' }}
+                style={{ maxHeight: isFullscreen ? 'none' : '800px' }}
               >
                 {hasContent ? (
                   <div
