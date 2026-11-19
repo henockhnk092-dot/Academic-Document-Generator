@@ -86,7 +86,7 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
           <div className="min-w-0 flex-1">
             <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">Premium rounds <Badge variant="secondary" className="text-[10px]">Best results</Badge></CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Our strongest engine rewrites your text in several rounds. After each round an independent detector scores it, flagged parts are reworked, and your numbers and citations are protected. You get the best round plus a final AI and plagiarism report.
+              Our strongest engine rewrites your text in several rounds. After each round an independent detector scores it, flagged parts are reworked, and your numbers and citations are protected. You get the best round plus a final AI and plagiarism report. If the two detectors never both agree, half your credits come back automatically.
             </CardDescription>
           </div>
         </div>

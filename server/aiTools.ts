@@ -319,6 +319,14 @@ async function runJob(j: Job, original: string, title: string) {
       await refundCredits(j.uid, j.cost, j.id, "Refund: no safe rewrite was possible").catch(() => {});
       log(`We could not rewrite this text safely without changing its facts, so your ${j.cost} credits were refunded.`);
       j.refunded = true;
+    } else if (j.cost > 0 && process.env.QUETEXT_API_KEY && !(bz != null && bz <= TARGET && bq != null && bq <= QT_TARGET)) {
+      // Fair-result guarantee: if the two independent detectors never both agreed, half the credits come back.
+      const back = Math.floor(j.cost / 2);
+      if (back > 0) {
+        await refundCredits(j.uid, back, j.id, "Partial refund: the two detectors did not both agree").catch(() => {});
+        log(`The two independent detectors did not both agree within ${MAX_ROUNDS} rounds, so ${back} of your ${j.cost} credits were refunded. You keep the best version.`);
+        (j as any).partialRefund = back;
+      }
     }
     j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext };
     j.status = "done";

@@ -179,6 +179,7 @@ export default function Legal() {
                 <Section icon={CheckCircle2} title="Refunds">
                   <ul className="list-disc pl-5 space-y-1">
                     <li>If a Rewrite &amp; Verify job fails, or we cannot rewrite your text without changing its facts, the credits are returned to your account automatically.</li>
+                    <li>Premium rounds and Rewrite &amp; Verify: if the two independent detectors never both agree within the rounds, half of the credits for that job are returned automatically. You keep the best version.</li>
                     <li>If you were charged in error, charged twice, or the service did not work because of a fault on our side, contact us within 7 days of the charge and we will refund you to the original payment method.</li>
                     <li>Unused credit packs can be refunded within 7 days of purchase if none of the credits were used.</li>
                     <li>Subscription periods and credits that were already used are not refundable, except where the law requires it.</li>
