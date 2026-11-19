@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// The APK is small enough for Cloudflare Pages. Desktop installers (110+ MB) live on GitHub Releases,
-// because Cloudflare Pages caps files at 25 MB. Set DESKTOP_READY once the release is published.
+// The APK is small enough for Cloudflare Pages. Desktop installers (110+ MB) are split into <25 MB parts
+// in /downloads/desktop and joined in the browser (see ChunkedDownload).
 export const ANDROID_URL = "/downloads/AcademicGen.apk";
-const RELEASES = "https://github.com/henockhnk092-dot/academicgen-apps/releases/latest/download";
-export const WINDOWS_URL = `${RELEASES}/AcademicGen-Setup.exe`;
-export const LINUX_URL = `${RELEASES}/AcademicGen-linux-x64.tar.gz`;
-export const DESKTOP_READY = false;
+const RELEASES = "https://gitlab.com/hhnk3693-group/academicgen-apps/-/raw/main"; // mirror (private until made public); the buttons use /downloads/desktop
+export const WINDOWS_URL = `${RELEASES}/AcademicGen-Setup.exe?inline=false`;
+export const LINUX_URL = `${RELEASES}/AcademicGen-linux-x64.tar.gz?inline=false`;
+export const DESKTOP_READY = true;
 
 type Platform = "windows" | "android" | "ios" | "mac" | "linux" | "other";
 
@@ -90,6 +90,45 @@ const BENEFITS = [
   { icon: <ShieldCheck className="w-5 h-5" />, title: "Same account", text: "Sign in with the same account. Your projects, plan and credits are all there." },
 ];
 
+// Desktop installers are split into parts under 25 MB (Cloudflare Pages limit) and joined in the browser.
+// manifest.json holds each file's size, SHA-256 and part list; the joined file is verified before saving.
+function ChunkedDownload({ file, label, full, testId }: { file: string; label: string; full: boolean; testId: string }) {
+  const [pct, setPct] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const start = async () => {
+    setErr(null); setPct(0);
+    try {
+      const man = await (await fetch("/downloads/desktop/manifest.json", { cache: "no-store" })).json();
+      const m = man[file]; if (!m) throw new Error("File list not found.");
+      const chunks: Uint8Array[] = []; let got = 0;
+      for (const part of m.parts) {
+        const r = await fetch(`/downloads/desktop/${part}`); if (!r.ok || !r.body) throw new Error("A part could not be downloaded. Please try again.");
+        const reader = r.body.getReader();
+        for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; setPct(Math.min(99, Math.round((got / m.size) * 100))); }
+      }
+      if (got !== m.size) throw new Error("The download was incomplete. Please try again.");
+      const blob = new Blob(chunks, { type: "application/octet-stream" });
+      if (crypto?.subtle) {
+        const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()))).map((b) => b.toString(16).padStart(2, "0")).join("");
+        if (hash !== m.sha256) throw new Error("The file did not pass its integrity check. Please try again.");
+      }
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = file;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setPct(100);
+    } catch (e: any) { setErr(e.message || "Download failed."); setPct(null); }
+  };
+  const busy = pct !== null && pct < 100;
+  return (
+    <div className={full ? "w-full space-y-2" : "space-y-2"}>
+      <Button size="sm" onClick={start} disabled={busy} className={full ? "w-full" : "w-full sm:w-auto"} data-testid={testId}>
+        <DownloadIcon className="w-4 h-4 mr-1" />{busy ? `Downloading ${pct}%` : pct === 100 ? "Downloaded, check your Downloads folder" : label}
+      </Button>
+      {busy && <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} /></div>}
+      {err && <p className="text-xs text-destructive">{err}</p>}
+    </div>
+  );
+}
+
 export default function DownloadPage() {
   const [platform, setPlatform] = useState<Platform>("other");
   const { canInstall, installed, install } = useInstallPrompt();
@@ -114,8 +153,8 @@ export default function DownloadPage() {
     </div>
   );
   const actionFor = (p: PlatformInfo, full = false) =>
-    p.id === "windows" ? (DESKTOP_READY ? fileButton(WINDOWS_URL, "Download for Windows", "windows", full) : soon("Windows installer", full))
-    : p.id === "linux" ? (DESKTOP_READY ? fileButton(LINUX_URL, "Download for Linux", "linux", full) : soon("Linux app", full))
+    p.id === "windows" ? (DESKTOP_READY ? <ChunkedDownload file="AcademicGen-Setup.exe" label="Download for Windows (112 MB)" full={full} testId="link-download-windows" /> : soon("Windows installer", full))
+    : p.id === "linux" ? (DESKTOP_READY ? <ChunkedDownload file="AcademicGen-linux-x64.tar.gz" label="Download for Linux (119 MB)" full={full} testId="link-download-linux" /> : soon("Linux app", full))
     : p.id === "android" ? (
       <div className="flex flex-col sm:flex-row gap-2 w-full">
         {fileButton(ANDROID_URL, "Download APK", "android", full)}
