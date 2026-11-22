@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { refHtml, RefText } from "@/lib/ref-format";
 import { useTranslation } from "react-i18next";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { FileText, Sparkles, Upload, Download, X, FileIcon, Settings, Save, Trash2, Undo2, FileCode, Printer, Cloud, FileDown, Loader2, Plus, Minus, Image, Table, BookOpen, FileSignature, Wand2, BookOpenCheck, Maximize2, Minimize2 } from "lucide-react";
@@ -406,7 +407,7 @@ export default function GenerateCustomReport() {
     <h2>References</h2>`;
       generatedContent.references.forEach((ref: string) => {
         html += `
-    <div class="reference-item">${ref}</div>`;
+    <div class="reference-item">${refHtml(ref)}</div>`;
       });
       html += `
   </div>`;
@@ -506,7 +507,7 @@ export default function GenerateCustomReport() {
       if (generatedContent.references && generatedContent.references.length > 0) {
         htmlContent += `<h2>References</h2>`;
         generatedContent.references.forEach((ref: string) => {
-          htmlContent += `<p>${ref}</p>`;
+          htmlContent += `<p>${refHtml(ref)}</p>`;
         });
       }
 
@@ -1156,7 +1157,7 @@ export default function GenerateCustomReport() {
                         <div className="space-y-2">
                           {generatedContent.references.map((ref: string, idx: number) => (
                             <div key={idx} className="text-sm pl-5 -indent-5">
-                              {ref}
+                              <RefText text={ref} />
                             </div>
                           ))}
                         </div>

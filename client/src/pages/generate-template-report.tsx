@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { refHtml, RefText } from "@/lib/ref-format";
 import { useTranslation } from "react-i18next";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import {
@@ -233,7 +234,7 @@ export default function GenerateTemplateReport() {
         }
       });
       if (generatedContent.references?.length) {
-        html += `<h2>References</h2>` + generatedContent.references.map((r: string) => `<p>${r}</p>`).join("");
+        html += `<h2>References</h2>` + generatedContent.references.map((r: string) => `<p>${refHtml(r)}</p>`).join("");
       }
       await exportHtmlToDocx(html, { title: generatedContent.title ?? "template-report" });
       toast({ title: t("pages.templateReport.docxExported") });
@@ -831,7 +832,7 @@ export default function GenerateTemplateReport() {
                               <h2>{t("pages.report.referencesHeading")}</h2>
                               <div className="space-y-2">
                                 {generatedContent.references.map((ref: string, idx: number) => (
-                                  <div key={idx} className="text-sm pl-5 -indent-5">{ref}</div>
+                                  <div key={idx} className="text-sm pl-5 -indent-5"><RefText text={ref} /></div>
                                 ))}
                               </div>
                             </div>

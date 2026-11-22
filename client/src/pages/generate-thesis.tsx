@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { refHtml, RefText } from "@/lib/ref-format";
 import { useTranslation } from "react-i18next";
 import { GraduationCap, Sparkles, Upload, Settings, Download, Save, X, FileIcon, FileDown, FileCode, Cloud, Printer, FileText, Wand2, BookOpenCheck, Trash2, Undo2, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useGeminiTTS } from "@/hooks/use-gemini-tts";
@@ -271,7 +272,7 @@ export default function GenerateThesis() {
       if (generatedContent.references && generatedContent.references.length > 0) {
         html += `<h2>${t("pages.references.title")}</h2>`;
         generatedContent.references.forEach((ref: string) => {
-          html += `<p>${ref}</p>`;
+          html += `<p>${refHtml(ref)}</p>`;
         });
       }
 
@@ -395,7 +396,7 @@ export default function GenerateThesis() {
     <h2>${t("pages.references.title")}</h2>`;
       generatedContent.references.forEach((ref: string) => {
         html += `
-    <p>${ref}</p>`;
+    <p>${refHtml(ref)}</p>`;
       });
       html += `
   </div>`;
@@ -925,7 +926,7 @@ export default function GenerateThesis() {
                         <h2 className="text-xl font-bold mb-4">{t("pages.report.referencesHeading")}</h2>
                         <ol className="list-decimal pl-6 space-y-2">
                           {generatedContent.references.map((ref: string, idx: number) => (
-                            <li key={idx} className="text-sm leading-relaxed">{ref}</li>
+                            <li key={idx} className="text-sm leading-relaxed"><RefText text={ref} /></li>
                           ))}
                         </ol>
                       </div>

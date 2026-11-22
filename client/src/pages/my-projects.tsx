@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { RefText } from "@/lib/ref-format";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -1129,7 +1130,7 @@ export default function MyProjects() {
                         <h3 className="text-lg font-semibold mb-3">{t("pages.myProjects.references")}</h3>
                         <ol className="list-decimal pl-6 space-y-1">
                           {viewedDocument.content.references.map((ref: string, index: number) => (
-                            <li key={index} className="text-sm">{ref}</li>
+                            <li key={index} className="text-sm"><RefText text={ref} /></li>
                           ))}
                         </ol>
                       </div>

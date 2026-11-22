@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { RefText } from "@/lib/ref-format";
 import { useTranslation } from "react-i18next";
 import { readCitationsPrefill } from "@/lib/humanize-transfer";
 import {
@@ -583,7 +584,7 @@ export default function Citations() {
                         result.referenceSection.map((ref, i) => (
                           <div key={i} className="flex gap-3 text-sm">
                             <span className="text-muted-foreground font-mono text-xs pt-0.5 flex-shrink-0">[{i + 1}]</span>
-                            <p className="leading-relaxed">{ref}</p>
+                            <p className="leading-relaxed"><RefText text={ref} /></p>
                           </div>
                         ))
                       )}
