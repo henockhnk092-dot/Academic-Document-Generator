@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { TextInputWithUpload } from "@/components/text-input-with-upload";
 import { ResultTools } from "@/components/result-tools";
@@ -51,6 +51,13 @@ export default function RewriteVerify() {
   const [info, setInfo] = useState<EnginesInfo | null>(null);
   const [engine, setEngine] = useState("premium");
   const [balance, setBalance] = useState<number | null>(null);
+  const [showSide, setShowSide] = useState<boolean>(() => {
+    try { return localStorage.getItem("rv-show-side") !== "0"; } catch { return true; }
+  });
+  const toggleSide = () => setShowSide((v) => {
+    try { localStorage.setItem("rv-show-side", v ? "0" : "1"); } catch { /* ignore */ }
+    return !v;
+  });
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<Job | null>(null);
@@ -169,8 +176,17 @@ export default function RewriteVerify() {
       icon={<Sparkles className="w-6 h-6 text-white" />}
       gradient="from-fuchsia-500 to-violet-600"
     >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="flex items-center justify-end gap-3 mb-3">
+        {!showSide && isAuthenticated && (
+          <span className="text-sm text-muted-foreground flex items-center gap-1"><Coins className="w-4 h-4" />{balance ?? "..."} credits</span>
+        )}
+        <Button variant="ghost" size="sm" onClick={toggleSide} aria-expanded={showSide} data-testid="button-rv-toggle-side">
+          {showSide ? <PanelRightClose className="w-4 h-4 mr-2" /> : <PanelRightOpen className="w-4 h-4 mr-2" />}
+          {showSide ? "Hide credits & info" : "Show credits & info"}
+        </Button>
+      </div>
+      <div className={showSide ? "grid gap-6 lg:grid-cols-3" : "grid gap-6"}>
+        <div className={showSide ? "lg:col-span-2 space-y-6" : "space-y-6"}>
           {(waitingOrder || job) ? (
             <Card>
               <CardHeader>
@@ -276,7 +292,7 @@ export default function RewriteVerify() {
           )}
         </div>
 
-        <div className="space-y-6">
+        {showSide && <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2"><Coins className="w-5 h-5" />Credits</CardTitle>
@@ -302,7 +318,7 @@ export default function RewriteVerify() {
               <p>4. Final independent AI check and plagiarism scan with sources.</p>
             </CardContent>
           </Card>
-        </div>
+        </div>}
       </div>
     </GeneratorLayout>
   );

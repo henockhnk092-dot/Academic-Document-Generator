@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Sparkles, Loader2, CheckCircle2, ArrowRight, ShieldCheck, Coins } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, ArrowRight, ShieldCheck, Coins, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,13 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [starting, setStarting] = useState(false);
+  const [open, setOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem("premium-rounds-open") !== "0"; } catch { return true; }
+  });
+  const toggleOpen = () => setOpen((v) => {
+    try { localStorage.setItem("premium-rounds-open", v ? "0" : "1"); } catch { /* ignore */ }
+    return !v;
+  });
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -80,18 +87,27 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
 
   return (
     <Card className="border-violet-500/40" data-testid="card-premium-rounds">
-      <CardHeader className="pb-3">
+      <CardHeader className={open ? "pb-3" : "py-3"}>
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center"><Sparkles className="w-4 h-4" /></div>
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">Premium rounds <Badge variant="secondary" className="text-[10px]">Best results</Badge></CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Our strongest engine rewrites your text in several rounds. After each round an independent detector scores it, flagged parts are reworked, and your numbers and citations are protected. You get the best round plus a final AI and plagiarism report. If the two detectors never both agree, half your credits come back automatically.
-            </CardDescription>
+            <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">
+              Premium rounds <Badge variant="secondary" className="text-[10px]">Best results</Badge>
+              {!open && job?.status === "running" && <Badge variant="outline" className="text-[10px]"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Running {job.progress}%</Badge>}
+              {!open && job?.status === "done" && <Badge variant="outline" className="text-[10px] text-emerald-600">Done</Badge>}
+            </CardTitle>
+            {open && (
+              <CardDescription className="text-xs sm:text-sm">
+                Our strongest engine rewrites your text in several rounds. After each round an independent detector scores it, flagged parts are reworked, and your numbers and citations are protected. You get the best round plus a final AI and plagiarism report. If the two detectors never both agree, half your credits come back automatically.
+              </CardDescription>
+            )}
           </div>
+          <Button variant="ghost" size="sm" onClick={toggleOpen} aria-expanded={open} className="shrink-0 -mr-2" data-testid="button-premium-toggle">
+            {open ? <><ChevronUp className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Hide</span></> : <><ChevronDown className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Show</span></>}
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {open && <CardContent className="space-y-4">
         {!jobId && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="text-sm text-muted-foreground flex items-center gap-1.5 flex-1">
@@ -138,7 +154,7 @@ export function PremiumRounds({ text, onUse }: { text: string; onUse: (rewritten
             )}
           </div>
         )}
-      </CardContent>
+      </CardContent>}
     </Card>
   );
 }
