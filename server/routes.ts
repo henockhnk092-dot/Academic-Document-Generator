@@ -1278,6 +1278,34 @@ Return JSON with "formatted" (full reference list entry) and "inText" (in-text c
     }
   });
 
+  // Academic integrity confirmation (terms of use): stored on the account with the date and version.
+  const integrityDoc = async (uid: string) => {
+    const { getApp } = await import("firebase-admin/app");
+    const { getFirestore } = await import("firebase-admin/firestore");
+    return getFirestore(getApp()).collection("users").doc(uid);
+  };
+  app.get("/api/integrity", async (req, res) => {
+    const uid = await getAuthenticatedUid(req).catch(() => null);
+    if (!uid) return res.status(401).json({ error: "Please sign in." });
+    try {
+      const a = (await (await integrityDoc(uid)).get()).data()?.integrityAccepted;
+      res.json({ accepted: Number(a?.version) >= 1, version: a?.version ?? null });
+    } catch (e: any) {
+      res.status(500).json({ error: "Could not read your confirmation." });
+    }
+  });
+  app.post("/api/integrity/accept", async (req, res) => {
+    const uid = await getAuthenticatedUid(req).catch(() => null);
+    if (!uid) return res.status(401).json({ error: "Please sign in." });
+    const version = Number(req.body?.version) || 1;
+    try {
+      await (await integrityDoc(uid)).set({ integrityAccepted: { version, at: new Date().toISOString() } }, { merge: true });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: "Could not save your confirmation." });
+    }
+  });
+
   app.get("/api/usage/:userId", async (req, res) => {
     try {
       const { userId } = req.params;

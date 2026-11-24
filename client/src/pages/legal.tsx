@@ -187,7 +187,7 @@ export default function Legal() {
                   <p className="mt-2">Approved refunds are processed within 7 business days. The time for the money to reach your account depends on your bank.</p>
                 </Section>
                 <Section icon={AlertTriangle} title="Fair use and academic integrity">
-                  <p>AcademicGen helps you plan, write, check and improve your own work. We do not promise any particular detector score or outcome, and you are responsible for following your university's rules on AI. Accounts that abuse the service, for example through automated or resold use, may be suspended without a refund of the abused period.</p>
+                  <p>AcademicGen produces AI drafts and AI rewrites to help you plan, write, check and improve your own work. You must not submit content generated or rewritten by AcademicGen as your own academic work, unless your institution allows AI assistance and you disclose it as your institution requires. Every user confirms this before using the tools. We do not promise any particular detector score or outcome. Accounts that break these rules, or that abuse the service, for example through automated or resold use, may be suspended without a refund of the affected period.</p>
                 </Section>
                 <Section icon={Users} title="Company details">
                   <p><strong className="text-foreground">HNK IoT Solutions (Pty) Ltd</strong>, registration number 2026/647269/07.<br />33 Scott Road, Parow West, Cape Town, South Africa.<br />Email: support@hnkiot.com · WhatsApp: +27 61 471 9400</p>

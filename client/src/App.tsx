@@ -9,6 +9,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChatbotWidget } from "@/components/chatbot-widget";
 import { OnboardingModal } from "@/components/onboarding-modal";
+import { IntegrityGate } from "@/components/integrity-gate";
 import { WhatsNewBanner } from "@/components/whats-new-banner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -236,6 +237,7 @@ function App() {
             </SidebarProvider>
             <ChatbotWidget />
             <OnboardingModal />
+            <IntegrityGate />
             <PwaUpdateBanner />
             <CookieConsent />
             <Toaster />
