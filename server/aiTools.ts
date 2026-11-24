@@ -22,9 +22,10 @@ export const ENGINES: Record<string, { label: string; perK: number; desc: string
 };
 const MIN_WORDS_BILLED = 300;
 const MAX_WORDS = 5000;
-const TARGET = 15; // ZeroGPT must be at or below this %
-const QT_TARGET = 20; // ...and Quetext at or below this % (accept only when BOTH independent detectors agree)
-const MAX_ROUNDS = 5;
+const TARGET = 10; // ZeroGPT must be at or below this %
+const QT_TARGET = 10; // ...and Quetext at or below this % (accept only when BOTH independent detectors agree)
+const MAX_ROUNDS = 8;
+const MAX_ENGINE_FACTOR = 6; // stop when the engine has rewritten this many times the editable words (cost limit)
 
 // Engines on sale (RV_ENGINES, comma list). Default: premium only. Tested 15 Nov 2026 on a technical paragraph:
 // Standard (Gemini) and Advanced (ZeroGPT) stayed at 100% AI-likeness after 4 rounds; Premium (WriteHuman) reached 0%.
@@ -324,59 +325,58 @@ async function runJob(j: Job, original: string, title: string) {
     if (j.before !== null) log(`Your text before: AI-likeness ${j.before}%.`);
     log(`Rewriting ${editable.length} passage(s) with the ${ENGINES[j.engine].label} engine.`);
     let targets = editable;
-    let best = { score: Infinity, texts: chunks.map((c) => c.text) };
-    let forceFresh = false; // set when Quetext disagrees with ZeroGPT
+    let best = { score: Infinity, texts: chunks.map((c) => c.text), zg: null as number | null, qt: null as number | null };
+    const good = new Map<Chunk, string>(editable.map((c) => [c, c.orig])); // last version whose meaning was verified
+    const editableWords = editable.reduce((n, c) => n + words(c.orig), 0);
+    let engineWords = 0, forceFresh = false, meaningChecked = true;
+    const retryFresh = new Set<Chunk>(); // passages whose last rewrite changed the meaning: try again from the original
     for (let round = 1; round <= MAX_ROUNDS; round++) {
       for (let i = 0; i < targets.length; i += 3) {
-        // Rounds 2 and 4 retry flagged passages fresh from the original; round 3 rehumanizes the latest version.
-        const fresh = forceFresh || round % 2 === 0;
-        await Promise.all(targets.slice(i, i + 3).map(async (c) => { c.text = await safeRewrite(j.engine, c.orig, c.text, log, fresh); }));
+        await Promise.all(targets.slice(i, i + 3).map(async (c) => {
+          const fresh = forceFresh || round % 2 === 0 || retryFresh.has(c);
+          engineWords += words(c.orig);
+          c.text = await safeRewrite(j.engine, c.orig, c.text, log, fresh);
+        }));
         j.progress = Math.min(85, Math.round(((round - 1) + (i + 3) / Math.max(targets.length, 1)) / MAX_ROUNDS * 80));
       }
-      forceFresh = false;
+      forceFresh = false; retryFresh.clear();
+      // Meaning check, automatic: a passage that changed what the author wrote goes back to its last verified version.
+      const fresh2 = targets.filter((c) => c.text !== c.orig && c.text !== good.get(c));
+      const bad = fresh2.length ? await meaningIssues(fresh2.map((c) => ({ orig: c.orig, next: c.text }))) : new Map<number, string>();
+      if (bad === null) { meaningChecked = false; fresh2.forEach((c) => { c.text = good.get(c)!; }); log("The meaning check could not run, so this round's rewrites were not used."); }
+      else {
+        fresh2.forEach((c, k) => { if (bad.has(k)) { c.text = good.get(c)!; retryFresh.add(c); } else good.set(c, c.text); });
+        if (bad.size) log(`Meaning check: ${bad.size} of ${fresh2.length} passage(s) changed what you wrote and were put back.`);
+      }
       const full = join(chunks);
       const det = await zerogptDetect(full);
-      // Detectors can disagree (seen: ZeroGPT 0%, Quetext 100% on the same text). When ZeroGPT passes, confirm with
-      // Quetext; a round counts only when both are low, and rounds are ranked on the worse of the two.
-      let qt: number | null = null;
+      // Detectors can disagree (seen: ZeroGPT 0%, Quetext 83% on the same text), so a round passes only when both are low.
+      let qt: number | null = null; let qtFlagged: string[] = [];
       if (det.score <= TARGET && process.env.QUETEXT_API_KEY && words(full) >= 50) {
         const r: any = await quetextReport("ai-detect-report", full, title).catch(() => null);
         qt = r && r.ai_score != null ? Math.round(Number(r.ai_score) * 100) / 100 : null;
+        qtFlagged = (r?.ai_matches || []).filter((m: any) => Number(m?.generated_prob) >= 0.5).map((m: any) => String(m?.sentence || ""));
       }
       j.rounds.push({ round, score: det.score, quetext: qt });
       log(`Round ${round}: AI-likeness ${det.score}% (ZeroGPT)${qt !== null ? `, ${qt}% (Quetext)` : ""}.`);
       const combined = qt !== null ? Math.max(det.score, qt) : det.score + 100; // unconfirmed rounds rank below confirmed ones
-      // A later round can score worse than an earlier one: always keep the best version seen.
-      if (combined < best.score) best = { score: combined, texts: chunks.map((c) => c.text), zg: det.score, qt } as any;
-      if ((det.score <= TARGET && (qt === null ? !process.env.QUETEXT_API_KEY : qt <= QT_TARGET)) || round === MAX_ROUNDS) break;
-      if (det.score <= TARGET) {
-        targets = editable; forceFresh = true; // ZeroGPT passed but Quetext did not: fresh attempts on every passage
-        log(`The second detector still flags it. Reworking all ${targets.length} passage(s).`);
-        continue;
-      }
-      const flagged = det.flagged.map((f) => norm(f).slice(0, 60)).filter(Boolean);
-      targets = editable.filter((c) => flagged.some((f) => norm(c.text).includes(f)));
+      if (combined < best.score) best = { score: combined, texts: chunks.map((c) => c.text), zg: det.score, qt };
+      if (det.score <= TARGET && (qt === null ? !process.env.QUETEXT_API_KEY : qt <= QT_TARGET)) { log(`Both detectors are at ${TARGET}% or below after round ${round}.`); break; }
+      if (round === MAX_ROUNDS) break;
+      if (engineWords >= editableWords * MAX_ENGINE_FACTOR) { log("Stopped here: further rounds are not bringing the score down."); break; }
+      const flagged = [...det.flagged, ...qtFlagged].map((f) => norm(f).slice(0, 60)).filter(Boolean);
+      const untouched = editable.filter((c) => c.text === c.orig);
+      targets = editable.filter((c) => flagged.some((f) => norm(c.text).includes(f)) || untouched.includes(c));
       if (!targets.length) targets = editable;
-      log(`Reworking ${targets.length} flagged passage(s).`);
+      if (det.score <= TARGET) { forceFresh = true; log("The second detector still flags it."); }
+      log(`Round ${round + 1}: reworking ${targets.length} passage(s).`);
     }
     best.texts.forEach((t, i) => { chunks[i].text = t; });
-    let bz = (best as any).zg, bq = (best as any).qt;
-    if (j.rounds.length > 1) log(`Keeping the best round (${bz ?? best.score}% ZeroGPT${bq != null ? `, ${bq}% Quetext` : ""}).`);
-    // Check the meaning paragraph by paragraph. Flagged paragraphs go back to the original wording by default (the user
-    // reviews them side by side), and the reported score is that of the text actually delivered.
+    const bz = best.zg; let bq = best.qt;
+    if (j.rounds.length > 1) log(`Keeping the best round (${bz ?? "?"}% ZeroGPT${bq != null ? `, ${bq}% Quetext` : ""}).`);
     const origParas = join(chunks.map((c) => ({ ...c, text: c.orig }))).split("\n\n"), nextParas = join(chunks).split("\n\n");
     const review = origParas.length === nextParas.length
       ? origParas.map((orig, para) => ({ para, orig, next: nextParas[para], flagged: false, why: "" })).filter((r) => r.orig !== r.next) : [];
-    const bad = review.length ? await meaningIssues(review) : new Map<number, string>();
-    const meaningChecked = bad !== null;
-    if (bad === null) log("The meaning check could not run. Compare every rewrite with your original before you use it.");
-    else if (bad.size) {
-      bad.forEach((why, k) => { review[k].flagged = true; review[k].why = why; });
-      const back = new Set(review.filter((r) => r.flagged).map((r) => r.para));
-      chunks.forEach((c) => { if (back.has(c.para)) c.text = c.orig; });
-      bz = await zerogptDetect(join(chunks)).then((d) => d.score).catch(() => null); bq = null;
-      log(`Meaning check: ${bad.size} of ${review.length} paragraph(s) may have changed what you wrote. Your original is used there until you review them.${bz !== null ? ` AI-likeness ${bz}% (ZeroGPT).` : ""}`);
-    } else log(`Meaning check: no change of meaning found in ${review.length} paragraph(s). Read them anyway.`);
     const final = join(chunks);
     j.progress = 90;
     let quetext: any = null;
@@ -408,7 +408,7 @@ async function runJob(j: Job, original: string, title: string) {
         (j as any).partialRefund = back;
       }
     }
-    j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext, finalScore: bz ?? null, meaningChecked, review };
+    j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext, finalScore: bz, meaningChecked, review };
     j.status = "done";
     j.progress = 100;
     log("Done.");
@@ -631,6 +631,26 @@ ${rewritten}`,
     if (!uid || !o || o.uid !== uid) return res.status(404).json({ error: "Order not found." });
     res.set("Cache-Control", "no-store");
     res.json({ status: o.status, jobId: o.jobId || null, amount: o.amount, engine: o.engine, words: o.words });
+  });
+
+  // Re-check the score after the user's own edits: part of the paid job (no fair-use limit), 5 times per job,
+  // only for a text of about the same length as the job's.
+  app.post("/api/rv/job/:id/recheck", async (req, res) => {
+    const uid = await uidOf(req);
+    if (!uid) return res.status(401).json({ error: "Please sign in." });
+    try {
+      let j: any = jobs.get(req.params.id);
+      if (!j) { const db: any = await firestore(); j = db ? (await db.collection("rv_jobs").doc(req.params.id).get()).data() : null; }
+      if (!j || j.uid !== uid || j.status !== "done") return res.status(404).json({ error: "Job not found." });
+      const text = String(req.body?.text || "").trim();
+      if (words(text) < 40 || words(text) > j.words * 1.3 + 100) return res.status(400).json({ error: "This text does not match the job." });
+      if ((j.rechecks || 0) >= 5) return res.status(429).json({ error: "You have used the 5 re-checks of this job." });
+      j.rechecks = (j.rechecks || 0) + 1; await saveJob(j);
+      res.json({ success: true, score: (await zerogptDetect(text)).score });
+    } catch (e: any) {
+      console.error("[rv] recheck", e?.message);
+      res.status(500).json({ error: "The check failed. Please try again in a minute." });
+    }
   });
 
   app.get("/api/rv/job/:id", async (req, res) => {

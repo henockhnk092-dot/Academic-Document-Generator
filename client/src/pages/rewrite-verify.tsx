@@ -81,7 +81,7 @@ export default function RewriteVerify() {
   const recheckScore = async () => {
     setRecheck((r) => ({ ...r, busy: true }));
     try {
-      const r = await fetch("/api/ai-check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: finalText }) });
+      const r = await fetch(`/api/rv/job/${job!.id}/recheck`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: finalText }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "The check failed.");
       setRecheck({ score: Number(d.score), stale: false, busy: false });
@@ -216,7 +216,7 @@ export default function RewriteVerify() {
   return (
     <GeneratorLayout
       title="Rewrite & Verify"
-      description="We rewrite your text in a natural academic style, check numbers, citations and meaning against your original, and let you review every change. You also get an AI and plagiarism report."
+      description="We rewrite your text in a natural academic style, check numbers, citations and meaning against your original, over automatic rounds. You also get an AI and plagiarism report."
       icon={<Sparkles className="w-6 h-6 text-white" />}
       gradient="from-fuchsia-500 to-violet-600"
     >
@@ -260,7 +260,7 @@ export default function RewriteVerify() {
                       return (
                         <div className="space-y-3">
                           {best !== null && (
-                            <div className={`rounded-lg border-2 p-4 ${best <= 15 && fc?.aiScore != null && Number(fc.aiScore) <= 20 && recheck.score === null ? "border-emerald-500/50 bg-emerald-500/5" : "border-amber-500/50 bg-amber-500/5"}`}>
+                            <div className={`rounded-lg border-2 p-4 ${best <= 10 && fc?.aiScore != null && Number(fc.aiScore) <= 10 && recheck.score === null ? "border-emerald-500/50 bg-emerald-500/5" : "border-amber-500/50 bg-amber-500/5"}`}>
                               <p className="text-xs text-muted-foreground">AI-likeness of the final text (ZeroGPT)</p>
                               <p className="text-3xl font-bold">{Math.round(best)}%{first !== null && first > best ? <span className="text-base font-medium text-muted-foreground ml-2">from {Math.round(first)}%</span> : null}</p>
                             </div>
@@ -282,7 +282,8 @@ export default function RewriteVerify() {
                       </details>
                     )}
                     {!!job.result.review?.length && (
-                      <>
+                      <details className="space-y-2" data-testid="rv-review-details">
+                        <summary className="cursor-pointer text-sm font-medium">Review the changes (optional)</summary>
                         <ParagraphReview items={job.result.review} paras={paras} onChange={choosePara} />
                         <div className="flex flex-wrap items-center gap-2">
                           <Button size="sm" variant="outline" onClick={recheckScore} disabled={recheck.busy} data-testid="rv-recheck">
@@ -290,7 +291,7 @@ export default function RewriteVerify() {
                           </Button>
                           {recheck.stale && <span className="text-xs text-amber-600">You changed the text, so the score above is out of date.</span>}
                         </div>
-                      </>
+                      </details>
                     )}
                     {resultDoc && (
                       <div className="rounded-lg border bg-muted/30 p-3 space-y-2" data-testid="rv-layout-result">
@@ -390,7 +391,7 @@ export default function RewriteVerify() {
             <CardContent className="text-sm space-y-1 text-muted-foreground">
               <p>1. Natural academic rewrite with the engine you choose.</p>
               <p>2. Fact guard: numbers, citations and figure/table references are compared with your text.</p>
-              <p>3. AI-likeness check each round, a meaning check, and your own side-by-side review.</p>
+              <p>3. Automatic rounds (up to 8) aiming for 10% or below on two detectors, with a meaning check in every round.</p>
               <p>4. Final independent AI check and plagiarism scan with sources.</p>
             </CardContent>
           </Card>

@@ -33,7 +33,7 @@ export function ParagraphReview({ items, paras, onChange }: { items: ReviewItem[
               <div className="flex flex-wrap items-center gap-2">
                 {it.flagged
                   ? <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400"><AlertTriangle className="w-3 h-3 mr-1" />Check meaning</Badge>
-                  : <Badge variant="outline" className="border-emerald-500 text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="w-3 h-3 mr-1" />No change found</Badge>}
+                  : <Badge variant="outline" className="border-emerald-500 text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="w-3 h-3 mr-1" />Passed the meaning check</Badge>}
                 {it.why && <span className="text-xs text-muted-foreground">{it.why}</span>}
               </div>
               <div className="grid gap-2 md:grid-cols-2">
