@@ -10,36 +10,51 @@ import { useAuth } from "@/components/auth-provider";
 // Signed-in acceptances are stored on the account (users/<uid>.integrityAccepted) so they can be shown later.
 export const INTEGRITY_VERSION = 1;
 const KEY = `academicgen_integrity_v${INTEGRITY_VERSION}`;
-const TOOL_PATHS = ["/generate", "/humanize", "/rewrite-verify", "/ai-check", "/ai-assistant", "/references"];
+// Everything is behind the confirmation except the information pages.
+const PUBLIC_PATHS = ["/", "/tutorials", "/download", "/about", "/contact", "/legal", "/pricing", "/settings", "/checkout"];
 
 export function IntegrityGate() {
   const [location] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [open, setOpen] = useState(false);
   const [ticked, setTicked] = useState(false);
   const [busy, setBusy] = useState(false);
-  const onTool = TOOL_PATHS.some((p) => location === p || location.startsWith(p + "/"));
+  const [error, setError] = useState("");
+  const onTool = !PUBLIC_PATHS.some((p) => location === p || (p !== "/" && location.startsWith(p + "/")));
+  const uid = isAuthenticated ? (user as any)?.uid ?? (user as any)?.id ?? null : null;
+  // Per account: one person's confirmation never counts for another account on the same computer.
+  const key = `${KEY}_${isAuthenticated ? uid || "account" : "guest"}`;
 
   useEffect(() => {
+    setTicked(false); setError("");
     if (!onTool) { setOpen(false); return; }
     let local = false;
-    try { local = localStorage.getItem(KEY) === "1"; } catch { /* storage blocked */ }
-    if (!isAuthenticated) { setOpen(!local); return; }
+    try { local = localStorage.getItem(key) === "1"; } catch { /* storage blocked */ }
+    if (local && (!isAuthenticated || uid)) { setOpen(false); return; }
+    if (!isAuthenticated) { setOpen(true); return; }
     let live = true;
     fetch("/api/integrity").then((r) => (r.ok ? r.json() : null)).then((d) => {
       if (!live) return;
-      if (d?.accepted) { try { localStorage.setItem(KEY, "1"); } catch { /* ignore */ } setOpen(false); }
-      else if (local) fetch("/api/integrity/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: INTEGRITY_VERSION }) }).catch(() => {});
+      if (d?.accepted) { try { localStorage.setItem(key, "1"); } catch { /* ignore */ } setOpen(false); }
       else setOpen(true);
-    }).catch(() => live && setOpen(!local));
+    }).catch(() => live && setOpen(true));
     return () => { live = false; };
-  }, [onTool, isAuthenticated, location]);
+  }, [onTool, isAuthenticated, key]);
 
   const accept = async () => {
-    setBusy(true);
-    try { localStorage.setItem(KEY, "1"); } catch { /* ignore */ }
-    if (isAuthenticated) await fetch("/api/integrity/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: INTEGRITY_VERSION }) }).catch(() => {});
-    setBusy(false); setOpen(false);
+    setBusy(true); setError("");
+    try {
+      if (isAuthenticated) {
+        const r = await fetch("/api/integrity/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: INTEGRITY_VERSION }) });
+        if (!r.ok) throw new Error();
+      }
+      try { localStorage.setItem(key, "1"); } catch { /* ignore */ }
+      setOpen(false);
+    } catch {
+      setError("Your confirmation could not be saved. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -61,6 +76,7 @@ export function IntegrityGate() {
           <Checkbox checked={ticked} onCheckedChange={(v) => setTicked(v === true)} data-testid="integrity-tick" className="mt-0.5" />
           <span>I confirm the three points above.</span>
         </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
         <Button onClick={accept} disabled={!ticked || busy} data-testid="integrity-accept">Continue</Button>
       </DialogContent>
     </Dialog>

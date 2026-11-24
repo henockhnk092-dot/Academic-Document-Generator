@@ -1310,7 +1310,7 @@
         "acceptable1": "AcademicGen est fourni « tel quel » sans garantie d'aucune sorte, expresse ou implicite.",
         "acceptable2": "Vous êtes seul responsable du contenu que vous générez et de la manière dont vous l'utilisez.",
         "acceptable3": "L'exactitude du contenu généré doit être vérifiée avant sa soumission, sa publication ou sa soumission à un établissement universitaire.",
-        "acceptable4": "N'utilisez pas ce service pour générer du contenu qui viole les politiques d'intégrité académique de votre établissement.",
+        "acceptable4": "Ne soumettez pas un contenu généré ou réécrit par AcademicGen comme votre propre travail académique, sauf si votre établissement autorise l'aide de l'IA et si vous la déclarez comme demandé. Les comptes qui enfreignent cette règle peuvent être suspendus.",
         "acceptable5": "N'essayez pas de faire de l'ingénierie inverse, de supprimer ou d'abuser des points de terminaison de l'API.",
         "acceptable6": "N'utilisez pas le service à des fins illégales ou pour nuire à autrui.",
         "availability1": "Nous visons une haute disponibilité mais ne garantissons pas un accès ininterrompu.",
