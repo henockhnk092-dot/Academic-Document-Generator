@@ -34,8 +34,10 @@ export function SurpriseMeButton({ onText, size = "sm", className = "" }: { onTe
 
 // Same "Upload file / Paste text" input as the AI Humanizer page. Files go through /api/humanize/upload
 // (PDF, DOCX, TXT, MD, or an image read with OCR) and the extracted text lands in the text box.
-export function TextInputWithUpload({ value, onChange, placeholder, minHeight = "min-h-[300px]", testId }: {
+export function TextInputWithUpload({ value, onChange, placeholder, minHeight = "min-h-[300px]", testId, interceptFile }: {
   value: string; onChange: (v: string) => void; placeholder: string; minHeight?: string; testId?: string;
+  /** Optional: read the file in the page instead (return the text), or return null to use the normal upload. */
+  interceptFile?: (file: File) => Promise<string | null>;
 }) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -47,6 +49,12 @@ export function TextInputWithUpload({ value, onChange, placeholder, minHeight = 
   const handleFile = async (file: File) => {
     setLoading(true);
     try {
+      const own = interceptFile ? await interceptFile(file) : null;
+      if (own !== null) {
+        onChange(own); setFileName(file.name); setMode("paste");
+        toast({ title: "File added", description: `${countWords(own).toLocaleString("en-US")} words from ${file.name}` });
+        return;
+      }
       const fd = new FormData();
       fd.append("file", file);
       const r = await fetch("/api/humanize/upload", { method: "POST", body: fd });

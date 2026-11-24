@@ -144,7 +144,8 @@ async function quetextReport(kind: "ai-detect-report" | "report", text: string, 
     const p = await fetch(`${base}/report-progress/${id}`, { headers: { ...H, Accept: "application/json", "User-Agent": UA } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     if (Number(p?.data?.progress) >= 1) break;
   }
-  const r = await fetch(`${base}/${kind}/${id}`, { headers: { ...H, Accept: "application/json", "User-Agent": UA } });
+  // Only the download of the finished report is retried; creating it again would be billed again.
+  const r = await retry(() => fetch(`${base}/${kind}/${id}`, { headers: { ...H, Accept: "application/json", "User-Agent": UA } }));
   return ((await r.json().catch(() => ({}))) as any)?.data ?? {};
 }
 
@@ -191,7 +192,7 @@ ${rewritten}`,
 //    repaired text goes through the engine once more and is kept only if its facts still match;
 //  - `fresh` starts from the ORIGINAL passage instead of the last output (fresh attempts rescued many passages).
 async function safeRewrite(engine: string, orig: string, current: string, log: (s: string) => void, fresh = false): Promise<string> {
-  let next = await ENGINE_FN[engine](fresh ? orig : current);
+  let next = (await ENGINE_FN[engine](fresh ? orig : current)).replace(/^\s*[•\-*]\s+/, "");
   let issues = factIssues(orig, next);
   if (issues.length) {
     next = await geminiFix(orig, next, issues).catch(() => next);
@@ -208,28 +209,89 @@ async function safeRewrite(engine: string, orig: string, current: string, log: (
   return next;
 }
 
+// Meaning check: numbers and citations can survive while the claim changes (seen: "simulated" -> "was tested", a
+// comparison reversed, sentences invented). Returns the indices whose rewrite is not faithful, or null when the check
+// could not run (the caller must then say so instead of implying that the text was verified).
+// Retry a step that fails on a dropped connection ("fetch failed").
+async function retry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
+  for (let i = 1; ; i++) {
+    try { return await fn(); } catch (e) { if (i >= tries) throw e; await sleep(5000 * i); }
+  }
+}
+
+async function meaningIssues(pairs: { orig: string; next: string }[]): Promise<Map<number, string> | null> {
+  const bad = new Map<number, string>();
+  for (let i = 0; i < pairs.length; i += 10) {
+    const batch = pairs.slice(i, i + 10);
+    try {
+      const flagged = await retry(async () => {
+        const out = await generateContent(
+          `Compare each REWRITE with its ORIGINAL. Flag a rewrite only when a reader would learn something different: it states
+something the original does not say, reverses, weakens or strengthens a claim ("simulated" becoming "tested", "an estimated
+third" becoming "more than a third", "e.g., 4" becoming a fixed 4), drops a substantive point, or changes a cause, condition or
+comparison. Do not flag different wording, or lost filler adjectives such as "comprehensive" or "robust".
+Return only JSON: {"flagged":[{"id":<id>,"why":"<what changed, at most 14 words>"}]}
+
+${batch.map((p, k) => `ID ${k}\nORIGINAL: ${p.orig}\nREWRITE: ${p.next}`).join("\n\n")}`,
+          { temperature: 0, maxTokens: 8192, responseFormat: "json" },
+        );
+        const f = JSON.parse(out)?.flagged;
+        if (!Array.isArray(f)) throw new Error("unexpected answer");
+        return f;
+      });
+      for (const f of flagged) {
+        const k = Number(f?.id);
+        if (Number.isInteger(k) && k >= 0 && k < batch.length) bad.set(i + k, String(f?.why || "").slice(0, 160));
+      }
+    } catch (e: any) {
+      console.warn("[rv] meaning check failed:", String(e?.message || e).slice(0, 160));
+      return null;
+    }
+  }
+  return bad;
+}
+
 // Split into paragraphs, then into groups of 2-4 sentences (about 70 words). Small pieces keep the engines from
 // dropping facts (tested: whole paragraphs lost "Table 2" / "Smith (2020)"; 45-word groups lost nothing).
-// Passages under 25 words, equations and reference lists are left untouched.
+// Left untouched: headings and captions (under 12 words, "Figure 3: ..."), the reference list (from a
+// "References" heading to the next numbered heading, and "[1] ..." entries), and every SENTENCE that holds an
+// equation. The prose around an equation is still rewritten (a paragraph with one formula used to be skipped
+// whole, which left most of a technical report untouched and scored 100% AI in every round).
 type Chunk = { text: string; orig: string; edit: boolean; para: number };
+const isFormula = (s: string) => /\\[a-z]+\{|[=≈∑∫√]/.test(s);
+const isHeading = (s: string) => /^(\d+(\.\d+)*\.?|[A-Z]\.|appendix\b|chapter\b)\s*\S/i.test(s) && words(s) < 15;
 function chunksOf(text: string): Chunk[] {
   const out: Chunk[] = [];
-  text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).forEach((t, para) => {
-    const skip = words(t) < 25 || /\\[a-z]+\{|[=∑∫√].*[=∑∫√]/.test(t) || /^(references|bibliography)\b/i.test(t);
-    if (skip) { out.push({ text: t, orig: t, edit: false, para }); return; }
+  let inRefs = false;
+  text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).forEach((t0, para) => {
+    let t = t0;
+    const refHead = /^(\d+(\.\d+)*\.?\s*)?(references|bibliography|reference list|works cited)\b/i.test(t) && words(t) < 6;
+    if (refHead) inRefs = true;
+    else if (inRefs && isHeading(t) && !/^\[\d+\]/.test(t)) inRefs = false;
+    const keep = refHead || inRefs || words(t) < 12 || /^\[\d+\]\s/.test(t) || /^(figure|fig\.|table|equation|eq\.)\s*\d/i.test(t);
+    const isTitle = words(t) < 25 && !/[.!?:;]["')\]]?$/.test(t) && !/^[•\-*]\s/.test(t); // document title, long headings
+    if (keep || isTitle) { out.push({ text: t, orig: t, edit: false, para }); return; }
+    const mark = t.match(/^[•\-*]\s+/)?.[0]; // the bullet itself is never rewritten
+    if (mark) { out.push({ text: mark.trim(), orig: mark.trim(), edit: false, para }); t = t.slice(mark.length); }
+    // Sentences (split after . ! ? followed by a capital, so decimals like 0.75 stay whole); equations stay as they are.
+    const sents = t.split(/(?<=[.!?]["')\]]?)\s+(?=[A-Z(\["'•\-])/);
     let cur = "";
-    for (const sent of t.match(/[^.!?]+[.!?]+["')\]]*\s*|.+$/g) || [t]) {
-      if (words(cur + sent) > 70 && words(cur) >= 25) { out.push({ text: cur.trim(), orig: cur.trim(), edit: true, para }); cur = ""; }
-      cur += sent;
+    const flush = () => { const s = cur.trim(); if (s) out.push({ text: s, orig: s, edit: words(s) >= 8, para }); cur = ""; };
+    for (const s of sents) {
+      if (isFormula(s)) { flush(); out.push({ text: s, orig: s, edit: false, para }); continue; }
+      if (words(cur + " " + s) > 70 && words(cur) >= 25) flush();
+      cur += (cur ? " " : "") + s;
     }
-    if (cur.trim()) out.push({ text: cur.trim(), orig: cur.trim(), edit: words(cur) >= 12, para });
+    flush();
   });
   return out;
 }
 const join = (cs: Chunk[]) => {
   const paras: string[][] = [];
   for (const c of cs) (paras[c.para] ||= []).push(c.text);
-  return paras.filter(Boolean).map((p) => p.join(" ")).join("\n\n");
+  // One output paragraph per input paragraph (line breaks inside a rewrite are folded), so a Word file's
+  // paragraphs can be put back in place ("keep layout").
+  return paras.filter(Boolean).map((p) => p.join(" ").replace(/\s*\n+\s*/g, " ").trim()).join("\n\n");
 };
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
@@ -298,8 +360,23 @@ async function runJob(j: Job, original: string, title: string) {
       log(`Reworking ${targets.length} flagged passage(s).`);
     }
     best.texts.forEach((t, i) => { chunks[i].text = t; });
-    const bz = (best as any).zg, bq = (best as any).qt;
+    let bz = (best as any).zg, bq = (best as any).qt;
     if (j.rounds.length > 1) log(`Keeping the best round (${bz ?? best.score}% ZeroGPT${bq != null ? `, ${bq}% Quetext` : ""}).`);
+    // Check the meaning paragraph by paragraph. Flagged paragraphs go back to the original wording by default (the user
+    // reviews them side by side), and the reported score is that of the text actually delivered.
+    const origParas = join(chunks.map((c) => ({ ...c, text: c.orig }))).split("\n\n"), nextParas = join(chunks).split("\n\n");
+    const review = origParas.length === nextParas.length
+      ? origParas.map((orig, para) => ({ para, orig, next: nextParas[para], flagged: false, why: "" })).filter((r) => r.orig !== r.next) : [];
+    const bad = review.length ? await meaningIssues(review) : new Map<number, string>();
+    const meaningChecked = bad !== null;
+    if (bad === null) log("The meaning check could not run. Compare every rewrite with your original before you use it.");
+    else if (bad.size) {
+      bad.forEach((why, k) => { review[k].flagged = true; review[k].why = why; });
+      const back = new Set(review.filter((r) => r.flagged).map((r) => r.para));
+      chunks.forEach((c) => { if (back.has(c.para)) c.text = c.orig; });
+      bz = await zerogptDetect(join(chunks)).then((d) => d.score).catch(() => null); bq = null;
+      log(`Meaning check: ${bad.size} of ${review.length} paragraph(s) may have changed what you wrote. Your original is used there until you review them.${bz !== null ? ` AI-likeness ${bz}% (ZeroGPT).` : ""}`);
+    } else log(`Meaning check: no change of meaning found in ${review.length} paragraph(s). Read them anyway.`);
     const final = join(chunks);
     j.progress = 90;
     let quetext: any = null;
@@ -309,13 +386,16 @@ async function runJob(j: Job, original: string, title: string) {
       const ai: any = await quetextReport("ai-detect-report", final, title).catch((e) => ({ error: e.message }));
       const plag: any = await quetextReport("report", final, title).catch((e) => ({ error: e.message }));
       if (ai?.error || plag?.error) console.warn("[rv] Quetext:", ai?.error || "", plag?.error || "");
+      if (ai?.ai_score == null) log("The Quetext AI check did not return a score this time.");
+      if (plag?.score == null && plag?.percentage == null) log("The plagiarism scan did not return a result this time.");
+      if (bq == null && ai?.ai_score != null) bq = Math.round(Number(ai.ai_score) * 100) / 100;
       quetext = {
         aiScore: ai?.ai_score ?? null,
         plagiarism: plag?.score ?? plag?.percentage ?? null,
         sources: (plag?.matches || []).slice(0, 10).map((m: any) => ({ url: m?.source?.url, similar: m?.percent_similar })),
       };
     }
-    if (chunks.every((c) => c.text === c.orig)) {
+    if (!review.length) {
       await refundCredits(j.uid, j.cost, j.id, "Refund: no safe rewrite was possible").catch(() => {});
       log(`We could not rewrite this text safely without changing its facts, so your ${j.cost} credits were refunded.`);
       j.refunded = true;
@@ -324,11 +404,11 @@ async function runJob(j: Job, original: string, title: string) {
       const back = Math.floor(j.cost / 2);
       if (back > 0) {
         await refundCredits(j.uid, back, j.id, "Partial refund: the two detectors did not both agree").catch(() => {});
-        log(`The two independent detectors did not both agree within ${MAX_ROUNDS} rounds, so ${back} of your ${j.cost} credits were refunded. You keep the best version.`);
+        log(`The two detectors did not both confirm a low score, so ${back} of your ${j.cost} credits were refunded. You keep the best version.`);
         (j as any).partialRefund = back;
       }
     }
-    j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext };
+    j.result = { text: final, originalWords: j.words, finalWords: words(final), before: j.before ?? null, rounds: j.rounds, finalCheck: quetext, finalScore: bz ?? null, meaningChecked, review };
     j.status = "done";
     j.progress = 100;
     log("Done.");

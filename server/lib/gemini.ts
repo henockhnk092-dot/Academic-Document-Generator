@@ -211,6 +211,13 @@ export interface GenerateContentOptions {
   responseFormat?: "text" | "json";
 }
 
+// The model sometimes leaves notes to itself in the document, e.g. "(This is incorrect. Should be ...)".
+const SELF_NOTE_RULE = "\n\nNever leave notes to yourself, corrections or review comments in the output (for example \"(This is incorrect...)\" or \"(Note: should be ...)\"). If a value or formula is wrong, write only the correct version.";
+const SELF_NOTE = /\s*\((?:this is (?:incorrect|wrong|an error)|this (?:was|is) a mistake|correction:|note: (?:this|the) (?:value|formula|calculation) (?:is|was) (?:incorrect|wrong))[^()"\n\\]*(?:\([^()"\n\\]*\)[^()"\n\\]*)*\)/gi; // no quotes or backslashes inside, so JSON stays valid
+export function stripSelfNotes(text: string): string {
+  return text.replace(SELF_NOTE, "");
+}
+
 export async function generateContent(
   prompt: string,
   options: GenerateContentOptions = {}
@@ -236,7 +243,7 @@ export async function generateContent(
       };
 
       if (systemInstruction) {
-        config.systemInstruction = systemInstruction;
+        config.systemInstruction = systemInstruction + SELF_NOTE_RULE;
       }
 
       if (responseFormat === "json") {
@@ -265,7 +272,7 @@ export async function generateContent(
         throw new Error("The AI returned an empty response. Please try again.");
       }
 
-      return text;
+      return stripSelfNotes(text);
     });
   } catch (error: any) {
     // Re-throw errors we already formatted
@@ -284,7 +291,11 @@ export async function generateReportContent(
   generateImages: boolean = true,
   language?: string
 ): Promise<any> {
-  const pageCount = targetLength === "auto" ? "5-10" : targetLength.split("-")[0] || "5";
+  const pageCount = targetLength === "auto" ? "5-10" : targetLength || "5-10";
+  const short = targetLength === "2-5";
+  // About 250 words per page, tables and references included. Without a word range "2-5 pages" produced about 14.
+  const wordRange: Record<string, string> = { "2-5": "900 to 1,200", "5-10": "1,500 to 2,500", "6-10": "1,500 to 2,500", "11-20": "2,750 to 5,000", "20+": "5,000 to 6,500" };
+  const wordTarget = wordRange[pageCount] || "1,500 to 2,500";
 
   const systemInstruction = `You are an expert BET technical report writer. Generate a comprehensive academic technical report.
 
@@ -292,9 +303,9 @@ STRICT FORMATTING & STRUCTURAL RULES:
 
 1. **Length & Depth Constraint**:
    * The user has requested a report of approximately **${pageCount} pages**.
-   * To meet this, you MUST expand heavily on technical details.
-   * Generate deep subsections (e.g., 1.1, 1.2, 4.1, 4.2) and extensive paragraphs.
-   * Ensure the "Methodology" and "Results" sections are very detailed.
+   * The WHOLE report (abstract, sections, tables, references) must be **${wordTarget} words**. Never exceed the upper limit.
+${short ? `   * This is a SHORT report: one or two compact paragraphs per section, at most one schedule table (4 rows) and one budget table (5 rows), at most 5 references, and NO appendix.` : `   * Expand on technical details, with subsections (e.g., 1.1, 1.2, 4.1, 4.2).
+   * Ensure the "Methodology" and "Results" sections are detailed.`}
 
 2. **Mandatory Section Structure**:
    * **Introduction**: Context (### 1.1), Problem Statement (### 1.2), Objectives (### 1.3).
@@ -304,7 +315,7 @@ STRICT FORMATTING & STRUCTURAL RULES:
    * **Results/Analysis**: Performance metrics, validation (### 5.1).
    * **Conclusion**: Summary and Future Work.
    * **References**: List citations.
-   * **Appendix A**: MUST include Appendix A for supplementary material.
+${short ? "" : "   * **Appendix A**: MUST include Appendix A for supplementary material."}
 
 3. **Tables & Figures Protocol (CRITICAL)**:
    * **Intro First**: You MUST introduce every figure or table in the text **BEFORE** you place it.

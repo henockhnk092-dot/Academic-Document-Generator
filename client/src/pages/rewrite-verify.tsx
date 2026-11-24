@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Sparkles, Loader2, Coins, CreditCard, Copy, Download, ShieldCheck, CheckCircle2, AlertTriangle, Trash2, PanelRightClose, PanelRightOpen, FileText, Maximize2 } from "lucide-react";
 import { GeneratorLayout } from "@/components/generator-layout";
 import { TextInputWithUpload } from "@/components/text-input-with-upload";
 import { ResultTools } from "@/components/result-tools";
@@ -10,13 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider";
+import { DocxViewer } from "@/components/docx-viewer";
+import { ParagraphReview, type ReviewItem } from "@/components/paragraph-review";
+import { isDocx, loadDocx, rebuildDocx, type DocxModel } from "@/lib/docx-layout";
 
 interface Engine { id: string; label: string; perK: number; desc: string; available: boolean }
 interface EnginesInfo { engines: Engine[]; minWords: number; maxWords: number; once: { markup: number; min: number }; launch?: { price: number; maxWords: number; slots: number; left: number } | null }
 interface Job {
   id: string; engine: string; words: number; cost: number; status: "running" | "done" | "failed"; progress: number;
-  log: string[]; rounds: { round: number; score: number; quetext?: number | null }[]; error?: string;
-  result?: { text: string; finalWords: number; rounds: { round: number; score: number }[]; finalCheck: { aiScore: number | null; plagiarism: number | null; sources: { url: string; similar: number }[] } | null };
+  log: string[]; rounds: { round: number; score: number; quetext?: number | null }[]; error?: string; before?: number | null;
+  result?: { text: string; finalWords: number; before?: number | null; finalScore?: number | null; review?: ReviewItem[]; meaningChecked?: boolean; rounds: { round: number; score: number }[]; finalCheck: { aiScore: number | null; plagiarism: number | null; sources: { url: string; similar: number }[] } | null };
 }
 
 export const CREDIT_PACKS = [
@@ -59,8 +62,41 @@ export default function RewriteVerify() {
     return !v;
   });
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  // "Keep layout": a dropped Word file comes back as the same document with only the paragraphs rewritten.
+  const [docModel, setDocModel] = useState<DocxModel | null>(null);
+  const jobDoc = useRef<DocxModel | null>(null);
+  const [resultDoc, setResultDoc] = useState<Blob | null>(null);
+  const [layoutNote, setLayoutNote] = useState("");
+  const [viewer, setViewer] = useState<{ blob: Blob; title: string; name: string } | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  // The reader's choices: one entry per paragraph of the final text.
+  const [paras, setParas] = useState<string[]>([]);
+  const [recheck, setRecheck] = useState<{ score: number | null; stale: boolean; busy: boolean }>({ score: null, stale: false, busy: false });
+  useEffect(() => {
+    setParas((job?.result?.text || "").split(/\n\s*\n/).filter((x) => x.trim()));
+    setRecheck({ score: null, stale: false, busy: false });
+  }, [job?.result?.text]);
+  const finalText = paras.length ? paras.join("\n\n") : job?.result?.text || "";
+  const choosePara = (i: number, t: string) => { setParas((p) => p.map((x, k) => (k === i ? t : x))); setRecheck((r) => ({ ...r, stale: true })); };
+  const recheckScore = async () => {
+    setRecheck((r) => ({ ...r, busy: true }));
+    try {
+      const r = await fetch("/api/ai-check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: finalText }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "The check failed.");
+      setRecheck({ score: Number(d.score), stale: false, busy: false });
+    } catch (e: any) {
+      setRecheck((r) => ({ ...r, busy: false }));
+      toast({ title: "AI check", description: e.message, variant: "destructive" });
+    }
+  };
+  const layoutOk = !!docModel && text === docModel.text;
+  const interceptFile = async (f: File) => {
+    if (!isDocx(f)) { setDocModel(null); return null; }
+    try { const m = await loadDocx(f); setDocModel(m); return m.text; } catch { setDocModel(null); return null; }
+  };
+  const outName = () => (jobDoc.current?.name || "document.docx").replace(/\.docx$/i, "") + " (rewritten).docx";
+  const [busy, setBusy] = useState(false);
   const [waitingOrder, setWaitingOrder] = useState<string | null>(null);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
   const words = countWords(text);
@@ -130,6 +166,7 @@ export default function RewriteVerify() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Could not start.");
       setBalance((b) => (b ?? 0) - d.cost);
+      jobDoc.current = layoutOk ? docModel : null; setResultDoc(null); setLayoutNote("");
       watchJob(d.jobId);
     } catch (e: any) {
       toast({ title: "Rewrite & Verify", description: e.message, variant: "destructive" });
@@ -157,22 +194,29 @@ export default function RewriteVerify() {
     if (err) toast({ title: "Payment", description: err, variant: "destructive" });
   };
 
-  const copy = () => job?.result && navigator.clipboard.writeText(job.result.text).then(() => toast({ title: "Copied" }));
+  const copy = () => job?.result && navigator.clipboard.writeText(finalText).then(() => toast({ title: "Copied" }));
   const download = () => {
     if (!job?.result) return;
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([job.result.text], { type: "text/plain;charset=utf-8" }));
+    a.href = URL.createObjectURL(new Blob([finalText], { type: "text/plain;charset=utf-8" }));
     a.download = "academicgen-rewrite.txt";
     a.click();
   };
-  const reset = () => { setJob(null); localStorage.removeItem(JOB_KEY); };
+  const reset = () => { setJob(null); setResultDoc(null); setLayoutNote(""); jobDoc.current = null; localStorage.removeItem(JOB_KEY); };
+
+  useEffect(() => {
+    const m = jobDoc.current, t = job?.result && finalText;
+    if (!m || !t) return;
+    rebuildDocx(m, t).then((b) => (b ? setResultDoc(b) : setLayoutNote("The paragraphs changed during the rewrite, so this result is text only."))).catch(() => setLayoutNote("Could not rebuild the Word file; the text below is complete."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalText, job?.result]);
 
   const enough = isAdmin || (balance !== null && balance >= cost);
 
   return (
     <GeneratorLayout
       title="Rewrite & Verify"
-      description="We rewrite your text in a natural academic style, keep your facts and citations, check it, rework the flagged parts, and give you a final AI and plagiarism report."
+      description="We rewrite your text in a natural academic style, check numbers, citations and meaning against your original, and let you review every change. You also get an AI and plagiarism report."
       icon={<Sparkles className="w-6 h-6 text-white" />}
       gradient="from-fuchsia-500 to-violet-600"
     >
@@ -198,8 +242,9 @@ export default function RewriteVerify() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {job && job.status === "running" && <Progress value={job.progress} />}
-                {job && job.rounds.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                {job && (job.rounds.length > 0 || job.before != null) && (
+                  <div className="flex flex-wrap gap-2" data-testid="rv-rounds">
+                    {job.before != null && <Badge variant="outline">Before: {Math.round(job.before)}% AI-like</Badge>}
                     {job.rounds.map((r) => <Badge key={r.round} variant="secondary">Round {r.round}: {r.score}% AI-like{r.quetext != null ? ` · Quetext ${r.quetext}%` : ""}</Badge>)}
                   </div>
                 )}
@@ -208,21 +253,22 @@ export default function RewriteVerify() {
                   <>
                     {(() => {
                       const rounds = job.result.rounds || [];
-                      const first = rounds.length ? rounds[0].score : null;
-                      const best = rounds.length ? Math.min(...rounds.map((r) => r.score)) : null;
+                      const first = job.result.before ?? job.before ?? (rounds.length ? rounds[0].score : null);
+                      const best = recheck.score !== null ? recheck.score : job.result.finalScore !== undefined ? job.result.finalScore : rounds.length ? Math.min(...rounds.map((r) => r.score)) : null; // score of the delivered text
                       const fc = job.result.finalCheck;
                       const has = (v: any) => v !== null && v !== undefined;
                       return (
                         <div className="space-y-3">
                           {best !== null && (
-                            <div className="rounded-lg border-2 border-emerald-500/50 bg-emerald-500/5 p-4">
-                              <p className="text-xs text-muted-foreground">AI-likeness after rewrite (checked every round)</p>
+                            <div className={`rounded-lg border-2 p-4 ${best <= 15 && fc?.aiScore != null && Number(fc.aiScore) <= 20 && recheck.score === null ? "border-emerald-500/50 bg-emerald-500/5" : "border-amber-500/50 bg-amber-500/5"}`}>
+                              <p className="text-xs text-muted-foreground">AI-likeness of the final text (ZeroGPT)</p>
                               <p className="text-3xl font-bold">{Math.round(best)}%{first !== null && first > best ? <span className="text-base font-medium text-muted-foreground ml-2">from {Math.round(first)}%</span> : null}</p>
                             </div>
                           )}
+                          {best !== null && fc?.aiScore != null && Math.abs(best - Number(fc.aiScore)) > 30 && <p className="text-sm text-amber-700 dark:text-amber-400">The two detectors disagree strongly. Do not rely on the lower score.</p>}
                           {fc && (has(fc.aiScore) || has(fc.plagiarism)) && (
                             <div className="grid sm:grid-cols-2 gap-3">
-                              {has(fc.aiScore) && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Strict independent check (Quetext)</p><p className="text-xl font-semibold">{Math.round(Number(fc.aiScore))}%</p></div>)}
+                              {has(fc.aiScore) && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">AI-likeness, second detector (Quetext){recheck.score !== null || recheck.stale ? ", before your edits" : ""}</p><p className="text-xl font-semibold">{Math.round(Number(fc.aiScore))}%</p></div>)}
                               {has(fc.plagiarism) && (<div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Plagiarism similarity</p><p className="text-xl font-semibold">{fc.plagiarism}%</p></div>)}
                             </div>
                           )}
@@ -235,8 +281,31 @@ export default function RewriteVerify() {
                         <ul className="mt-2 space-y-1">{job.result.finalCheck.sources.map((s, i) => <li key={i} className="truncate"><a className="underline" href={s.url} target="_blank" rel="noopener noreferrer">{s.url}</a> ({s.similar}%)</li>)}</ul>
                       </details>
                     )}
-                    <Textarea readOnly value={job.result.text} className="min-h-[320px]" />
-                    <ResultTools text={job.result.text} title="Rewrite & Verify result" />
+                    {!!job.result.review?.length && (
+                      <>
+                        <ParagraphReview items={job.result.review} paras={paras} onChange={choosePara} />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={recheckScore} disabled={recheck.busy} data-testid="rv-recheck">
+                            {recheck.busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-1" />}Re-check the AI score
+                          </Button>
+                          {recheck.stale && <span className="text-xs text-amber-600">You changed the text, so the score above is out of date.</span>}
+                        </div>
+                      </>
+                    )}
+                    {resultDoc && (
+                      <div className="rounded-lg border bg-muted/30 p-3 space-y-2" data-testid="rv-layout-result">
+                        <p className="text-sm font-medium flex items-center gap-2"><FileText className="w-4 h-4" />Your Word document, layout kept</p>
+                        <p className="text-xs text-muted-foreground">Same figures, tables, images and headings as your file. It follows the choices you make above.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" onClick={() => setViewer({ blob: resultDoc, title: "Rewritten document", name: outName() })} data-testid="rv-view-doc"><Maximize2 className="w-4 h-4 mr-1" />View full screen</Button>
+                          <Button size="sm" variant="outline" onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(resultDoc); a.download = outName(); a.click(); }} data-testid="rv-download-docx"><Download className="w-4 h-4 mr-1" />Download Word</Button>
+                          {jobDoc.current && <Button size="sm" variant="ghost" onClick={() => setViewer({ blob: jobDoc.current!.original, title: "Original document", name: jobDoc.current!.name })} data-testid="rv-view-original">View original</Button>}
+                        </div>
+                      </div>
+                    )}
+                    {layoutNote && <p className="text-xs text-amber-600">{layoutNote}</p>}
+                    <Textarea readOnly value={finalText} className="min-h-[320px]" />
+                    <ResultTools text={finalText} title="Rewrite & Verify result" />
                     <Button variant="ghost" onClick={reset}>New text</Button>
                     <p className="text-xs text-muted-foreground">Read it through and make it your own. Follow your university's rules on AI-assisted writing.</p>
                   </>
@@ -256,10 +325,17 @@ export default function RewriteVerify() {
                     <span className="font-semibold">Launch offer:</span> your first document (up to {info.launch.maxWords.toLocaleString("en-US")} words) for only R{info.launch.price}. {info.launch.left} of {info.launch.slots} places left.
                   </div>
                 )}
-                <TextInputWithUpload value={text} onChange={setText} placeholder="Paste your text here..." minHeight="min-h-[300px]" testId="input-rv" />
+                <TextInputWithUpload value={text} onChange={setText} placeholder="Paste your text here..." minHeight="min-h-[300px]" testId="input-rv" interceptFile={interceptFile} />
+                {docModel && (layoutOk ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/5 p-2 text-xs" data-testid="rv-layout-kept">
+                    <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="flex-1">Word layout kept: figures, tables and images stay where they are. Only the paragraphs are rewritten.</span>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => setViewer({ blob: docModel.original, title: "Original document", name: docModel.name })} data-testid="rv-preview-original"><Maximize2 className="w-3.5 h-3.5 mr-1" />Preview</Button>
+                  </div>
+                ) : <p className="text-xs text-muted-foreground">You edited the text, so the result will be text only (the Word layout is used only for an unchanged file).</p>)}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{words.toLocaleString("en-US")} words{tooLong ? " (too long, split it)" : ""}</span>
-                  <Button variant="ghost" size="sm" onClick={() => setText("")} disabled={!text}><Trash2 className="w-4 h-4 mr-1" />Clear</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setText(""); setDocModel(null); }} disabled={!text}><Trash2 className="w-4 h-4 mr-1" />Clear</Button>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -313,13 +389,14 @@ export default function RewriteVerify() {
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><ShieldCheck className="w-5 h-5" />What you get</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1 text-muted-foreground">
               <p>1. Natural academic rewrite with the engine you choose.</p>
-              <p>2. Fact guard: numbers, citations and figure/table references are kept exactly.</p>
-              <p>3. AI-likeness check, then only the flagged parts are reworked (up to 4 rounds).</p>
+              <p>2. Fact guard: numbers, citations and figure/table references are compared with your text.</p>
+              <p>3. AI-likeness check each round, a meaning check, and your own side-by-side review.</p>
               <p>4. Final independent AI check and plagiarism scan with sources.</p>
             </CardContent>
           </Card>
         </div>}
       </div>
+      {viewer && <DocxViewer blob={viewer.blob} title={viewer.title} fileName={viewer.name} onClose={() => setViewer(null)} />}
     </GeneratorLayout>
   );
 }

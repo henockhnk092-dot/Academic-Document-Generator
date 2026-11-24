@@ -74,15 +74,22 @@ export function parseMarkdownToHtml(markdown: string): string {
   let listType: 'ul' | 'ol' = 'ul';
 
   const processInlineFormatting = (text: string): string => {
-    let result = text;
-    result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    result = result.replace(/__(.+?)__/g, '<strong>$1</strong>');
-    result = result.replace(/_(.+?)_/g, '<em>$1</em>');
-    result = result.replace(/`([^`]+)`/g, '<code class="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>');
+    // Inline code first, kept aside: "*" and "_" inside formulas such as `C_batt = (E * D) / (V * DoD)` are
+    // maths, not emphasis. Emphasising them dropped the symbols and produced <code>...<em>...</code>...</em>,
+    // which the browser repairs by reopening <code> for the rest of the document (one giant code block in Word).
+    const codes: string[] = [];
+    let result = text.replace(/`([^`]+)`/g, (_m, c) => {
+      codes.push(`<code class="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 px-1 py-0.5 rounded text-sm font-mono">${c}</code>`);
+      return `\u0000${codes.length - 1}\u0000`;
+    });
+    // Emphasis only when the markers hug a word: "a * b" and snake_case stay as they are.
+    result = result.replace(/\*\*\*(?=\S)(.+?)(?<=\S)\*\*\*/g, '<strong><em>$1</em></strong>');
+    result = result.replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/\*(?=\S)([^*]+?)(?<=\S)\*/g, '<em>$1</em>');
+    result = result.replace(/(?<![\w])__(?=\S)(.+?)(?<=\S)__(?![\w])/g, '<strong>$1</strong>');
+    result = result.replace(/(?<![\w])_(?=\S)([^_]+?)(?<=\S)_(?![\w])/g, '<em>$1</em>');
     result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline">$1</a>');
-    return result;
+    return result.replace(/\u0000(\d+)\u0000/g, (_m, i) => codes[Number(i)]);
   };
 
   const flushList = () => {
@@ -253,8 +260,10 @@ export function parseMarkdownToHtml(markdown: string): string {
 
 export function sanitizeHtml(html: string): string {
   let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
-  sanitized = sanitized.replace(/javascript:/gi, '');
+  // Only inside tags: in text, "Days_Autonomy = 2" or "Conversion = 0.9" matched the old on...= pattern, which
+  // deleted part of the text plus the closing </code>, and the rest of the document became one code block.
+  sanitized = sanitized.replace(/<[a-z][^>]*>/gi, (tag) => tag
+    .replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src|action|formaction|xlink:href)\s*=\s*(["']?)\s*javascript:[^"'\s>]*\2/gi, '$1="#"'));
   return sanitized;
 }
