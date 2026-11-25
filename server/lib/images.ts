@@ -138,13 +138,36 @@ export async function searchImagesWithFallback(query: string, perPage = 10): Pro
   return [];
 }
 
-export async function getImageWithFallback(query: string): Promise<ImageResult | null> {
-  const images = await searchImagesWithFallback(query, 10);
-  if (images.length > 0) return images[Math.floor(Math.random() * images.length)];
+// Words that say what the picture is about (no filler such as "diagram", "illustration", "system").
+const FILLER = new Set([...Array.from(GENERIC), "diagram", "illustration", "image", "photo", "picture", "figure", "chart", "graph",
+  "system", "overview", "concept", "showing", "using", "based", "design", "model", "process", "small", "large"]);
+const terms = (t: string) => Array.from(new Set(t.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !FILLER.has(w))));
+const stem = (w: string) => w.replace(/(ing|ers|ies|es|s)$/, "");
 
-  // Generic fallback query
-  const fallback = await searchImagesWithFallback("technology science education", 10);
-  if (fallback.length > 0) return fallback[Math.floor(Math.random() * fallback.length)];
+function relevance(img: ImageResult, want: string[]): number {
+  const tags = terms(img.tags).map(stem);
+  return want.reduce((n, w) => n + (tags.some((t) => t === stem(w) || t.startsWith(stem(w)) || stem(w).startsWith(t)) ? 1 : 0), 0);
+}
 
+// Best-matching picture for a figure, or null. A section with no relevant picture gets no picture: an unrelated one
+// (seen: a microscope as the "system diagram" of a solar cold store) is worse than none.
+export async function getImageWithFallback(query: string, topic = ""): Promise<ImageResult | null> {
+  const want = terms(query);
+  const subject = terms(topic).slice(0, 3);
+  const queries = Array.from(new Set([
+    want.slice(0, 4).join(" "),
+    want.slice(0, 2).join(" "),
+    [...want.slice(0, 1), ...subject.filter((w) => !want.includes(w)).slice(0, 2)].join(" "),
+  ].filter((q) => q.trim())));
+  // The picture must show the section's own subject: at least two of its words (one if it only has one),
+  // with the report topic used only to break ties.
+  const need = Math.min(2, want.length);
+  for (const q of queries) {
+    const images = await searchImagesWithFallback(q, 10);
+    const ranked = images.map((img, i) => ({ img, own: relevance(img, want), score: 2 * relevance(img, want) + relevance(img, subject), i }))
+      .filter((x) => need > 0 && x.own >= need)
+      .sort((x, y) => y.score - x.score || x.i - y.i);
+    if (ranked.length) return ranked[0].img;
+  }
   return null;
 }

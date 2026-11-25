@@ -86,7 +86,7 @@ export default function GenerateThesis() {
         if (!imageQuery) return;
         try {
           const response: any = await apiRequest("POST", "/api/images/random", {
-            query: imageQuery
+            query: imageQuery, topic: generatedContent?.title || ""
           });
           if (response.image) {
             const url = response.image.webformatURL || response.image.largeImageURL;

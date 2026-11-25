@@ -96,7 +96,7 @@ export default function GenerateTemplateReport() {
       const imageQuery = section.image_prompt || section.heading || section.title;
       if (!imageQuery) return;
       try {
-        const res: any = await apiRequest("POST", "/api/images/random", { query: imageQuery });
+        const res: any = await apiRequest("POST", "/api/images/random", { query: imageQuery, topic: generatedContent?.title || ""});
         const url = res?.image?.webformatURL || res?.image?.largeImageURL;
         if (url) setSectionImageUrls(prev => ({ ...prev, [index]: url }));
       } catch {

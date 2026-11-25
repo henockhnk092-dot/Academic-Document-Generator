@@ -434,13 +434,13 @@ OUTPUT: return ONLY valid JSON, no markdown wrapper:
 
   app.post("/api/images/random", async (req, res) => {
     try {
-      const { query } = req.body;
+      const { query, topic } = req.body;
 
       if (!query) {
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const image = await getImageWithFallback(query);
+      const image = await getImageWithFallback(String(query), String(topic || ""));
       res.json({ success: true, image });
     } catch (error: any) {
       console.error("Random image error:", error);

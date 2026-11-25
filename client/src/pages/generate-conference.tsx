@@ -107,7 +107,7 @@ export default function GenerateConference() {
       const caption = figure.querySelector('figcaption')?.textContent?.trim();
       if (!caption) return;
       try {
-        const response: any = await apiRequest("POST", "/api/images/random", { query: caption });
+        const response: any = await apiRequest("POST", "/api/images/random", { query: caption, topic: generatedContent?.title || ""});
         if (response.image) {
           const url = response.image.webformatURL || response.image.largeImageURL;
           setSectionImageUrls(prev => ({ ...prev, [index]: url }));
