@@ -103,7 +103,7 @@ export function registerPayfastRoutes(app: Express) {
       const pairs: [string, string][] = [
         ["merchant_id", c.merchantId],
         ["merchant_key", c.merchantKey],
-        ["return_url", orderId ? `${site}/rewrite-verify?order=${orderId}` : `${site}/checkout-success?provider=payfast&tier=${tier}`],
+        ["return_url", orderId ? `${site}/rewrite-verify?order=${orderId}` : `${site}/checkout/success?provider=payfast&tier=${tier}`],
         ["cancel_url", `${site}/pricing?payment=cancelled`],
         ["notify_url", `${api}/api/payfast/notify`],
         ["email_address", user.email || ""],
@@ -157,9 +157,17 @@ export function registerPayfastRoutes(app: Express) {
         const added = await addCredits(uid, pack.credits, ref, `${pack.label} (Payfast${c.sandbox ? " sandbox" : ""})`);
         return log(`Payfast credits ${added ? "added" : "already added"}: ${pack.credits} for ${tier}${c.sandbox ? " (sandbox)" : ""}`, "payfast");
       }
-      await firebaseSubscriptionStorage.getOrCreateSubscription(uid);
-      const expiry = new Date(Date.now() + plan.days * 86400000);
+      const sub = await firebaseSubscriptionStorage.getOrCreateSubscription(uid);
+      // Payfast resends an ITN until it gets a 200, and monthly/yearly renewals arrive as new ITNs:
+      // apply each payment once, and extend a still-running plan of the same tier instead of restarting it.
+      const ref = `payfast-${body.pf_payment_id || body.m_payment_id}`;
+      if (sub.lastPaymentRef === ref) return log(`Payfast ITN already applied for ${tier}`, "payfast");
+      const raw: any = sub.subscriptionExpiry;
+      const cur = raw ? (typeof raw.toDate === "function" ? raw.toDate() : new Date(raw)).getTime() : 0;
+      const base = sub.subscriptionStatus === "active" && sub.subscriptionTier === tier && cur > Date.now() ? cur : Date.now();
+      const expiry = new Date(base + plan.days * 86400000);
       await firebaseSubscriptionStorage.activateSubscription(uid, `payfast:${body.token || body.pf_payment_id}`, tier, expiry);
+      await firebaseSubscriptionStorage.updateUserSubscription(uid, { lastPaymentRef: ref });
       log(`Payfast payment COMPLETE: ${tier} activated until ${expiry.toISOString().slice(0, 10)}${c.sandbox ? " (sandbox)" : ""}`, "payfast");
     } catch (e) {
       log(`Payfast ITN error: ${e instanceof Error ? e.message : e}`, "payfast");

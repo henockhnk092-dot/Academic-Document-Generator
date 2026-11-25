@@ -62,6 +62,7 @@ export interface UserSubscription {
   subscriptionExpiry: Date | null;
   freeAttemptsUsed: number;
   maxFreeAttempts: number;
+  lastPaymentRef?: string; // last Payfast payment applied (ITN idempotency)
   email?: string;
   createdAt: Date;
   updatedAt: Date;
