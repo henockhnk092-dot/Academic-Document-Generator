@@ -247,6 +247,20 @@ async function retry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
 // Second look at flagged passages: a flag stands only when the model quotes the original words and the rewrite words
 // that differ, and both quotes really occur in the texts. Lighter fallback models (used when the main model's daily
 // quota is gone) flagged plain rewording as "meaning changed", which threw most rewrites away (25 Nov 2026).
+// Models answer the same request as {"flagged":[...]}, a bare [...], {"items":[...]} or {} ("nothing to flag");
+// all of these are valid. Anything else is retried. ("unexpected answer" broke the meaning check, 25 Nov 2026.)
+function listFrom(out: string, key: string): any[] {
+  const d = JSON.parse(String(out).replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  if (Array.isArray(d)) return d;
+  if (d && typeof d === "object") {
+    if (Array.isArray(d[key])) return d[key];
+    const arr = Object.values(d).find((v) => Array.isArray(v));
+    if (arr) return arr as any[];
+    if (Object.keys(d).length === 0 || d[key] == null) return [];
+  }
+  throw new Error("unexpected answer");
+}
+
 async function confirmMeaning(batch: { orig: string; next: string }[], first: Map<number, string>): Promise<Map<number, string>> {
   if (!first.size) return first;
   const ids = Array.from(first.keys());
@@ -265,9 +279,7 @@ ORIGINAL: ${batch[k].orig}
 REWRITE: ${batch[k].next}`).join("\n\n")}`,
         { temperature: 0, maxTokens: 8192, responseFormat: "json" },
       );
-      const items = JSON.parse(r)?.items;
-      if (!Array.isArray(items)) throw new Error("unexpected answer");
-      return items;
+      return listFrom(r, "items");
     });
     const kept = new Map<number, string>();
     for (const it of out) {
@@ -285,8 +297,8 @@ REWRITE: ${batch[k].next}`).join("\n\n")}`,
 
 async function meaningIssues(pairs: { orig: string; next: string }[]): Promise<Map<number, string> | null> {
   const bad = new Map<number, string>();
-  for (let i = 0; i < pairs.length; i += 10) {
-    const batch = pairs.slice(i, i + 10);
+  for (let i = 0; i < pairs.length; i += 5) {
+    const batch = pairs.slice(i, i + 5);
     try {
       const flagged = await retry(async () => {
         const out = await generateContent(
@@ -299,9 +311,7 @@ Return only JSON: {"flagged":[{"id":<id>,"why":"<what changed, at most 14 words>
 ${batch.map((p, k) => `ID ${k}\nORIGINAL: ${p.orig}\nREWRITE: ${p.next}`).join("\n\n")}`,
           { temperature: 0, maxTokens: 8192, responseFormat: "json" },
         );
-        const f = JSON.parse(out)?.flagged;
-        if (!Array.isArray(f)) throw new Error("unexpected answer");
-        return f;
+        return listFrom(out, "flagged");
       });
       const first = new Map<number, string>();
       for (const f of flagged) {

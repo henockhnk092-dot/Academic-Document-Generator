@@ -124,7 +124,12 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
 
 // Same client, but text generation calls use `model` instead (speech and image models are left unchanged).
 function withModelOverride(client: GoogleGenAI, model: string): GoogleGenAI {
-  const swap = (p: any) => (p && typeof p.model === "string" && !/tts|image|imagen|veo/i.test(p.model) ? { ...p, model } : p);
+  // Only 2.5 models accept thinkingConfig (newer light models answer 400), so drop it when switching away.
+  const swap = (p: any) => {
+    if (!(p && typeof p.model === "string" && !/tts|image|imagen|veo/i.test(p.model))) return p;
+    const config = p.config && !/2\.5/.test(model) ? (({ thinkingConfig, ...rest }: any) => rest)(p.config) : p.config;
+    return { ...p, model, config };
+  };
   const models = new Proxy(client.models as any, {
     get(target, prop) {
       const v = target[prop];
@@ -270,6 +275,9 @@ export async function generateContent(
 
       if (responseFormat === "json") {
         config.responseMimeType = "application/json";
+        // 2.5 models "think" inside the output budget and cut JSON answers off (seen 25 Nov 2026: the meaning check
+        // failed on "Unterminated string in JSON"); a JSON check needs no thinking.
+        if (/2\.5/.test(model)) config.thinkingConfig = { thinkingBudget: 0 };
       }
 
       const response = await ai.models.generateContent({
