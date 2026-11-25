@@ -219,6 +219,12 @@ async function safeRewrite(engine: string, orig: string, current: string, log: (
     if (!issues.length && engine !== "standard") {
       const again = await ENGINE_FN[engine](next).catch(() => "");
       if (again && !factIssues(orig, again).length) next = again; // rehumanized and still faithful
+      else {
+        // The repair tends to copy the original's sentences back (detectors then flag the passage again), so try one
+        // new engine rewrite from the original and keep it when its facts match (25 Nov 2026).
+        const retry2 = await ENGINE_FN[engine](orig).catch(() => "");
+        if (retry2 && !factIssues(orig, retry2).length) next = retry2;
+      }
     }
   }
   if (issues.some((i) => /missing|added/.test(i))) {
@@ -320,6 +326,10 @@ ${batch.map((p, k) => `ID ${k}\nORIGINAL: ${p.orig}\nREWRITE: ${p.next}`).join("
 type Chunk = { text: string; orig: string; edit: boolean; para: number };
 const isFormula = (s: string) => /\\[a-z]+\{|[=≈∑∫√]/.test(s);
 const isHeading = (s: string) => /^(\d+(\.\d+)*\.?|[A-Z]\.|appendix\b|chapter\b)\s*\S/i.test(s) && words(s) < 15;
+// Whole paragraphs (up to ~220 words) go to the engine. Tested 25 Nov 2026 on the same 115-word paragraph: sent whole,
+// WriteHuman scored 0-0.4% on Quetext; cut into ~40-word pieces it scored 44%, and a full report in ~70-word pieces
+// stayed at 100% for 7 rounds. Facts are still protected by the fact guard and the meaning check.
+const CHUNK_WORDS = Number(process.env.RV_CHUNK_WORDS || 220);
 function chunksOf(text: string): Chunk[] {
   const out: Chunk[] = [];
   let inRefs = false;
@@ -339,7 +349,7 @@ function chunksOf(text: string): Chunk[] {
     const flush = () => { const s = cur.trim(); if (s) out.push({ text: s, orig: s, edit: words(s) >= 8, para }); cur = ""; };
     for (const s of sents) {
       if (isFormula(s)) { flush(); out.push({ text: s, orig: s, edit: false, para }); continue; }
-      if (words(cur + " " + s) > 70 && words(cur) >= 25) flush();
+      if (words(cur + " " + s) > CHUNK_WORDS && words(cur) >= 60) flush();
       cur += (cur ? " " : "") + s;
     }
     flush();
@@ -388,6 +398,7 @@ async function runJob(j: Job, original: string, title: string) {
     const good = new Map<Chunk, string>(editable.map((c) => [c, c.orig])); // last version whose meaning was verified
     const editableWords = editable.reduce((n, c) => n + words(c.orig), 0);
     let engineWords = 0, forceFresh = false, meaningChecked = true;
+    const unchecked = new Set<Chunk>(); // kept rewrites whose meaning could not be checked automatically
     const retryFresh = new Set<Chunk>(); // passages whose last rewrite changed the meaning: try again from the original
     for (let round = 1; round <= MAX_ROUNDS; round++) {
       for (let i = 0; i < targets.length; i += 3) {
@@ -401,25 +412,40 @@ async function runJob(j: Job, original: string, title: string) {
       forceFresh = false; retryFresh.clear();
       // Meaning check, automatic: a passage that changed what the author wrote goes back to its last verified version.
       const fresh2 = targets.filter((c) => c.text !== c.orig && c.text !== good.get(c));
-      const bad = fresh2.length ? await meaningIssues(fresh2.map((c) => ({ orig: c.orig, next: c.text }))) : new Map<number, string>();
-      if (bad === null) { meaningChecked = false; fresh2.forEach((c) => { c.text = good.get(c)!; }); log("The meaning check could not run, so this round's rewrites were not used."); }
-      else {
+      let bad = fresh2.length ? await meaningIssues(fresh2.map((c) => ({ orig: c.orig, next: c.text }))) : new Map<number, string>();
+      for (const wait of [20000, 60000]) { // Gemini busy or out of quota for a moment: try again before giving up
+        if (bad !== null) break;
+        await sleep(wait);
+        bad = await meaningIssues(fresh2.map((c) => ({ orig: c.orig, next: c.text })));
+      }
+      if (bad === null) {
+        // Throwing the whole round away (old behaviour) left most of the document untouched. The numbers, citations and
+        // references were already checked by the fact guard, so keep these rewrites and ask the customer to read them.
+        meaningChecked = false;
+        fresh2.forEach((c) => { unchecked.add(c); good.set(c, c.text); });
+        log(`The automatic meaning check was not available this round, so ${fresh2.length} passage(s) are marked for you to read.`);
+      } else {
+        fresh2.forEach((c) => unchecked.delete(c));
         fresh2.forEach((c, k) => { if (bad.has(k)) { c.text = good.get(c)!; retryFresh.add(c); } else good.set(c, c.text); });
         if (bad.size) log(`Meaning check: ${bad.size} of ${fresh2.length} passage(s) changed what you wrote and were put back.`);
       }
       const full = join(chunks);
-      const det = await zerogptDetect(full);
+      // AI checks read the prose only: tables, headings, captions and references are not AI writing and Quetext scored
+      // every table row 100% AI, which kept whole documents at 100% (Turnitin's AI check also skips them).
+      const prose = editable.map((c) => c.text).join("\n\n");
+      if (round === 1) log("AI checks read your paragraphs of text; tables, headings and references are not scored.");
+      const det = await zerogptDetect(prose);
       // Detectors can disagree (seen: ZeroGPT 0%, Quetext 83% on the same text), so a round passes only when both are low.
       let qt: number | null = null; let qtFlagged: string[] = [];
-      if (det.score <= TARGET && process.env.QUETEXT_API_KEY && words(full) >= 50) {
-        const r: any = await quetextReport("ai-detect-report", full, title).catch((e) => { if (e instanceof QuetextNoCredit) throw e; return null; });
+      if (det.score <= TARGET && process.env.QUETEXT_API_KEY && words(prose) >= 50) {
+        const r: any = await quetextReport("ai-detect-report", prose, title).catch((e) => { if (e instanceof QuetextNoCredit) throw e; return null; });
         qt = r && r.ai_score != null ? Math.round(Number(r.ai_score) * 100) / 100 : null;
         qtFlagged = (r?.ai_matches || []).filter((m: any) => Number(m?.generated_prob) >= 0.5).map((m: any) => String(m?.sentence || ""));
       }
       j.rounds.push({ round, score: det.score, quetext: qt });
       log(`Round ${round}: AI-likeness ${det.score}% (ZeroGPT)${qt !== null ? `, ${qt}% (Quetext)` : ""}.`);
       const combined = qt !== null ? Math.max(det.score, qt) : det.score + 100; // unconfirmed rounds rank below confirmed ones
-      if (combined < best.score) best = { score: combined, texts: chunks.map((c) => c.text), zg: det.score, qt };
+      if (combined <= best.score) best = { score: combined, texts: chunks.map((c) => c.text), zg: det.score, qt };
       if (det.score <= TARGET && (qt === null ? !process.env.QUETEXT_API_KEY : qt <= QT_TARGET)) { log(`Both detectors are at ${TARGET}% or below after round ${round}.`); break; }
       if (round === MAX_ROUNDS) break;
       if (engineWords >= editableWords * MAX_ENGINE_FACTOR) { log("Stopped here: further rounds are not bringing the score down."); break; }
@@ -435,14 +461,18 @@ async function runJob(j: Job, original: string, title: string) {
     if (j.rounds.length > 1) log(`Keeping the best round (${bz ?? "?"}% ZeroGPT${bq != null ? `, ${bq}% Quetext` : ""}).`);
     const origParas = join(chunks.map((c) => ({ ...c, text: c.orig }))).split("\n\n"), nextParas = join(chunks).split("\n\n");
     const review = origParas.length === nextParas.length
-      ? origParas.map((orig, para) => ({ para, orig, next: nextParas[para], flagged: false, why: "" })).filter((r) => r.orig !== r.next) : [];
+      ? origParas.map((orig, para) => {
+          const unc = Array.from(unchecked).some((c) => c.para === para && c.text !== c.orig);
+          return { para, orig, next: nextParas[para], flagged: unc, why: unc ? "Meaning not checked automatically. Please read it." : "" };
+        }).filter((r) => r.orig !== r.next) : [];
     const final = join(chunks);
     j.progress = 90;
     let quetext: any = null;
     if (process.env.QUETEXT_API_KEY && words(final) >= 50) {
       log("Final AI check and plagiarism scan.");
       // One after the other: two parallel reports on the same key get rate-limited.
-      const ai: any = await quetextReport("ai-detect-report", final, title).catch((e) => ({ error: e.message }));
+      const finalProse = editable.map((c) => c.text).join("\n\n");
+      const ai: any = await quetextReport("ai-detect-report", finalProse, title).catch((e) => ({ error: e.message }));
       const plag: any = await quetextReport("report", final, title).catch((e) => ({ error: e.message }));
       if (ai?.error || plag?.error) console.warn("[rv] Quetext:", ai?.error || "", plag?.error || "");
       if (ai?.ai_score == null) log("The Quetext AI check did not return a score this time.");
