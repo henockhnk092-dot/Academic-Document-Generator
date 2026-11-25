@@ -77,7 +77,9 @@ export function IntegrityGate() {
           <span>I confirm the three points above.</span>
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button onClick={accept} disabled={!ticked || busy} data-testid="integrity-accept">Continue</Button>
+        <div className="flex justify-end">
+          <Button onClick={accept} disabled={!ticked || busy} data-testid="integrity-accept">Continue</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
