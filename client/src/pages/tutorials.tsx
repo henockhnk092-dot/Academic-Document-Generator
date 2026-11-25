@@ -17,7 +17,7 @@ const TOOL_TUTS = [
   { file: "grammar_check", title: "Grammar Check", desc: "Grammar, spelling and style suggestions.", href: "/grammar-check" },
   { file: "ai_check", title: "AI Check", desc: "Score and flagged sentences, free.", href: "/ai-check" },
   { file: "humanizer_premium", title: "AI Humanizer", desc: "Clear academic wording, Premium rounds and Review with AI.", href: "/humanize" },
-  { file: "rewrite_verify", title: "Rewrite & Verify", desc: "Long documents with a final AI and plagiarism report.", href: "/rewrite-verify" },
+  { file: "rewrite_verify", title: "Rewrite & Verify", desc: "Recorded live on a 5-page report: Word file in, automatic rounds, fact and meaning checks, layout kept, final AI and plagiarism report.", href: "/rewrite-verify" },
   { file: "ai_assistant", title: "AI Assistant", desc: "Ask about writing, structure and references.", href: "/ai-assistant" },
   { file: "community", title: "Community", desc: "Chat with students, reviewed by AI.", href: "/community" },
   { file: "templates_projects", title: "Templates and projects", desc: "Ready structures and your saved work.", href: "/templates" },
