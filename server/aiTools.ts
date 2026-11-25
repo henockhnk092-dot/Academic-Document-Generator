@@ -134,11 +134,29 @@ export async function zerogptDetect(text: string): Promise<{ score: number; flag
   return { score: Math.round(score * 10) / 10, flagged };
 }
 
+// Quetext has no balance endpoint: an "insufficient credits" (402) answer pauses new jobs for a while, and a running job
+// stops at once (no more rewrite-engine words spent) and is refunded in full, instead of going on with one detector.
+class QuetextNoCredit extends Error {}
+let quetextOutAt = 0;
+const QT_PAUSE_MS = 20 * 60 * 1000;
+const quetextOut = () => Boolean(process.env.QUETEXT_API_KEY) && Date.now() - quetextOutAt < QT_PAUSE_MS;
+
 async function quetextReport(kind: "ai-detect-report" | "report", text: string, title: string): Promise<any> {
   const key = process.env.QUETEXT_API_KEY!;
   const H = { "X-API-Key": key };
   const base = "https://www.quetext.com/api/v2";
-  const id = (await postJson(`${base}/${kind}`, { title: title.slice(0, 120), text }, H, 60000))?.data?.id;
+  let id: string | undefined;
+  try {
+    id = (await postJson(`${base}/${kind}`, { title: title.slice(0, 120), text }, H, 60000))?.data?.id;
+  } catch (e: any) {
+    if (/HTTP 402/.test(String(e?.message))) {
+      quetextOutAt = Date.now();
+      console.error("[rv] Quetext is out of credit: new Rewrite & Verify jobs are paused. Top up Quetext.");
+      throw new QuetextNoCredit("quetext_no_credit");
+    }
+    throw e;
+  }
+  quetextOutAt = 0;
   if (!id) throw new Error("Quetext: no report id");
   for (let i = 0; i < 100; i++) {
     await sleep(3000);
@@ -220,6 +238,45 @@ async function retry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
   }
 }
 
+// Second look at flagged passages: a flag stands only when the model quotes the original words and the rewrite words
+// that differ, and both quotes really occur in the texts. Lighter fallback models (used when the main model's daily
+// quota is gone) flagged plain rewording as "meaning changed", which threw most rewrites away (25 Nov 2026).
+async function confirmMeaning(batch: { orig: string; next: string }[], first: Map<number, string>): Promise<Map<number, string>> {
+  if (!first.size) return first;
+  const ids = Array.from(first.keys());
+  const n = (t: string) => t.toLowerCase().replace(/[^a-z0-9%]+/g, " ").trim();
+  try {
+    const out = await retry(async () => {
+      const r = await generateContent(
+        `For each pair, decide whether the REWRITE tells the reader something different from the ORIGINAL (a changed fact,
+number, claim strength, cause, condition or comparison, an added claim, or a dropped substantive point). Different wording,
+sentence order or dropped filler words are NOT a change. When it is a change, copy the exact ORIGINAL words and the exact
+REWRITE words that differ (each at most 12 words, copied character for character).
+Return only JSON: {"items":[{"id":<id>,"changed":true|false,"original":"<words>","rewrite":"<words>","why":"<at most 14 words>"}]}
+
+${ids.map((k) => `ID ${k}
+ORIGINAL: ${batch[k].orig}
+REWRITE: ${batch[k].next}`).join("\n\n")}`,
+        { temperature: 0, maxTokens: 8192, responseFormat: "json" },
+      );
+      const items = JSON.parse(r)?.items;
+      if (!Array.isArray(items)) throw new Error("unexpected answer");
+      return items;
+    });
+    const kept = new Map<number, string>();
+    for (const it of out) {
+      const k = Number(it?.id);
+      if (!first.has(k) || it?.changed !== true) continue;
+      const o = n(String(it?.original || "")), w = n(String(it?.rewrite || ""));
+      const grounded = (o && n(batch[k].orig).includes(o)) || (w && n(batch[k].next).includes(w));
+      if (grounded) kept.set(k, String(it?.why || first.get(k) || "").slice(0, 160));
+    }
+    return kept;
+  } catch {
+    return first; // if the second look fails, stay on the safe side and keep the original flags
+  }
+}
+
 async function meaningIssues(pairs: { orig: string; next: string }[]): Promise<Map<number, string> | null> {
   const bad = new Map<number, string>();
   for (let i = 0; i < pairs.length; i += 10) {
@@ -240,10 +297,12 @@ ${batch.map((p, k) => `ID ${k}\nORIGINAL: ${p.orig}\nREWRITE: ${p.next}`).join("
         if (!Array.isArray(f)) throw new Error("unexpected answer");
         return f;
       });
+      const first = new Map<number, string>();
       for (const f of flagged) {
         const k = Number(f?.id);
-        if (Number.isInteger(k) && k >= 0 && k < batch.length) bad.set(i + k, String(f?.why || "").slice(0, 160));
+        if (Number.isInteger(k) && k >= 0 && k < batch.length) first.set(k, String(f?.why || "").slice(0, 160));
       }
+      (await confirmMeaning(batch, first)).forEach((why, k) => bad.set(i + k, why));
     } catch (e: any) {
       console.warn("[rv] meaning check failed:", String(e?.message || e).slice(0, 160));
       return null;
@@ -353,7 +412,7 @@ async function runJob(j: Job, original: string, title: string) {
       // Detectors can disagree (seen: ZeroGPT 0%, Quetext 83% on the same text), so a round passes only when both are low.
       let qt: number | null = null; let qtFlagged: string[] = [];
       if (det.score <= TARGET && process.env.QUETEXT_API_KEY && words(full) >= 50) {
-        const r: any = await quetextReport("ai-detect-report", full, title).catch(() => null);
+        const r: any = await quetextReport("ai-detect-report", full, title).catch((e) => { if (e instanceof QuetextNoCredit) throw e; return null; });
         qt = r && r.ai_score != null ? Math.round(Number(r.ai_score) * 100) / 100 : null;
         qtFlagged = (r?.ai_matches || []).filter((m: any) => Number(m?.generated_prob) >= 0.5).map((m: any) => String(m?.sentence || ""));
       }
@@ -414,6 +473,14 @@ async function runJob(j: Job, original: string, title: string) {
     log("Done.");
   } catch (e: any) {
     j.status = "failed";
+    if (e instanceof QuetextNoCredit) {
+      j.error = "The second AI detector is temporarily unavailable.";
+      await refundCredits(j.uid, j.cost, j.id, "Refund: second detector unavailable").catch(() => {});
+      log(`Our second AI detector is temporarily unavailable, so we stopped before using more of your text. Your ${j.cost} credits were refunded. Please try again later.`);
+      j.refunded = true;
+      await saveJob(j);
+      return;
+    }
     j.error = String(e?.message || e).slice(0, 300);
     await refundCredits(j.uid, j.cost, j.id, `Refund: Rewrite & Verify failed (${j.error.slice(0, 60)})`).catch(() => {});
     log(`Failed: ${j.error}. Your ${j.cost} credits were refunded.`);
@@ -434,6 +501,7 @@ function validate(text: string, engine: string, uid: string): { status: number; 
   if (w < 50) return { status: 400, error: "Please paste at least 50 words." };
   if (w > MAX_WORDS) return { status: 400, error: `Please submit at most ${MAX_WORDS.toLocaleString("en-US")} words at a time (split longer documents).` };
   if (!process.env.ZEROGPT_API_KEY) return { status: 503, error: "Rewrite & Verify is temporarily unavailable." };
+  if (quetextOut()) return { status: 503, error: "Rewrite & Verify is paused for a short while for maintenance. Nothing was charged. Please try again later." };
   if (Array.from(jobs.values()).some((j) => j.uid === uid && j.status === "running")) return { status: 429, error: "You already have a job running. Please wait for it to finish." };
   return null;
 }
