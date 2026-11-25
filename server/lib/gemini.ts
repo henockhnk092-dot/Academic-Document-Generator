@@ -1,13 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Collect all configured API keys (Railway env vars + legacy fallback)
-const API_KEYS = [
-  process.env.GEMINI_API_KEY_1,
-  process.env.GEMINI_API_KEY_2,
-  process.env.GEMINI_API_KEY_3,
-  process.env.GEMINI_API_KEY_4,
+// GEMINI_API_KEY_1 ... GEMINI_API_KEY_10, then the legacy single key; duplicates are dropped.
+const API_KEYS = Array.from(new Set([
+  ...Array.from({ length: 10 }, (_, i) => process.env[`GEMINI_API_KEY_${i + 1}`]),
   process.env.GEMINI_API_KEY, // legacy single-key support
-].filter((k): k is string => Boolean(k));
+].map((k) => (k || "").trim()).filter(Boolean)));
 
 // Index of the currently preferred key; rotates on failure
 let currentKeyIndex = 0;
