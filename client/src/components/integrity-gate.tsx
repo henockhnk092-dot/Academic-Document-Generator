@@ -57,8 +57,16 @@ export function IntegrityGate() {
     }
   };
 
+  // Wait until the first-visit welcome tour is closed, so the two windows are never stacked.
+  const [tourDone, setTourDone] = useState(() => { try { return !!localStorage.getItem("academicgen_onboarded_v1"); } catch { return true; } });
+  useEffect(() => {
+    if (tourDone) return;
+    const t = setInterval(() => { try { if (localStorage.getItem("academicgen_onboarded_v1")) setTourDone(true); } catch { setTourDone(true); } }, 500);
+    return () => clearInterval(t);
+  }, [tourDone]);
+
   return (
-    <Dialog open={open} onOpenChange={() => { /* cannot be dismissed without confirming */ }}>
+    <Dialog open={open && tourDone} onOpenChange={() => { /* cannot be dismissed without confirming */ }}>
       <DialogContent className="max-w-lg [&>button]:hidden" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()} data-testid="integrity-gate">
         <DialogTitle className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-primary" />Academic integrity</DialogTitle>
         <DialogDescription asChild>
