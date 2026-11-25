@@ -72,10 +72,29 @@ async function uidFromRequest(req: Request): Promise<{ uid: string; email?: stri
   return { uid: d.uid, email: d.email };
 }
 
+// Who may buy. Live: everyone, unless PAYFAST_PURCHASES=closed. Sandbox (the shared public test merchant): only admin
+// accounts and PAYFAST_TEST_UIDS, because anyone can make a "valid" sandbox payment with Payfast's public test card
+// and must not get a real plan or credits from it.
+async function mayBuy(uid: string): Promise<boolean> {
+  const c = config();
+  if (!c.sandbox) return (process.env.PAYFAST_PURCHASES || "open").toLowerCase() !== "closed";
+  if ((process.env.PAYFAST_TEST_UIDS || "").split(",").map((s) => s.trim()).filter(Boolean).includes(uid)) return true;
+  try {
+    const { getApp } = await import("firebase-admin/app");
+    const { getFirestore } = await import("firebase-admin/firestore");
+    const d = (await getFirestore(getApp()).collection("users").doc(uid).get()).data();
+    return d?.isAdmin === true || d?.role === "admin";
+  } catch {
+    return false;
+  }
+}
+const CLOSED = "New purchases open soon. Existing plans and credits are not affected.";
+
 export function registerPayfastRoutes(app: Express) {
   app.get("/api/payfast/status", (_req, res) => {
     const c = config();
-    res.json({ enabled: c.sandbox || Boolean(c.merchantId && c.merchantKey), sandbox: c.sandbox, prices: PAYFAST_PRICES_ZAR });
+    const open = !c.sandbox && Boolean(c.merchantId && c.merchantKey) && (process.env.PAYFAST_PURCHASES || "open").toLowerCase() !== "closed";
+    res.json({ enabled: open, sandbox: c.sandbox, testOnly: c.sandbox, prices: PAYFAST_PRICES_ZAR });
   });
 
   // Build a signed payment for the chosen plan; the browser posts these fields to Payfast.
@@ -83,6 +102,7 @@ export function registerPayfastRoutes(app: Express) {
     try {
       const user = await uidFromRequest(req).catch(() => null);
       if (!user) return res.status(401).json({ error: "Please sign in first." });
+      if (!(await mayBuy(user.uid))) return res.status(403).json({ error: CLOSED, code: "payments_closed" });
       const tier = String(req.body?.tier || "");
       const pack = CREDIT_PACKS[tier];
       let plan: { amount: number; days: number; label: string; recurring?: 3 | 6 } | undefined =
@@ -147,6 +167,7 @@ export function registerPayfastRoutes(app: Express) {
       if (body.payment_status !== "COMPLETE") return log(`ITN status ${body.payment_status} for ${tier}`, "payfast");
 
       const uid = body.custom_str1;
+      if (!(await mayBuy(uid))) return log(`ITN rejected: purchases are closed for this account${c.sandbox ? " (sandbox test payment)" : ""}`, "payfast");
       if (order) {
         if (order.uid !== uid) return log("ITN rejected: order owner mismatch", "payfast");
         const r = await startPaidOrder(body.custom_str3, `payfast-${body.pf_payment_id || body.m_payment_id}`);

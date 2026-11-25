@@ -1390,6 +1390,9 @@ Return JSON with "formatted" (full reference list entry) and "inText" (in-text c
         return res.status(503).json({ error: "Buy Me a Coffee is not configured" });
       }
       const tier = req.query.tier as string | undefined;
+      // Buy Me a Coffee is no longer a way to buy (payments move to Payfast). Without a tier this still returns the
+      // membership page, so existing members can manage what they already pay for.
+      if (tier) return res.status(410).json({ error: "New purchases open soon. Existing plans and credits are not affected.", code: "payments_closed" });
       if (tier && !isPricingTier(tier)) {
         return res.status(400).json({ error: "Invalid pricing tier" });
       }

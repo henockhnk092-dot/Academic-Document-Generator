@@ -19,6 +19,10 @@ function isKeyFailureError(error: any): boolean {
     status === 429 ||
     status === 401 ||
     status === 403 ||
+    // A newer Google project cannot use an older model ("no longer available to new users"): move on to the next key
+    // and then to the fallback model instead of failing the request (seen 25 Nov 2026 with gemini-2.5-flash).
+    (status === 404 && (msg.includes("no longer available") || msg.includes("not found") || msg.includes("not supported"))) ||
+    msg.includes("no longer available") ||
     msg.includes("quota") ||
     msg.includes("rate limit") ||
     msg.includes("api_key_invalid") ||

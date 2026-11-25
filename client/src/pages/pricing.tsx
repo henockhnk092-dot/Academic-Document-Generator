@@ -64,7 +64,11 @@ export default function Pricing() {
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ tier: plan }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      if (d?.code === "payments_closed") { toast({ title: "Payments", description: d.error }); return true; } // handled: no other checkout
+      return false;
+    }
     const { action, fields } = await res.json();
     const form = document.createElement("form");
     form.method = "POST";
@@ -95,17 +99,9 @@ export default function Pricing() {
     setIsCheckoutLoading(true);
 
     try {
-      if (await startPayfast(plan).catch(() => false)) return; // redirects to Payfast checkout
-      const response = await fetch(`/api/bmc/checkout-url?tier=${encodeURIComponent(plan)}`);
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || t("pages.pricing.checkoutFailedDesc"));
-      }
-      window.open(data.url, "_blank", "noopener,noreferrer");
-      toast({
-        title: t("pages.pricing.openingBMC"),
-        description: t("pages.pricing.openingBMCDesc"),
-      });
+      // Payfast is the only checkout (Buy Me a Coffee was removed as a fallback on 25 Nov 2026).
+      if (await startPayfast(plan).catch(() => false)) return;
+      throw new Error(t("pages.pricing.checkoutFailedDesc"));
     } catch (error) {
       console.error("Checkout error:", error);
       toast({
