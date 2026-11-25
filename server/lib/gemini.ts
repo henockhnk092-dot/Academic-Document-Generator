@@ -1,9 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Collect all configured API keys (Railway env vars + legacy fallback)
-// GEMINI_API_KEY_1 ... GEMINI_API_KEY_10, then the legacy single key; duplicates are dropped.
+// All configured keys: GEMINI_API_KEY_1 ... GEMINI_API_KEY_30, then the legacy single key; duplicates are dropped.
+// Each key is a separate Google project with its own free daily quota, so more keys = more free requests.
 const API_KEYS = Array.from(new Set([
-  ...Array.from({ length: 10 }, (_, i) => process.env[`GEMINI_API_KEY_${i + 1}`]),
+  ...Array.from({ length: 30 }, (_, i) => process.env[`GEMINI_API_KEY_${i + 1}`]),
   process.env.GEMINI_API_KEY, // legacy single-key support
 ].map((k) => (k || "").trim()).filter(Boolean)));
 
@@ -40,6 +40,17 @@ function isTransientError(error: any): boolean {
 }
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Keys that just failed rest for a while, so later requests do not spend calls on them again:
+// quota used up -> 1 hour; model not available to that project, or key refused -> 24 hours.
+const restUntil = new Map<string, number>(); // `${stage}:${keyIndex}` -> time
+const resting = (stage: string, k: number) => (restUntil.get(`${stage}:${k}`) ?? 0) > Date.now();
+function rest(stage: string, k: number, error: any) {
+  const msg = String(error?.message ?? error ?? "").toLowerCase();
+  const status = error?.status ?? error?.statusCode ?? error?.code;
+  const long = status === 404 || status === 403 || status === 401 || msg.includes("no longer available") || msg.includes("permission_denied") || msg.includes("api_key_invalid");
+  restUntil.set(`${stage}:${k}`, Date.now() + (long ? 24 : 1) * 3600 * 1000);
+}
+
 async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<T> {
   if (API_KEYS.length === 0) {
     throw new Error("No Gemini API keys configured. Add GEMINI_API_KEY_1 (and optionally _2, _3) to environment variables.");
@@ -48,6 +59,7 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
   let lastError: any;
   for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
     const keyIndex = (currentKeyIndex + attempt) % API_KEYS.length;
+    if (resting("main", keyIndex)) continue;
     const client = new GoogleGenAI({ apiKey: API_KEYS[keyIndex] });
     try {
       const result = await fn(client);
@@ -55,7 +67,8 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
       return result;
     } catch (error: any) {
       if (isKeyFailureError(error)) {
-        console.warn(`Gemini key ${keyIndex + 1} failed (${error?.message ?? error}), trying next key...`);
+        console.warn(`Gemini key ${keyIndex + 1} failed (${String(error?.message ?? error).slice(0, 120)}), trying next key...`);
+        rest("main", keyIndex, error);
         lastError = error;
         continue;
       }
@@ -75,12 +88,14 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
   const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.5-flash-lite";
   if (fallbackModel && fallbackModel !== "none") {
     for (let k = 0; k < API_KEYS.length; k++) {
+      if (resting("fallback", k)) continue;
       try {
         const result = await fn(withModelOverride(new GoogleGenAI({ apiKey: API_KEYS[k] }), fallbackModel));
         console.warn(`Gemini: served by fallback model ${fallbackModel} (key ${k + 1}) after quota errors.`);
         return result;
       } catch (error: any) {
         if (!isKeyFailureError(error) && !isTransientError(error)) throw error;
+        if (isKeyFailureError(error)) rest("fallback", k, error);
         lastError = error;
         if (isTransientError(error)) await pause(2000);
       }
@@ -98,6 +113,11 @@ async function withKeyFallback<T>(fn: (ai: GoogleGenAI) => Promise<T>): Promise<
         if (!isKeyFailureError(error) && !isTransientError(error)) throw error;
       }
     }
+  }
+  if (!lastError) {
+    // every key is resting: let the soonest one try again rather than failing without a call
+    restUntil.clear();
+    return withKeyFallback(fn);
   }
   throw lastError;
 }
