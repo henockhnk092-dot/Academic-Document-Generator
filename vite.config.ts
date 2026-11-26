@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     runtimeErrorOverlay(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt", // autoUpdate reloaded open tabs on every deploy; the PwaUpdateBanner asks instead
       includeAssets: ["favicon.ico", "favicon-16x16.png", "favicon-32x32.png", "apple-touch-icon.png", "icons/*.png", "og/*.jpg"],
       manifest: {
         name: "AcademicGen - AI Document Generator",
