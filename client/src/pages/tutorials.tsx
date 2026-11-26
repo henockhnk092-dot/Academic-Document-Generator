@@ -113,7 +113,10 @@ export default function Tutorials() {
           <p className="text-sm text-muted-foreground mb-4">Every click explained, with numbered steps.</p>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {[{ file: "guide_ai_check", title: "How to use AI Check", desc: "6 steps: add your text, check it, read the score, export and improve.", href: "/ai-check" },
-              { file: "guide_humanizer", title: "How to use the AI Humanizer", desc: "7 steps plus Premium rounds: rewrite, compare, Review with AI, export.", href: "/humanize" }].map((v) => (
+              { file: "guide_humanizer", title: "How to use the AI Humanizer", desc: "7 steps plus Premium rounds: rewrite, compare, Review with AI, export.", href: "/humanize" },
+              { file: "guide_ai_assistant", title: "How to use the AI Assistant and chat widget", desc: "6 steps: ask a question, read and copy the answer, attach your work for feedback, and use the chat widget on any page.", href: "/ai-assistant" },
+              { file: "guide_grammar_check", title: "How to use Grammar Check", desc: "5 steps: add your text, check it, read each suggestion, apply one or all, copy.", href: "/grammar-check" },
+              { file: "guide_citation_checker", title: "How to check your references", desc: "7 steps: find fake or wrong citations, see corrections, and build a missing reference list from your valid citations.", href: "/citations" }].map((v) => (
               <Card key={v.file} className="overflow-hidden flex flex-col">
                 <video className="w-full bg-black aspect-video" controls preload="none" playsInline poster={`/videos/v2/${v.file}.jpg`} data-testid={`video-${v.file}`}>
                   <source src={`/videos/v2/${v.file}.mp4`} type="video/mp4" />

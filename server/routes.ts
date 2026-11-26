@@ -5,7 +5,7 @@ import net from "node:net";
 import { storage } from "./storage";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
-import { generateReportContent, generatePresentationContent, generateConferencePaperContent, generateThesisContent, extractTextFromImage, generateChatResponse, generateSpeechAudio, checkGrammar, generateContent, generateSectionContent } from "./lib/gemini";
+import { generateReportContent, generatePresentationContent, generateConferencePaperContent, generateThesisContent, extractTextFromImage, generateChatResponse, generateWritingAssistantResponse, generateSpeechAudio, checkGrammar, generateContent, generateSectionContent } from "./lib/gemini";
 import { generateAzureAudio, generateElevenLabsAudio, generateVoiceRSSAudio, generateStreamElementsAudio, ELEVENLABS_VOICES, STREAMELEMENTS_VOICES } from "./lib/tts";
 import { searchImagesWithFallback, getImageWithFallback } from "./lib/images";
 import { extractTextFromFile } from "./lib/file-processor";
@@ -1176,7 +1176,7 @@ Return JSON with "formatted" (full reference list entry) and "inText" (in-text c
         ? `You are an academic writing assistant. The user is working on: ${context}. Help them improve their writing.`
         : "You are an academic writing assistant. Help the user improve their academic writing.";
 
-      const response = await generateChatResponse(`${systemContext}\n\nUser: ${message}`, language);
+      const response = await generateWritingAssistantResponse(`${systemContext}\n\nUser: ${message}`, language);
 
       if (sessionId) {
         try {
@@ -1807,7 +1807,8 @@ ${styleHint}
 For each paragraph, identify ALL citations (inline citations like [1], (Author, Year), Author (Year), etc.) and:
 1. Determine if each citation is valid/properly formatted or fake/incorrect
 2. For invalid citations: explain the issue and suggest a corrected version
-3. Generate a full formatted reference for each citation
+3. Generate a full formatted reference for each VALID citation of a real, verifiable work. For a fake, invalid or unverifiable citation set "formattedRef" to null: never invent titles, journals, volumes or pages
+4. "referenceSection" lists only the valid citations' references
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
 {
@@ -1849,6 +1850,10 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
       });
 
       const withCitations = allParagraphs.filter((p: any) => p.citations.length > 0);
+      // A flagged (fake/incorrect) citation must never get a made-up full reference (seen 26 Nov 2026: a 2031 source
+      // was flagged, then listed with an invented journal, volume and pages). Build the list from valid citations only.
+      for (const p of withCitations) for (const c of p.citations) if (!c.isValid) c.formattedRef = null;
+      const validRefs = Array.from(new Set(withCitations.flatMap((p: any) => p.citations.filter((c: any) => c.isValid && c.formattedRef).map((c: any) => String(c.formattedRef)))));
       const totalCitations = withCitations.reduce((acc: number, p: any) => acc + p.citations.length, 0);
       const validCount = withCitations.reduce((acc: number, p: any) => acc + p.citations.filter((c: any) => c.isValid).length, 0);
       const fakeCount = totalCitations - validCount;
@@ -1856,7 +1861,7 @@ ${paragraphs.map((p: string, i: number) => `[Paragraph ${i}]\n${p}`).join("\n\n"
       res.json({
         success: true,
         paragraphs: allParagraphs,
-        referenceSection: parsed.referenceSection || [],
+        referenceSection: validRefs,
         totalCitations,
         validCount,
         fakeCount,

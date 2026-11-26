@@ -36,7 +36,9 @@ function isTransientError(error: any): boolean {
   const status = error?.status ?? error?.code ?? error?.error?.code;
   const msg = String(error?.message ?? "").toLowerCase();
   return status === 503 || status === 500 || status === 504 || msg.includes("unavailable") || msg.includes("high demand") ||
-    msg.includes("overloaded") || msg.includes("try again later") || msg.includes("deadline") || msg.includes('"code":503') || msg.includes('"code":500');
+    msg.includes("overloaded") || msg.includes("try again later") || msg.includes("deadline") || msg.includes('"code":503') || msg.includes('"code":500') ||
+    // network blips (connection reset, DNS, socket closed) are worth another try, not a failed answer
+    msg.includes("fetch failed") || msg.includes("econnreset") || msg.includes("etimedout") || msg.includes("socket hang up") || msg.includes("enotfound");
 }
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -1171,6 +1173,24 @@ Return ONLY the JSON array of suggestions. If no issues found, return []`;
     }
     return [];
   }
+}
+
+// The AI Assistant page (/ai-assistant): real writing help and feedback. The site-guide prompt below (chat widget)
+// forced a link into every answer and capped replies at 512 tokens, so feedback on an attached paragraph came back
+// as "use the AI Assistant" instead of feedback.
+export async function generateWritingAssistantResponse(message: string, language?: string): Promise<string> {
+  const langNote = language && language !== "en"
+    ? `\n\nRespond only in ${LANG_NAMES[language] ?? language}.`
+    : "";
+  const systemInstruction = `You are the AcademicGen AI Writing Assistant, a patient academic writing tutor for students.
+Help with structure, clarity, argument, academic style, grammar and citations (APA, Harvard, IEEE, MLA).
+When the user shares text or a file, give specific feedback on THAT text: what works, what to change, and short
+examples of improved sentences. Keep the student's own ideas, facts, numbers and citations; never invent sources.
+Encourage the student to write and check their own work, and to follow their university's rules on using AI.
+Format: short paragraphs and bullet points, plain Markdown, no tables. Aim for 120 to 300 words unless asked for more.
+Only mention an AcademicGen tool (with a Markdown link such as [Grammar Check](/grammar-check), [Citation Checker](/citations),
+[AI Check](/ai-check)) when it clearly helps with the question.${langNote}`;
+  return generateContent(message, { systemInstruction, temperature: 0.5, maxTokens: 4096 });
 }
 
 export async function generateChatResponse(message: string, language?: string): Promise<string> {
