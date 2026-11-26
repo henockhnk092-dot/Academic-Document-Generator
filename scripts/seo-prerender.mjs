@@ -5,6 +5,7 @@
 // Also writes sitemap.xml and robots.txt. Run after `vite build`:  node scripts/seo-prerender.mjs
 import fs from "node:fs";
 import path from "node:path";
+import { bodyFor } from "./seo-content.mjs";
 
 const SITE = "https://www.academicgen.com";
 const OUT = path.resolve("dist/public");
@@ -111,7 +112,8 @@ const stripped = base
 if (!stripped.includes("</head>")) throw new Error("index.html has no </head>");
 
 for (const p of PAGES) {
-  const html = stripped.replace("</head>", `    ${headFor(p)}\n  </head>`);
+  const html = stripped.replace("</head>", `    ${headFor(p)}\n  </head>`)
+    .replace('<div id="root"></div>', `<div id="root">${bodyFor(p, esc)}</div>`);
   const file = p.route === "/" ? path.join(OUT, "index.html") : path.join(OUT, p.route.slice(1) + ".html");
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, html);
